@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "5.1", date: "2026-09-15" };
+const BUILD = { number: "5.2", date: "2026-09-16" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // ---------- Saving on this device ----------
@@ -886,4 +886,11 @@ showTab(startTab);
 // Lets the app open without internet once it's been added to the home screen
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js");
+}
+
+// Ask Chrome to keep this app's data permanently, so it isn't cleared when the phone is low on space
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persisted()
+    .then((kept) => kept || navigator.storage.persist())
+    .catch((err) => console.error(err));
 }
