@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: 5, date: "2026-09-15" };
+const BUILD = { number: "5.1", date: "2026-09-15" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // ---------- Saving on this device ----------
@@ -661,7 +661,7 @@ function renderSavings() {
       const fill = el("div", "bar-fill");
       fill.style.width = `${Math.min(100, g.target ? (saved / g.target) * 100 : 0)}%`;
       bar.append(fill);
-      card.append(bar, el("div", "small", `${formatMoney(g.monthly, "USD")} a month`));
+      card.append(bar, el("div", "small", `${formatMoney(g.monthly, "USD")} a month`), el("div", "small", goalStatus(saved, g)));
       return card;
     })
   );
@@ -672,6 +672,18 @@ function renderSavings() {
   $("saving-log-empty").textContent = loadProblem ? "Your saved savings couldn't be read." : "No savings yet.";
   $("saving-log-empty").hidden = sortedSavings.length > 0;
   renderFullSavingLog();
+}
+
+// Same as the spreadsheet: months left = still needed ÷ monthly (rounded up), finish = this month + months left
+function goalStatus(saved, goal) {
+  const remaining = Math.round((goal.target - saved) * 100) / 100;
+  if (remaining <= 0) return "Goal reached ✓";
+  if (!(goal.monthly > 0)) return "";
+  const months = Math.ceil(remaining / goal.monthly);
+  const today = new Date();
+  const finish = new Date(today.getFullYear(), today.getMonth() + months, 1)
+    .toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return `${months} ${months === 1 ? "month" : "months"} left · est. ${finish}`;
 }
 
 function savingRow(s) {
