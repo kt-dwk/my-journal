@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>My Money · My Journal</title>
+  <meta name="theme-color" content="#fafafa">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page" id="main-page">
+    <header class="app-head">
+      <h1>My Money</h1>
+      <button type="button" class="icon-btn" id="open-settings" aria-label="Settings">⚙︎</button>
+    </header>
+
+    <div id="panel-expenses" role="tabpanel" aria-labelledby="tab-expenses">
+    <div class="month-nav">
+      <button type="button" class="btn" id="prev-month" aria-label="Previous month">&lt;</button>
+      <h2 id="month-label"></h2>
+      <button type="button" class="btn" id="next-month" aria-label="Next month">&gt;</button>
+    </div>
+    <p class="total">
+      <span class="small">Total spent</span>
+      <strong id="total"></strong>
+    </p>
+
+    <section>
+      <h3>By category</h3>
+      <ul id="by-group"></ul>
+    </section>
+
+    <section>
+      <h3>By Item</h3>
+      <div id="by-item"></div>
+    </section>
+
+    <button type="button" class="btn primary wide" id="open-add">+ Add transaction</button>
+
+    <section>
+      <h3>Transaction log</h3>
+      <ul id="log"></ul>
+      <p class="small" id="log-empty" hidden>No transactions this month.</p>
+    </section>
+    </div>
+
+    <div id="panel-savings" role="tabpanel" aria-labelledby="tab-savings" hidden>
+      <h2>Savings</h2>
+      <p class="total">
+        <span class="small">Total saved</span>
+        <strong id="savings-total"></strong>
+      </p>
+
+      <section>
+        <h3>Goals</h3>
+        <div id="goals"></div>
+      </section>
+
+      <button type="button" class="btn primary wide" id="open-saving">+ Add saving</button>
+
+      <section>
+        <h3>Saving log</h3>
+        <ul id="saving-log"></ul>
+        <p class="small" id="saving-log-empty" hidden>No savings yet.</p>
+        <button type="button" class="btn more" id="open-saving-log" hidden>View more log</button>
+      </section>
+    </div>
+  </main>
+
+  <!-- Settings page (whole app) -->
+  <div class="page" id="settings-page" hidden>
+    <header class="settings-head">
+      <button type="button" class="btn back" id="close-settings">← Back</button>
+      <h1>Settings</h1>
+    </header>
+
+    <section>
+      <h3>Exchange rates</h3>
+      <form id="rates-form" novalidate>
+        <p class="small">New transactions use these rates. Transactions you already saved keep their old rate.</p>
+        <div class="field">
+          <label class="label" for="rate-USD">1 USD = ? LAK</label>
+          <input id="rate-USD" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 22,500">
+        </div>
+        <div class="field">
+          <label class="label" for="rate-THB">1 THB = ? LAK</label>
+          <input id="rate-THB" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 690">
+        </div>
+        <p class="error" id="rates-error" hidden>Both rates must be above 0.</p>
+        <button type="submit" class="btn primary full">Save rates</button>
+        <p class="status" id="rates-status" role="status" hidden></p>
+      </form>
+    </section>
+
+    <section>
+      <h3>Backup &amp; Restore</h3>
+      <p class="small">Backup makes one file with all your expenses, savings and rates. Restore replaces everything on this device with a backup file.</p>
+      <div class="settings-actions" id="backup-actions">
+        <button type="button" class="btn" id="backup-btn">Backup</button>
+        <button type="button" class="btn" id="restore-btn">Restore</button>
+      </div>
+      <input type="file" id="restore-file" accept=".json,application/json" hidden>
+      <div class="confirm" id="restore-confirm" hidden>
+        <p id="restore-summary"></p>
+        <p class="small">This replaces all data on this device.</p>
+        <div class="actions">
+          <button type="button" class="btn" id="restore-no">No, keep my data</button>
+          <button type="button" class="btn danger-fill" id="restore-yes">Yes, restore</button>
+        </div>
+      </div>
+      <p class="status" id="backup-status" role="status" hidden></p>
+    </section>
+
+    <section>
+      <h3>Build info</h3>
+      <p id="build-info"></p>
+    </section>
+  </div>
+
+  <nav class="tabbar" id="tabbar" role="tablist" aria-label="My Money">
+    <button type="button" class="tab" role="tab" id="tab-expenses" aria-controls="panel-expenses" aria-selected="true">Expenses</button>
+    <button type="button" class="tab" role="tab" id="tab-savings" aria-controls="panel-savings" aria-selected="false">Savings</button>
+  </nav>
+
+  <!-- Add transaction pop-up -->
+  <dialog id="add-dialog" aria-labelledby="add-title">
+    <form id="add-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="add-title">Add transaction</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <fieldset class="field">
+        <legend class="label">Item</legend>
+        <div id="item-choices"></div>
+        <p class="error" id="item-error" hidden>Please choose an item.</p>
+      </fieldset>
+
+      <div class="field">
+        <label class="label" for="amount">Amount</label>
+        <div class="amount-row">
+          <select id="currency" aria-label="Currency"></select>
+          <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+        </div>
+        <p class="error" id="amount-error" hidden>Please enter an amount above 0.</p>
+        <p class="error" id="rate-error" hidden><span id="rate-error-text"></span></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="date">Date</label>
+        <input id="date" type="date">
+      </div>
+
+      <div class="field">
+        <label class="label" for="note">Note <span class="small">(optional)</span></label>
+        <input id="note" type="text" maxlength="120" autocomplete="off" placeholder="e.g. for mom">
+      </div>
+
+      <p class="error" id="add-error" hidden>Sorry, this couldn't be saved. Please try again.</p>
+
+      <div class="confirm" id="delete-confirm" hidden>
+        <p>Delete this transaction?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="delete-no">No, keep it</button>
+          <button type="button" class="btn danger-fill" id="delete-yes">Yes, delete</button>
+        </div>
+      </div>
+
+      <div class="actions" id="form-actions">
+        <button type="button" class="btn danger" id="delete-transaction" hidden>Delete</button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / Edit saving pop-up -->
+  <dialog id="saving-dialog" aria-labelledby="saving-title">
+    <form id="saving-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="saving-title">Add saving</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <fieldset class="field">
+        <legend class="label">Goal</legend>
+        <div class="item-buttons" id="goal-choices"></div>
+        <p class="error" id="goal-error" hidden>Please choose a goal.</p>
+      </fieldset>
+
+      <div class="field">
+        <label class="label" for="saving-amount">Amount ($ USD)</label>
+        <input id="saving-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+        <p class="error" id="saving-amount-error" hidden>Please enter an amount above 0.</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="saving-date">Date</label>
+        <input id="saving-date" type="date">
+      </div>
+
+      <div class="field">
+        <label class="label" for="saving-note">Note <span class="small">(optional)</span></label>
+        <input id="saving-note" type="text" maxlength="120" autocomplete="off">
+      </div>
+
+      <p class="error" id="saving-error" hidden>Sorry, this couldn't be saved. Please try again.</p>
+
+      <div class="confirm" id="saving-delete-confirm" hidden>
+        <p>Delete this saving?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="saving-delete-no">No, keep it</button>
+          <button type="button" class="btn danger-fill" id="saving-delete-yes">Yes, delete</button>
+        </div>
+      </div>
+
+      <div class="actions" id="saving-form-actions">
+        <button type="button" class="btn danger" id="delete-saving" hidden>Delete</button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Full saving log pop-up -->
+  <dialog id="saving-log-dialog" aria-labelledby="saving-log-title">
+    <div class="dialog-head">
+      <h2 id="saving-log-title">Saving log</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <p class="small" id="saving-log-range"></p>
+    <ul id="saving-log-full"></ul>
+    <nav class="pager" aria-label="Saving log pages">
+      <button type="button" class="btn" id="log-prev" aria-label="Previous page">&lt;</button>
+      <span id="log-page-label" aria-live="polite"></span>
+      <button type="button" class="btn" id="log-next" aria-label="Next page">&gt;</button>
+    </nav>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
