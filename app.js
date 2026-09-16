@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "5.2", date: "2026-09-16" };
+const BUILD = { number: "6.1", date: "2026-09-16" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // ---------- Saving on this device ----------
@@ -433,6 +433,73 @@ addForm.addEventListener("submit", (event) => {
   renderDashboard();
 });
 
+// ---------- My Skin cycle (the My Skin page itself arrives in Build 7) ----------
+
+const SKIN_CYCLE = ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"];
+const SKIN_START = { date: "2026-09-15", night: 1 }; // 15 Sep 2026 = Retinol
+
+function daysBetween(fromISO, toISO) {
+  const [y1, m1, d1] = fromISO.split("-").map(Number);
+  const [y2, m2, d2] = toISO.split("-").map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+}
+
+// The cycle follows the calendar, and "tonight" ends at midnight (local date)
+function skinNightFor(dateISO) {
+  const n = SKIN_CYCLE.length;
+  const index = (SKIN_START.night + daysBetween(SKIN_START.date, dateISO)) % n;
+  return SKIN_CYCLE[(index + n) % n];
+}
+
+// ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
+
+const VIEWS = ["home", "money", "skin"];
+const VIEW_KEY = "myjournal.view";
+let currentView = "home";
+
+function applyPages(settingsOpen) {
+  for (const view of VIEWS) $(`${view}-page`).hidden = settingsOpen || view !== currentView;
+  $("settings-page").hidden = !settingsOpen;
+  $("tabbar").hidden = settingsOpen || currentView !== "money";
+  window.scrollTo(0, 0);
+}
+
+function renderHome() {
+  $("skin-tile-tonight").textContent = `Tonight: ${skinNightFor(todayISO())}`;
+}
+
+function showView(view, { push = false } = {}) {
+  currentView = view;
+  if (view === "home") renderHome();
+  applyPages(false);
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {}
+  if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
+}
+
+function goHome() {
+  if (history.state && history.state.fromHome) {
+    history.back(); // same as the phone's Back gesture
+  } else {
+    showView("home");
+    history.replaceState({ view: "home" }, "");
+  }
+}
+
+// From Home, My Money always starts on the Expenses tab
+$("tile-money").addEventListener("click", () => {
+  showTab("expenses");
+  showView("money", { push: true });
+});
+$("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
+for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
+
+// The skin tile updates after midnight when the app comes back into view
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) renderHome();
+});
+
 // ---------- Settings page ----------
 
 const rateInputs = { USD: $("rate-USD"), THB: $("rate-THB") };
@@ -442,13 +509,6 @@ function showSettingsStatus(id, message, isProblem = false) {
   $(id).textContent = message;
   $(id).classList.toggle("is-problem", isProblem);
   $(id).hidden = false;
-}
-
-function showSettings(show) {
-  $("settings-page").hidden = !show;
-  $("main-page").hidden = show;
-  $("tabbar").hidden = show;
-  window.scrollTo(0, 0);
 }
 
 function fillRateInputs() {
@@ -462,16 +522,24 @@ function openSettings() {
   fillRateInputs();
   for (const id of ["rates-error", "rates-status", "backup-status"]) $(id).hidden = true;
   cancelRestore();
-  showSettings(true);
-  history.pushState({ settings: true }, ""); // so the phone's Back gesture closes Settings
+  applyPages(true);
+  history.pushState({ view: currentView, settings: true }, ""); // so the phone's Back gesture closes Settings
 }
 
-$("open-settings").addEventListener("click", openSettings);
+for (const button of document.querySelectorAll(".open-settings")) button.addEventListener("click", openSettings);
 $("close-settings").addEventListener("click", () => history.back());
-window.addEventListener("popstate", () => {
-  if ($("settings-page").hidden) return;
-  showSettings(false);
-  $("open-settings").focus();
+
+// Back / forward (← Back, ⌂ and the phone's Back gesture) all land here
+window.addEventListener("popstate", (event) => {
+  const state = event.state || { view: "home" };
+  if (state.settings) {
+    fillRateInputs();
+    applyPages(true);
+    return;
+  }
+  const settingsWasOpen = !$("settings-page").hidden;
+  showView(VIEWS.includes(state.view) ? state.view : "home");
+  if (settingsWasOpen) document.querySelector(`#${currentView}-page .open-settings`).focus();
 });
 
 // Exchange rates
@@ -882,6 +950,15 @@ try {
   if (localStorage.getItem(TAB_KEY) === "savings") startTab = "savings";
 } catch {}
 showTab(startTab);
+
+// Open where you left off (the first time after Build 6: Home)
+let startView = "home";
+try {
+  const saved = localStorage.getItem(VIEW_KEY);
+  if (VIEWS.includes(saved)) startView = saved;
+} catch {}
+showView(startView);
+history.replaceState({ view: startView }, "");
 
 // Lets the app open without internet once it's been added to the home screen
 if ("serviceWorker" in navigator && location.protocol !== "file:") {

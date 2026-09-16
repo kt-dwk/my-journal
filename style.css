@@ -247,7 +247,29 @@ input[type="text"], input[type="date"], select {
   gap: 8px;
   margin-bottom: 12px;
 }
-.app-head h1 { margin: 0; }
+.app-head h1 { margin: 0; flex: 1; }
+.go-home svg { display: block; margin: auto; }
+
+/* Home page tiles */
+.tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 88px;
+  margin-bottom: 12px;
+  padding: 16px 18px;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.tile:active { background: var(--line); }
+.tile:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.tile-name { font-size: 1.25rem; font-weight: 600; }
+.tile-sub { font-size: 0.95rem; color: var(--muted); }
 .icon-btn {
   width: 44px;
   height: 44px;

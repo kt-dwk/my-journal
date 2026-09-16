@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>My Money · My Journal</title>
+  <title>My Journal</title>
   <meta name="theme-color" content="#fafafa">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -11,10 +11,29 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="page" id="main-page">
+  <!-- Home page -->
+  <div class="page" id="home-page" hidden>
     <header class="app-head">
+      <h1>My Journal</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+    </header>
+    <button type="button" class="tile" id="tile-money">
+      <span class="tile-name">💰 My Money</span>
+    </button>
+    <button type="button" class="tile" id="tile-skin">
+      <span class="tile-name">🧴 My Skin</span>
+      <span class="tile-sub" id="skin-tile-tonight"></span>
+    </button>
+  </div>
+
+  <!-- My Money -->
+  <main class="page" id="money-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <h1>My Money</h1>
-      <button type="button" class="icon-btn" id="open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
     </header>
 
     <div id="panel-expenses" role="tabpanel" aria-labelledby="tab-expenses">
@@ -70,6 +89,18 @@
     </div>
   </main>
 
+  <!-- My Skin (placeholder until Build 7) -->
+  <div class="page" id="skin-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Skin</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+    </header>
+    <p>Coming in the next build.</p>
+  </div>
+
   <!-- Settings page (whole app) -->
   <div class="page" id="settings-page" hidden>
     <header class="settings-head">
@@ -80,7 +111,6 @@
     <section>
       <h3>Exchange rates</h3>
       <form id="rates-form" novalidate>
-        <p class="small">New transactions use these rates. Transactions you already saved keep their old rate.</p>
         <div class="field">
           <label class="label" for="rate-USD">1 USD = ? LAK</label>
           <input id="rate-USD" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 22,500">
@@ -97,7 +127,6 @@
 
     <section>
       <h3>Backup &amp; Restore</h3>
-      <p class="small">Backup makes one file with all your expenses, savings and rates. Restore replaces everything on this device with a backup file.</p>
       <div class="settings-actions" id="backup-actions">
         <button type="button" class="btn" id="backup-btn">Backup</button>
         <button type="button" class="btn" id="restore-btn">Restore</button>
@@ -116,7 +145,7 @@
 
     <section>
       <h3>Build info</h3>
-      <p id="build-info"></p>
+      <p class="small" id="build-info"></p>
     </section>
   </div>
 
