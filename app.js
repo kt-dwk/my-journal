@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "6.1", date: "2026-09-16" };
+const BUILD = { number: "7.3", date: "2026-09-16" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // ---------- Saving on this device ----------
@@ -436,6 +436,7 @@ addForm.addEventListener("submit", (event) => {
 // ---------- My Skin cycle (the My Skin page itself arrives in Build 7) ----------
 
 const SKIN_CYCLE = ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"];
+const SKIN_LETTERS = ["E", "R", "M", "M"]; // shown in the calendar: E xfoliate, R etinol, M oist
 const SKIN_START = { date: "2026-09-15", night: 1 }; // 15 Sep 2026 = Retinol
 
 function daysBetween(fromISO, toISO) {
@@ -445,11 +446,146 @@ function daysBetween(fromISO, toISO) {
 }
 
 // The cycle follows the calendar, and "tonight" ends at midnight (local date)
-function skinNightFor(dateISO) {
+function skinNightIndex(dateISO) {
   const n = SKIN_CYCLE.length;
-  const index = (SKIN_START.night + daysBetween(SKIN_START.date, dateISO)) % n;
-  return SKIN_CYCLE[(index + n) % n];
+  return ((SKIN_START.night + daysBetween(SKIN_START.date, dateISO)) % n + n) % n;
 }
+
+function skinNightFor(dateISO) {
+  return SKIN_CYCLE[skinNightIndex(dateISO)];
+}
+
+function skinLetterFor(dateISO) {
+  return SKIN_LETTERS[skinNightIndex(dateISO)];
+}
+
+// ---------- My Skin page ----------
+// Only the nights you marked Done are stored, keyed by date: { "YYYY-MM-DD": "done" }
+
+const SKIN_DATA_KEY = "myjournal.skin";
+
+function loadSkin() {
+  try {
+    const map = JSON.parse(localStorage.getItem(SKIN_DATA_KEY) || "{}");
+    return map && typeof map === "object" && !Array.isArray(map) ? map : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveSkin(map) {
+  localStorage.setItem(SKIN_DATA_KEY, JSON.stringify(map));
+}
+
+function setSkinDay(dateISO, done) {
+  const map = loadSkin();
+  if (done) map[dateISO] = "done";
+  else delete map[dateISO];
+  saveSkin(map);
+  renderSkin();
+  renderHome();
+}
+
+let skinViewYear = now.getFullYear();
+let skinViewMonth = now.getMonth();
+
+function isoDate(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function renderSkin() {
+  const map = loadSkin();
+  const today = todayISO();
+
+  // Tonight card
+  $("skin-today").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+  $("skin-tonight").textContent = skinNightFor(today);
+  const doneTonight = map[today] === "done";
+  $("skin-done-btn").textContent = doneTonight ? "✓ Done" : "Done";
+  $("skin-done-btn").classList.toggle("primary", doneTonight);
+  toggleConfirm("skin-undo-confirm", "skin-done-actions", false);
+
+  // Month calendar
+  $("skin-month-label").textContent = new Date(skinViewYear, skinViewMonth, 1)
+    .toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const daysInMonth = new Date(skinViewYear, skinViewMonth + 1, 0).getDate();
+  const blanks = (new Date(skinViewYear, skinViewMonth, 1).getDay() + 6) % 7; // weeks start on Monday
+  const cells = [];
+  for (let i = 0; i < blanks; i++) cells.push(el("span", "cal-cell cal-blank"));
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = isoDate(skinViewYear, skinViewMonth, day);
+    const done = map[date] === "done";
+    const canTap = date <= today && date >= SKIN_START.date;
+    const cell = el("button", "cal-cell");
+    cell.type = "button";
+    cell.append(
+      el("span", "cal-day", String(day)),
+      el("span", "cal-letter", skinLetterFor(date)),
+      el("span", "cal-mark", done ? "✓" : "")
+    );
+    if (date === today) cell.classList.add("is-today");
+    if (done) cell.classList.add("is-done");
+    if (canTap) cell.addEventListener("click", () => openSkinDay(date));
+    else {
+      cell.classList.add("is-off");
+      cell.disabled = true;
+    }
+    cell.setAttribute("aria-label", `${shortDate(date, true)}, ${skinNightFor(date)}${done ? ", done" : ""}`);
+    cells.push(cell);
+  }
+  $("skin-calendar").replaceChildren(...cells);
+}
+
+function changeSkinMonth(delta) {
+  const d = new Date(skinViewYear, skinViewMonth + delta, 1);
+  skinViewYear = d.getFullYear();
+  skinViewMonth = d.getMonth();
+  renderSkin();
+}
+
+$("skin-prev-month").addEventListener("click", () => changeSkinMonth(-1));
+$("skin-next-month").addEventListener("click", () => changeSkinMonth(1));
+
+// Tonight's Done button toggles: tap again and confirm to clear it
+$("skin-done-btn").addEventListener("click", () => {
+  const today = todayISO();
+  if (loadSkin()[today] === "done") {
+    toggleConfirm("skin-undo-confirm", "skin-done-actions", true);
+    $("skin-undo-no").focus();
+  } else {
+    setSkinDay(today, true);
+  }
+});
+
+$("skin-undo-no").addEventListener("click", () => {
+  toggleConfirm("skin-undo-confirm", "skin-done-actions", false);
+  $("skin-done-btn").focus();
+});
+
+$("skin-undo-yes").addEventListener("click", () => setSkinDay(todayISO(), false));
+
+// Fixing one day from the calendar
+let skinDayDate = null;
+
+function openSkinDay(dateISO) {
+  skinDayDate = dateISO;
+  const done = loadSkin()[dateISO] === "done";
+  $("skin-day-title").textContent = `${shortDate(dateISO, true)} · ${skinNightFor(dateISO)}`;
+  $("skin-day-state").textContent = done ? "Marked done" : "Not marked yet";
+  $("skin-day-done").hidden = done;
+  $("skin-day-not-done").hidden = !done;
+  $("skin-day-dialog").showModal();
+}
+
+$("skin-day-done").addEventListener("click", () => {
+  setSkinDay(skinDayDate, true);
+  $("skin-day-dialog").close();
+});
+
+$("skin-day-not-done").addEventListener("click", () => {
+  setSkinDay(skinDayDate, false);
+  $("skin-day-dialog").close();
+});
 
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
@@ -465,12 +601,15 @@ function applyPages(settingsOpen) {
 }
 
 function renderHome() {
-  $("skin-tile-tonight").textContent = `Tonight: ${skinNightFor(todayISO())}`;
+  const today = todayISO();
+  const done = loadSkin()[today] === "done";
+  $("skin-tile-tonight").textContent = `Tonight: ${skinNightFor(today)}${done ? " ✓" : ""}`;
 }
 
 function showView(view, { push = false } = {}) {
   currentView = view;
   if (view === "home") renderHome();
+  if (view === "skin") renderSkin();
   applyPages(false);
   try {
     localStorage.setItem(VIEW_KEY, view);
@@ -574,12 +713,13 @@ $("rates-form").addEventListener("submit", (event) => {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 1,
+    version: 2, // version 2 adds the My Skin days
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
     savings: savingsStore.load(),
     rates: loadRates(),
+    skin: loadSkin(),
   };
 }
 
@@ -637,6 +777,10 @@ function checkBackup(backup) {
   if (!backup.expenses.every(isEntry) || !backup.savings.every(isEntry)) {
     throw new Error("Backup has damaged entries");
   }
+  // Backups made before My Skin existed (version 1) have no "skin", and those leave My Skin untouched
+  if (backup.skin !== undefined && (typeof backup.skin !== "object" || backup.skin === null || Array.isArray(backup.skin))) {
+    throw new Error("Backup has damaged skin days");
+  }
   return backup;
 }
 
@@ -676,12 +820,13 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
     savingsStore.save(backup.savings);
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
+    if (backup.skin) saveSkin(backup.skin);
   } catch (err) {
     console.error(err);
     // Put everything back the way it was
@@ -693,6 +838,8 @@ $("restore-yes").addEventListener("click", () => {
   cancelRestore();
   renderDashboard();
   renderSavings();
+  renderSkin();
+  renderHome();
   fillRateInputs();
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);
 });

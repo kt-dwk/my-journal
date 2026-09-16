@@ -296,6 +296,67 @@ input[type="text"], input[type="date"], select {
 .status { margin: 8px 0 0; font-size: 0.9rem; color: #2e7d32; }
 .status.is-problem { color: var(--error); }
 
+/* ---------- My Skin ---------- */
+.tonight {
+  margin-bottom: 24px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.tonight-label {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.tonight-name {
+  margin: 0 0 10px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.tonight-icon {
+  margin: 0 0 14px;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.cal-head, .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-head {
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+.cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 52px;
+  padding: 2px;
+  font: inherit;
+  font-size: 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cal-blank { background: none; border: 0; }
+.cal-letter { font-size: 0.7rem; line-height: 1; color: var(--muted); }
+.cal-mark { min-height: 1em; font-size: 0.8rem; line-height: 1; }
+.cal-cell.is-off .cal-letter { color: #ccc; }
+.cal-cell.is-today { border-width: 2px; border-color: var(--ink); }
+.cal-cell.is-done .cal-mark { color: #2e7d32; }
+.cal-cell.is-off { color: #bbb; background: none; cursor: default; }
+.cal-cell:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+
 /* ---------- Bottom tab bar ---------- */
 .tabbar {
   position: fixed;

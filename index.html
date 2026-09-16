@@ -98,8 +98,48 @@
       <h1>My Skin</h1>
       <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
     </header>
-    <p>Coming in the next build.</p>
+    <section class="tonight">
+      <p class="small" id="skin-today"></p>
+      <p class="tonight-label">Tonight</p>
+      <p class="tonight-name" id="skin-tonight"></p>
+      <p class="tonight-icon" aria-hidden="true">🧴</p>
+      <div id="skin-done-actions">
+        <button type="button" class="btn" id="skin-done-btn">Done</button>
+      </div>
+      <div class="confirm" id="skin-undo-confirm" hidden>
+        <p>Mark tonight as not done?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="skin-undo-no">No, keep it</button>
+          <button type="button" class="btn danger-fill" id="skin-undo-yes">Yes</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="month-nav">
+        <button type="button" class="btn" id="skin-prev-month" aria-label="Previous month">&lt;</button>
+        <h2 id="skin-month-label"></h2>
+        <button type="button" class="btn" id="skin-next-month" aria-label="Next month">&gt;</button>
+      </div>
+      <div class="cal-head" aria-hidden="true"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+      <div class="cal-grid" id="skin-calendar"></div>
+      <p class="small">E = Exfoliate · R = Retinol · M = Moist<br>✓ done · blank = missed</p>
+    </section>
   </div>
+
+  <!-- My Skin: one day pop-up -->
+  <dialog id="skin-day-dialog" aria-labelledby="skin-day-title">
+    <div class="dialog-head">
+      <h2 id="skin-day-title"></h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <p class="small" id="skin-day-state"></p>
+    <div class="actions">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="skin-day-done">✓ Mark done</button>
+      <button type="button" class="btn" id="skin-day-not-done">Mark not done</button>
+    </div>
+  </dialog>
 
   <!-- Settings page (whole app) -->
   <div class="page" id="settings-page" hidden>

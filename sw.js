@@ -1,6 +1,6 @@
 // Offline helper: always tries the internet first (so updates show up),
 // and falls back to the saved copy when there's no connection.
-const CACHE = "my-journal-v11";
+const CACHE = "my-journal-v15";
 const APP_FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (event) => {
