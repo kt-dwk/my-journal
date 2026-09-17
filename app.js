@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.4", date: "2026-09-17" };
+const BUILD = { number: "9.5", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -683,7 +683,6 @@ function dailyLineFor(dateISO) {
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
 const VIEWS = ["home", "money", "skin", "diary"];
-const VIEW_KEY = "myjournal.view";
 let currentView = "home";
 
 // overlay: "" (a normal page), "settings", or "note" (the diary writing page)
@@ -708,9 +707,6 @@ function showView(view, { push = false } = {}) {
   if (view === "skin") renderSkin();
   if (view === "diary") renderDiary();
   applyPages();
-  try {
-    localStorage.setItem(VIEW_KEY, view);
-  } catch {}
   if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
 }
 
@@ -1603,14 +1599,9 @@ try {
 } catch {}
 showTab(startTab);
 
-// Open where you left off (the first time after Build 6: Home)
-let startView = "home";
-try {
-  const saved = localStorage.getItem(VIEW_KEY);
-  if (VIEWS.includes(saved)) startView = saved;
-} catch {}
-showView(startView);
-history.replaceState({ view: startView }, "");
+// A fresh start (the app fully closed and reopened) always opens on Home
+showView("home");
+history.replaceState({ view: "home" }, "");
 
 // Lets the app open without internet once it's been added to the home screen
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
