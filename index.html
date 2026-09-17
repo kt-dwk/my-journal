@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>My Journal</title>
   <meta name="theme-color" content="#fafafa">
   <link rel="manifest" href="manifest.json">
@@ -179,7 +179,8 @@
     </div>
     <div class="field">
       <span class="label" id="diary-text-label">Note</span>
-      <div class="note-toolbar-wrap">
+      <div class="note-toolbar-wrap" id="diary-toolbar-wrap">
+        <div class="colour-strip" id="colour-strip" hidden></div>
         <div class="note-toolbar" id="diary-toolbar" role="toolbar" aria-label="Formatting">
           <button type="button" class="tool" data-cmd="bold" aria-label="Bold" aria-pressed="false"><b>B</b></button>
           <button type="button" class="tool" data-cmd="italic" aria-label="Italic" aria-pressed="false"><i>I</i></button>
@@ -190,7 +191,6 @@
           <button type="button" class="tool" data-cmd="undo" aria-label="Undo">↶</button>
           <button type="button" class="tool" data-cmd="redo" aria-label="Redo">↷</button>
         </div>
-        <div class="colour-strip" id="colour-strip" hidden></div>
       </div>
       <div id="diary-text" class="note-text" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="diary-text-label"></div>
       <input type="color" id="colour-picker" class="colour-picker" tabindex="-1" aria-hidden="true">

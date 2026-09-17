@@ -191,17 +191,26 @@ textarea {
 .note-text { min-height: 45vh; }
 
 /* ---------- Formatting toolbar (Build 9.6) ---------- */
+/* Build 9.7: pinned to the bottom, riding just above the keyboard, so Android's Cut/Copy menu can't cover it */
 .note-toolbar-wrap {
-  position: sticky;          /* stays in place while a long note scrolls */
-  top: 0;
-  z-index: 3;
-  margin-bottom: 8px;
-  background: var(--bg);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 0 16px env(safe-area-inset-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.note-toolbar,
+.colour-strip {
+  max-width: 520px;
+  margin: 0 auto;
 }
 .note-toolbar {
   display: flex;
   gap: 4px;
-  padding: 4px 0;
+  padding: 6px 0;
   overflow-x: auto;          /* one row; slides sideways on the cover screen */
   scrollbar-width: none;
 }
@@ -230,7 +239,7 @@ textarea {
 .colour-strip {
   display: flex;
   gap: 6px;
-  padding: 6px 0;
+  padding: 6px 0 0;
   overflow-x: auto;
 }
 .swatch {

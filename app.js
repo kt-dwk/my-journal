@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.6", date: "2026-09-17" };
+const BUILD = { number: "9.7", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1219,6 +1219,7 @@ function closeColourStrip() {
   openPalette = null;
   $("colour-strip").hidden = true;
   for (const button of $("diary-toolbar").querySelectorAll("[data-palette]")) button.setAttribute("aria-expanded", "false");
+  makeRoomForToolbar();
 }
 
 function applyColour(kind, hex) {
@@ -1251,6 +1252,7 @@ function openColourStrip(kind) {
     plus
   );
   $("colour-strip").hidden = false;
+  makeRoomForToolbar();
   for (const button of $("diary-toolbar").querySelectorAll("[data-palette]")) {
     button.setAttribute("aria-expanded", String(button.dataset.palette === kind));
   }
@@ -1278,11 +1280,59 @@ document.addEventListener("selectionchange", () => {
   if (editor && selection.rangeCount && editor.contains(selection.anchorNode)) {
     rememberSelection();
     updateToolbarState();
+    keepCaretAboveToolbar();
   }
 });
 
+// ---------- Toolbar at the bottom (Build 9.7) ----------
+
+// Room at the end of the note page, so the toolbar never covers the bin and save buttons
+function makeRoomForToolbar() {
+  const page = $("diary-note-page");
+  if (page.hidden) return;
+  page.style.paddingBottom = `${$("diary-toolbar-wrap").offsetHeight + 28}px`;
+}
+
+// Normally Chrome shrinks the page above the keyboard (the viewport setting in index.html).
+// If a phone ignores that, lift the toolbar by the height the keyboard covers.
+function liftToolbarAboveKeyboard() {
+  const wrap = $("diary-toolbar-wrap");
+  const view = window.visualViewport;
+  if (!view || $("diary-note-page").hidden || view.scale > 1.01) { // zoomed in: leave it alone
+    wrap.style.transform = "";
+    return;
+  }
+  const covered = Math.round(window.innerHeight - view.height - view.offsetTop);
+  wrap.style.transform = covered > 0 ? `translateY(${-covered}px)` : "";
+}
+
+// While typing near the bottom, scroll so the line being typed stays above the toolbar
+function keepCaretAboveToolbar() {
+  const selection = document.getSelection();
+  if ($("diary-note-page").hidden || !selection.rangeCount) return;
+  let spot = selection.getRangeAt(0).getBoundingClientRect();
+  if (!spot.height) { // an empty line has no size, so measure the line itself
+    const node = selection.focusNode;
+    const line = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+    if (!line) return;
+    spot = line.getBoundingClientRect();
+  }
+  const toolbarTop = $("diary-toolbar-wrap").getBoundingClientRect().top;
+  const overlap = spot.bottom - (toolbarTop - 8);
+  if (overlap > 0) window.scrollBy(0, overlap);
+}
+
+if (window.ResizeObserver) new ResizeObserver(makeRoomForToolbar).observe($("diary-toolbar-wrap"));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", liftToolbarAboveKeyboard);
+  window.visualViewport.addEventListener("scroll", liftToolbarAboveKeyboard);
+}
+
 function wireEditor(editor) {
-  editor.addEventListener("input", () => ($("diary-error").hidden = true));
+  editor.addEventListener("input", () => {
+    $("diary-error").hidden = true;
+    keepCaretAboveToolbar();
+  });
   editor.addEventListener("paste", (event) => { // pasted text always arrives plain
     event.preventDefault();
     const text = (event.clipboardData || window.clipboardData).getData("text/plain");
@@ -1347,6 +1397,8 @@ function openNoteEditor(note) {
   leavingNote = false;
   savingNote = false;
   applyPages("note");
+  makeRoomForToolbar();
+  liftToolbarAboveKeyboard();
   history.pushState({ view: currentView, note: true }, ""); // so Back closes the writing page
   (note ? $("diary-text") : $("diary-title")).focus();
 }
