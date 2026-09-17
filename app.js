@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: 9, date: "2026-09-17" };
+const BUILD = { number: "9.1", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -742,6 +742,11 @@ document.addEventListener("visibilitychange", () => {
 const DIARY_KEY = "myjournal.diary";
 const diaryStore = makeStore(DIARY_KEY);
 
+const RECENT_NOTE_COUNT = 20;          // shown on the diary page
+const NOTE_PAGE_SIZE = 10;             // shown per page in the View more pop-up
+let sortedNotes = [];
+let notePage = 0;                      // 0 = first page
+
 let editingNoteId = null;              // null = writing a new note
 let noteOpenedWith = { title: "", text: "" };
 let leavingNote = false;               // true while a save, delete or discard closes the page
@@ -757,13 +762,46 @@ function renderDiary() {
     loadProblem = true;
   }
   // Newest first. Sorting on date and createdAt only, so editing a note never moves it.
-  const rows = [...notes].sort(
+  sortedNotes = [...notes].sort(
     (a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || "")
   );
-  $("diary-log").replaceChildren(...rows.map(noteRow));
+  $("diary-log").replaceChildren(...sortedNotes.slice(0, RECENT_NOTE_COUNT).map(noteRow));
+  $("open-diary-log").hidden = sortedNotes.length <= RECENT_NOTE_COUNT;
   $("diary-empty").textContent = loadProblem ? "Your saved notes couldn't be read." : "No notes yet.";
-  $("diary-empty").hidden = rows.length > 0;
+  $("diary-empty").hidden = sortedNotes.length > 0;
+  renderFullDiaryLog();
 }
+
+// ---------- The full note list (10 per page) ----------
+
+function renderFullDiaryLog() {
+  const count = sortedNotes.length;
+  const pages = Math.max(1, Math.ceil(count / NOTE_PAGE_SIZE));
+  notePage = Math.min(Math.max(notePage, 0), pages - 1);
+  const start = notePage * NOTE_PAGE_SIZE;
+  const pageRows = sortedNotes.slice(start, start + NOTE_PAGE_SIZE);
+
+  $("diary-log-full").replaceChildren(...pageRows.map(noteRow));
+  $("diary-log-range").textContent = count ? `${start + 1}\u2013${start + pageRows.length} of ${count}` : "No notes yet.";
+  $("diary-page-label").textContent = `Page ${notePage + 1} of ${pages}`;
+  $("diary-page-prev").disabled = notePage === 0;
+  $("diary-page-next").disabled = notePage >= pages - 1;
+}
+
+function changeDiaryPage(delta) {
+  notePage += delta;
+  renderFullDiaryLog();
+  $("diary-log-dialog").scrollTop = 0;
+}
+
+$("open-diary-log").addEventListener("click", () => {
+  notePage = 0;
+  renderFullDiaryLog();
+  $("diary-log-dialog").showModal();
+  $("diary-log-dialog").scrollTop = 0;
+});
+$("diary-page-prev").addEventListener("click", () => changeDiaryPage(-1));
+$("diary-page-next").addEventListener("click", () => changeDiaryPage(1));
 
 function noteRow(note) {
   const row = el("button", "log-row note-row");
@@ -826,7 +864,9 @@ function openNote(id) {
   } catch (err) {
     console.error(err);
   }
-  if (note) openNoteEditor(note);
+  if (!note) return;
+  if ($("diary-log-dialog").open) $("diary-log-dialog").close(); // the writing page is a full page, not a pop-up
+  openNoteEditor(note);
 }
 
 $("diary-new").addEventListener("click", () => openNoteEditor(null));

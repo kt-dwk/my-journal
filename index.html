@@ -147,6 +147,7 @@
       <h3>Notes</h3>
       <ul id="diary-log"></ul>
       <p class="small" id="diary-empty" hidden>No notes yet.</p>
+      <button type="button" class="btn more" id="open-diary-log" hidden>View more</button>
     </section>
   </div>
 
@@ -204,6 +205,21 @@
       <button type="button" class="btn primary" id="save-note">Save</button>
     </div>
   </div>
+
+  <!-- Full diary list pop-up -->
+  <dialog id="diary-log-dialog" aria-labelledby="diary-log-title">
+    <div class="dialog-head">
+      <h2 id="diary-log-title">Notes</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <p class="small" id="diary-log-range"></p>
+    <ul id="diary-log-full"></ul>
+    <nav class="pager" aria-label="Note pages">
+      <button type="button" class="btn" id="diary-page-prev" aria-label="Previous page">&lt;</button>
+      <span id="diary-page-label" aria-live="polite"></span>
+      <button type="button" class="btn" id="diary-page-next" aria-label="Next page">&gt;</button>
+    </nav>
+  </dialog>
 
   <!-- Settings page (whole app) -->
   <div class="page" id="settings-page" hidden>
