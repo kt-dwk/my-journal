@@ -57,6 +57,14 @@ button { font: inherit; color: inherit; }
 }
 .btn.primary { background: var(--ink); color: #fff; }
 .btn.danger { margin-right: auto; color: var(--error); border-color: var(--error); }
+.btn.icon-only {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  padding: 0;
+}
+.btn.icon-only svg { display: block; }
 .btn.danger-fill { background: var(--error); border-color: var(--error); color: #fff; }
 .confirm {
   margin-top: 8px;
@@ -167,6 +175,28 @@ input[type="text"], input[type="date"], select {
   border-radius: 8px;
   background: var(--card);
 }
+
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  font: inherit;
+  font-size: 16px;          /* 16px stops the phone zooming in on focus */
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  resize: vertical;
+}
+.note-text { min-height: 45vh; }
+.log-row.note-row { grid-template-columns: 6.2rem 1fr; }
+/* Diary titles stay on one line and end in … when too long */
+.note-row .log-item {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#diary-note-page { padding-block: 20px 28px; }
 
 .amount-row {
   display: grid;

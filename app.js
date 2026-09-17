@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: 8, date: "2026-09-16" };
+const BUILD = { number: 9, date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -682,14 +682,16 @@ function dailyLineFor(dateISO) {
 
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
-const VIEWS = ["home", "money", "skin"];
+const VIEWS = ["home", "money", "skin", "diary"];
 const VIEW_KEY = "myjournal.view";
 let currentView = "home";
 
-function applyPages(settingsOpen) {
-  for (const view of VIEWS) $(`${view}-page`).hidden = settingsOpen || view !== currentView;
-  $("settings-page").hidden = !settingsOpen;
-  $("tabbar").hidden = settingsOpen || currentView !== "money";
+// overlay: "" (a normal page), "settings", or "note" (the diary writing page)
+function applyPages(overlay = "") {
+  for (const view of VIEWS) $(`${view}-page`).hidden = overlay !== "" || view !== currentView;
+  $("settings-page").hidden = overlay !== "settings";
+  $("diary-note-page").hidden = overlay !== "note";
+  $("tabbar").hidden = overlay !== "" || currentView !== "money";
   window.scrollTo(0, 0);
 }
 
@@ -704,7 +706,8 @@ function showView(view, { push = false } = {}) {
   currentView = view;
   if (view === "home") renderHome();
   if (view === "skin") renderSkin();
-  applyPages(false);
+  if (view === "diary") renderDiary();
+  applyPages();
   try {
     localStorage.setItem(VIEW_KEY, view);
   } catch {}
@@ -726,11 +729,174 @@ $("tile-money").addEventListener("click", () => {
   showView("money", { push: true });
 });
 $("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
+$("tile-diary").addEventListener("click", () => showView("diary", { push: true }));
 for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
 
 // The skin tile updates after midnight when the app comes back into view
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) renderHome();
+});
+
+// ---------- My Diary ----------
+
+const DIARY_KEY = "myjournal.diary";
+const diaryStore = makeStore(DIARY_KEY);
+
+let editingNoteId = null;              // null = writing a new note
+let noteOpenedWith = { title: "", text: "" };
+let leavingNote = false;               // true while a save, delete or discard closes the page
+let savingNote = false;                // guards a double tap on Save
+
+function renderDiary() {
+  let notes = [];
+  let loadProblem = false;
+  try {
+    notes = diaryStore.load();
+  } catch (err) {
+    console.error(err);
+    loadProblem = true;
+  }
+  // Newest first. Sorting on date and createdAt only, so editing a note never moves it.
+  const rows = [...notes].sort(
+    (a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || "")
+  );
+  $("diary-log").replaceChildren(...rows.map(noteRow));
+  $("diary-empty").textContent = loadProblem ? "Your saved notes couldn't be read." : "No notes yet.";
+  $("diary-empty").hidden = rows.length > 0;
+}
+
+function noteRow(note) {
+  const row = el("button", "log-row note-row");
+  row.type = "button";
+  row.append(
+    el("span", "log-date", note.date ? shortDate(note.date, true) : ""),
+    el("span", "log-item", note.title || "(untitled)")
+  );
+  row.addEventListener("click", () => openNote(note.id));
+  const li = el("li");
+  li.append(row);
+  return li;
+}
+
+function noteWhen(note) {
+  const when = new Date(note.createdAt || `${note.date}T00:00:00`);
+  const stamp = when.toLocaleString("en-GB", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+  return note.updatedAt ? `${stamp} · edited` : stamp;
+}
+
+function noteFields() {
+  return { title: $("diary-title").value.trim(), text: $("diary-text").value.trim() };
+}
+
+function noteIsDirty() {
+  const now = noteFields();
+  return now.title !== noteOpenedWith.title || now.text !== noteOpenedWith.text;
+}
+
+function showNoteError(message) {
+  $("diary-error").textContent = message;
+  $("diary-error").hidden = false;
+}
+
+function openNoteEditor(note) {
+  editingNoteId = note ? note.id : null;
+  $("diary-note-title").textContent = note ? "Edit note" : "New note";
+  $("diary-title").value = note ? note.title || "" : "";
+  $("diary-text").value = note ? note.text || "" : "";
+  $("diary-when").textContent = note ? noteWhen(note) : "";
+  $("diary-when").hidden = !note;
+  $("delete-note").hidden = !note;
+  $("diary-error").hidden = true;
+  $("diary-leave-confirm").hidden = true;
+  toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
+  noteOpenedWith = noteFields();
+  leavingNote = false;
+  savingNote = false;
+  applyPages("note");
+  history.pushState({ view: currentView, note: true }, ""); // so Back closes the writing page
+  (note ? $("diary-text") : $("diary-title")).focus();
+}
+
+function openNote(id) {
+  let note;
+  try {
+    note = diaryStore.load().find((n) => n.id === id);
+  } catch (err) {
+    console.error(err);
+  }
+  if (note) openNoteEditor(note);
+}
+
+$("diary-new").addEventListener("click", () => openNoteEditor(null));
+$("close-note").addEventListener("click", () => history.back());
+
+for (const field of [$("diary-title"), $("diary-text")]) {
+  field.addEventListener("input", () => ($("diary-error").hidden = true));
+}
+
+$("save-note").addEventListener("click", () => {
+  if (savingNote) return;
+  const { title, text } = noteFields();
+  if (!title && !text) {
+    showNoteError("Write something first.");
+    return;
+  }
+  savingNote = true;
+  const finalTitle = title || text.split("\n")[0].slice(0, 60);
+  try {
+    if (editingNoteId) {
+      diaryStore.update(editingNoteId, { title: finalTitle, text });
+    } else {
+      diaryStore.add({ id: newId(), title: finalTitle, text, date: todayISO(), createdAt: new Date().toISOString() });
+    }
+  } catch (err) {
+    console.error(err);
+    savingNote = false;
+    showNoteError("Sorry, this note couldn't be saved. Your writing is still here.");
+    return;
+  }
+  savingNote = false;
+  renderDiary();
+  leavingNote = true;
+  history.back();
+});
+
+$("delete-note").addEventListener("click", () => {
+  toggleConfirm("diary-delete-confirm", "diary-form-actions", true);
+  $("diary-delete-no").focus();
+});
+
+$("diary-delete-no").addEventListener("click", () => {
+  toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
+  $("delete-note").focus();
+});
+
+$("diary-delete-yes").addEventListener("click", () => {
+  if (!editingNoteId) return;
+  try {
+    diaryStore.remove(editingNoteId);
+  } catch (err) {
+    console.error(err);
+    toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
+    showNoteError("Sorry, this note couldn't be deleted.");
+    return;
+  }
+  renderDiary();
+  leavingNote = true;
+  history.back();
+});
+
+$("diary-leave-no").addEventListener("click", () => {
+  toggleConfirm("diary-leave-confirm", "diary-form-actions", false);
+  $("diary-text").focus();
+});
+
+$("diary-leave-yes").addEventListener("click", () => {
+  toggleConfirm("diary-leave-confirm", "diary-form-actions", false);
+  leavingNote = true;
+  history.back();
 });
 
 // ---------- Settings page ----------
@@ -755,7 +921,7 @@ function openSettings() {
   fillRateInputs();
   for (const id of ["rates-error", "rates-status", "backup-status"]) $(id).hidden = true;
   cancelRestore();
-  applyPages(true);
+  applyPages("settings");
   history.pushState({ view: currentView, settings: true }, ""); // so the phone's Back gesture closes Settings
 }
 
@@ -767,12 +933,27 @@ window.addEventListener("popstate", (event) => {
   const state = event.state || { view: "home" };
   if (state.settings) {
     fillRateInputs();
-    applyPages(true);
+    applyPages("settings");
     return;
   }
+  if (state.note) {
+    applyPages("note");
+    return;
+  }
+  // Leaving the writing page with unsaved text: ask first, and put the history entry back
+  if (!$("diary-note-page").hidden && !leavingNote && noteIsDirty()) {
+    history.pushState({ view: currentView, note: true }, "");
+    toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
+    toggleConfirm("diary-leave-confirm", "diary-form-actions", true);
+    $("diary-leave-no").focus();
+    return;
+  }
+  const noteWasOpen = !$("diary-note-page").hidden;
+  leavingNote = false;
   const settingsWasOpen = !$("settings-page").hidden;
   showView(VIEWS.includes(state.view) ? state.view : "home");
   if (settingsWasOpen) document.querySelector(`#${currentView}-page .open-settings`).focus();
+  if (noteWasOpen) $("diary-new").focus();
 });
 
 // Exchange rates
@@ -807,7 +988,7 @@ $("rates-form").addEventListener("submit", (event) => {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 3, // version 2 added the My Skin days, version 3 the daily message
+    version: 4, // 2 added My Skin, 3 the daily message, 4 the diary notes
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -815,12 +996,14 @@ function makeBackup() {
     rates: loadRates(),
     skin: loadSkin(),
     daily: loadDaily(),
+    diary: diaryStore.load(),
   };
 }
 
 function backupSummary(backup) {
   const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  return `${count(backup.expenses.length, "expense")} · ${count(backup.savings.length, "saving")}`;
+  return `${count(backup.expenses.length, "expense")} · ${count(backup.savings.length, "saving")}`
+    + ` · ${count((backup.diary || []).length, "note")}`;
 }
 
 $("backup-btn").addEventListener("click", async () => {
@@ -879,6 +1062,10 @@ function checkBackup(backup) {
   if (backup.daily !== undefined && (typeof backup.daily !== "object" || backup.daily === null || Array.isArray(backup.daily))) {
     throw new Error("Backup has a damaged daily message");
   }
+  // Backups made before My Diary existed (version 3 and older) have no "diary", and those leave notes untouched
+  if (backup.diary !== undefined && (!Array.isArray(backup.diary) || !backup.diary.every((n) => n && typeof n.id === "string"))) {
+    throw new Error("Backup has damaged notes");
+  }
   return backup;
 }
 
@@ -918,7 +1105,7 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -926,6 +1113,7 @@ $("restore-yes").addEventListener("click", () => {
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
     if (backup.skin) saveSkin(backup.skin);
     if (backup.daily) saveDaily(backup.daily);
+    if (backup.diary) diaryStore.save(backup.diary);
   } catch (err) {
     console.error(err);
     // Put everything back the way it was
@@ -938,6 +1126,7 @@ $("restore-yes").addEventListener("click", () => {
   renderDashboard();
   renderSavings();
   renderSkin();
+  renderDiary();
   renderHome();
   fillRateInputs();
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);

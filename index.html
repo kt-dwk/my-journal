@@ -27,6 +27,9 @@
       <span class="tile-name">🧴 My Skin</span>
       <span class="tile-sub" id="skin-tile-tonight"></span>
     </button>
+    <button type="button" class="tile" id="tile-diary">
+      <span class="tile-name">📓 My Diary</span>
+    </button>
   </div>
 
   <!-- My Money -->
@@ -130,6 +133,23 @@
     </section>
   </div>
 
+  <!-- My Diary -->
+  <div class="page" id="diary-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Diary</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+    </header>
+    <button type="button" class="btn primary wide" id="diary-new">+ New note</button>
+    <section>
+      <h3>Notes</h3>
+      <ul id="diary-log"></ul>
+      <p class="small" id="diary-empty" hidden>No notes yet.</p>
+    </section>
+  </div>
+
   <!-- My Skin: one day pop-up -->
   <dialog id="skin-day-dialog" aria-labelledby="skin-day-title">
     <div class="dialog-head">
@@ -143,6 +163,47 @@
       <button type="button" class="btn" id="skin-day-not-done">Mark not done</button>
     </div>
   </dialog>
+
+  <!-- My Diary: writing page -->
+  <div class="page" id="diary-note-page" hidden>
+    <header class="settings-head">
+      <button type="button" class="btn back" id="close-note">← Back</button>
+      <h1 id="diary-note-title">New note</h1>
+    </header>
+    <p class="small" id="diary-when" hidden></p>
+
+    <div class="field">
+      <label class="label" for="diary-title">Title <span class="small">(optional)</span></label>
+      <input id="diary-title" type="text" maxlength="80" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="label" for="diary-text">Note</label>
+      <textarea id="diary-text" class="note-text" maxlength="10000"></textarea>
+    </div>
+    <p class="error" id="diary-error" hidden></p>
+
+    <div class="confirm" id="diary-delete-confirm" hidden>
+      <p>Delete this note?</p>
+      <div class="actions">
+        <button type="button" class="btn" id="diary-delete-no">No, keep it</button>
+        <button type="button" class="btn danger-fill" id="diary-delete-yes">Yes, delete</button>
+      </div>
+    </div>
+    <div class="confirm" id="diary-leave-confirm" hidden>
+      <p>Leave without saving?</p>
+      <div class="actions">
+        <button type="button" class="btn" id="diary-leave-no">No, keep writing</button>
+        <button type="button" class="btn danger-fill" id="diary-leave-yes">Yes, discard</button>
+      </div>
+    </div>
+
+    <div class="actions" id="diary-form-actions">
+      <button type="button" class="btn danger icon-only" id="delete-note" aria-label="Delete" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="btn primary" id="save-note">Save</button>
+    </div>
+  </div>
 
   <!-- Settings page (whole app) -->
   <div class="page" id="settings-page" hidden>
@@ -242,7 +303,9 @@
       </div>
 
       <div class="actions" id="form-actions">
-        <button type="button" class="btn danger" id="delete-transaction" hidden>Delete</button>
+        <button type="button" class="btn danger icon-only" id="delete-transaction" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button type="button" class="btn" data-close>Cancel</button>
         <button type="submit" class="btn primary">Save</button>
       </div>
@@ -290,7 +353,9 @@
       </div>
 
       <div class="actions" id="saving-form-actions">
-        <button type="button" class="btn danger" id="delete-saving" hidden>Delete</button>
+        <button type="button" class="btn danger icon-only" id="delete-saving" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button type="button" class="btn" data-close>Cancel</button>
         <button type="submit" class="btn primary">Save</button>
       </div>
