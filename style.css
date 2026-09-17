@@ -250,6 +250,28 @@ input[type="text"], input[type="date"], select {
 .app-head h1 { margin: 0; flex: 1; }
 .go-home svg { display: block; margin: auto; }
 
+/* Sticky note holding the daily message (plain placeholder, design pass later) */
+.sticky-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;          /* square, like a real 76 mm sticky note */
+  aspect-ratio: 1;
+  margin: 4px auto 22px;
+  padding: 16px;
+  text-align: center;
+  background: #fdf3bf;
+  border-radius: 2px;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.15);
+  transform: rotate(-1.5deg);
+}
+.daily-line {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
 /* Home page tiles */
 .tile {
   display: flex;

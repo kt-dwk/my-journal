@@ -31,8 +31,64 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "7.3", date: "2026-09-16" };
+const BUILD = { number: 8, date: "2026-09-16" };
 const BACKUP_FORMAT = "my-journal-backup";
+
+// Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
+const DAILY_LINES = [
+  "Start the day with a cup of coffee.",
+  "Don’t forget to love yourself.",
+  "It’s OK not to be OK.",
+  "Be kind to myself.",
+  "Thanks to myself for coming this far.",
+  "Progress, not perfection.",
+  "Be healthy, be happy!",
+  "Make today an adventure quest!",
+  "Just don’t give a damn sometimes.",
+  "Stay strong and focus on this moment.",
+  "I’m cute and I know it!",
+  "Keep calm, the day is starting!",
+  "Coffee first, work later.",
+  "Go to bed early today!",
+  "Be active, no more resting!",
+  "Beware of doomscrolling!",
+  "It’s stretching day!",
+  "No-sugar day!",
+  "What do I need to give myself more of today?",
+  "What can I let go of today?",
+  "What matters most to me right now?",
+  "Am I happy with how I’m spending my time?",
+  "What is taking up too much of my energy?",
+  "What am I avoiding?",
+  "What am I worried about?",
+  "What am I proud of?",
+  "What have I learned recently?",
+  "What do I want more of in my life?",
+  "What do I want less of?",
+  "What kind of person do I want to become?",
+  "I’m only human",
+  "Watching for the bump",
+  "Bankai! Senbonzakura Kageyoshi~",
+  "Gomu Gomu no Jet Pistol",
+  "Brace yourself, winter is coming",
+  "You know nothing, Jon Snow",
+  "Oops, I did it again",
+  "One more episode, really?",
+  "Work hard, meow harder!",
+  "Relax, it’s resting time",
+  "Stay away from dehydration",
+  "You too can become a hero",
+  "I’m gonna be the Pirate King!",
+  "Time to write something",
+  "Get ready and GO!",
+  "I love my JOB!",
+  "More water pleaseee",
+  "Stay tuned, reading time!",
+  "What’s on my mind today?",
+  "That’s my ninja way!",
+];
+const DAILY_KEY = "myjournal.daily";
+
 
 // ---------- Saving on this device ----------
 
@@ -587,6 +643,43 @@ $("skin-day-not-done").addEventListener("click", () => {
   $("skin-day-dialog").close();
 });
 
+// ---------- Daily message ----------
+// One line a day, picked at midnight. Random, but no repeats until every line has been shown.
+
+function loadDaily() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DAILY_KEY) || "{}");
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
+    return saved;
+  } catch {
+    return {};
+  }
+}
+
+function saveDaily(state) {
+  localStorage.setItem(DAILY_KEY, JSON.stringify(state));
+}
+
+function dailyLineFor(dateISO) {
+  const saved = loadDaily();
+  if (saved.date === dateISO && DAILY_LINES[saved.index]) return DAILY_LINES[saved.index];
+
+  let shown = Array.isArray(saved.shown) ? saved.shown.filter((i) => Number.isInteger(i) && DAILY_LINES[i]) : [];
+  let left = DAILY_LINES.map((_, i) => i).filter((i) => !shown.includes(i));
+  if (left.length === 0) { // every line has been shown: start the rotation again
+    shown = [];
+    left = DAILY_LINES.map((_, i) => i);
+  }
+  const index = left[Math.floor(Math.random() * left.length)];
+  shown.push(index);
+  try {
+    saveDaily({ date: dateISO, index, shown });
+  } catch (err) {
+    console.error(err);
+  }
+  return DAILY_LINES[index];
+}
+
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
 const VIEWS = ["home", "money", "skin"];
@@ -602,6 +695,7 @@ function applyPages(settingsOpen) {
 
 function renderHome() {
   const today = todayISO();
+  $("daily-line").textContent = dailyLineFor(today);
   const done = loadSkin()[today] === "done";
   $("skin-tile-tonight").textContent = `Tonight: ${skinNightFor(today)}${done ? " ✓" : ""}`;
 }
@@ -713,13 +807,14 @@ $("rates-form").addEventListener("submit", (event) => {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 2, // version 2 adds the My Skin days
+    version: 3, // version 2 added the My Skin days, version 3 the daily message
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
     savings: savingsStore.load(),
     rates: loadRates(),
     skin: loadSkin(),
+    daily: loadDaily(),
   };
 }
 
@@ -781,6 +876,9 @@ function checkBackup(backup) {
   if (backup.skin !== undefined && (typeof backup.skin !== "object" || backup.skin === null || Array.isArray(backup.skin))) {
     throw new Error("Backup has damaged skin days");
   }
+  if (backup.daily !== undefined && (typeof backup.daily !== "object" || backup.daily === null || Array.isArray(backup.daily))) {
+    throw new Error("Backup has a damaged daily message");
+  }
   return backup;
 }
 
@@ -820,13 +918,14 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
     savingsStore.save(backup.savings);
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
     if (backup.skin) saveSkin(backup.skin);
+    if (backup.daily) saveDaily(backup.daily);
   } catch (err) {
     console.error(err);
     // Put everything back the way it was
