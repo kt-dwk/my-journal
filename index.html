@@ -178,8 +178,22 @@
       <input id="diary-title" type="text" maxlength="80" autocomplete="off">
     </div>
     <div class="field">
-      <label class="label" for="diary-text">Note</label>
-      <textarea id="diary-text" class="note-text" maxlength="10000"></textarea>
+      <span class="label" id="diary-text-label">Note</span>
+      <div class="note-toolbar-wrap">
+        <div class="note-toolbar" id="diary-toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" class="tool" data-cmd="bold" aria-label="Bold" aria-pressed="false"><b>B</b></button>
+          <button type="button" class="tool" data-cmd="italic" aria-label="Italic" aria-pressed="false"><i>I</i></button>
+          <button type="button" class="tool" data-cmd="underline" aria-label="Underline" aria-pressed="false"><u>U</u></button>
+          <button type="button" class="tool" data-cmd="strikeThrough" aria-label="Strikethrough" aria-pressed="false"><s>S</s></button>
+          <button type="button" class="tool" data-palette="text" aria-label="Font colour" aria-expanded="false">🎨<span class="colour-bar" id="text-colour-bar"></span></button>
+          <button type="button" class="tool" data-palette="highlight" aria-label="Highlight" aria-expanded="false">🖍<span class="colour-bar" id="highlight-colour-bar"></span></button>
+          <button type="button" class="tool" data-cmd="undo" aria-label="Undo">↶</button>
+          <button type="button" class="tool" data-cmd="redo" aria-label="Redo">↷</button>
+        </div>
+        <div class="colour-strip" id="colour-strip" hidden></div>
+      </div>
+      <div id="diary-text" class="note-text" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="diary-text-label"></div>
+      <input type="color" id="colour-picker" class="colour-picker" tabindex="-1" aria-hidden="true">
     </div>
     <p class="error" id="diary-error" hidden></p>
 

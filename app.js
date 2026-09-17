@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.5", date: "2026-09-17" };
+const BUILD = { number: "9.6", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -744,7 +744,7 @@ let sortedNotes = [];
 let notePage = 0;                      // 0 = first page
 
 let editingNoteId = null;              // null = writing a new note
-let noteOpenedWith = { title: "", text: "" };
+let noteOpenedWith = { title: "", html: "" };
 let leavingNote = false;               // true while a save, delete or discard closes the page
 let savingNote = false;                // guards a double tap on Save
 
@@ -954,6 +954,360 @@ $("note-delete-yes").addEventListener("click", () => {
   renderDiary();
 });
 
+// ---------- Formatting (Build 9.6) ----------
+
+const NOTE_MAX_CHARS = 10000;
+const DEFAULT_TEXT_HEX = "#222222";            // the normal ink colour
+const COLOURS_KEY = "myjournal.colors";
+const COLOUR_DEFAULTS = {
+  text: ["#e53935", "#1e88e5", "#43a047", "#8e24aa", "#fb8c00"],       // red, blue, green, purple, orange
+  highlight: ["#fff176", "#a5d6a7", "#f8bbd0", "#90caf9", "#ffcc80"],  // yellow, green, pink, blue, orange
+};
+const DROP_TAGS = new Set(["SCRIPT", "STYLE", "TEMPLATE", "IFRAME", "OBJECT", "EMBED", "SVG", "MATH",
+  "VIDEO", "AUDIO", "CANVAS", "NOSCRIPT", "TEXTAREA", "SELECT", "BUTTON", "INPUT", "IMG"]);
+
+const colourReader = document.createElement("canvas").getContext("2d");
+
+// Any colour ("red", "#f00", "rgb(…)") in one standard form, or "" when it's invalid
+function standardColour(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const results = ["#000000", "#ffffff"].map((start) => { // an invalid colour leaves the starting one in place
+    colourReader.fillStyle = start;
+    colourReader.fillStyle = value;
+    return colourReader.fillStyle;
+  });
+  return results[0] === results[1] ? results[0] : "";
+}
+
+// A colour worth keeping, or "" when it's invalid, see-through, the normal ink, or no highlight
+function cleanColour(value, kind) {
+  const colour = standardColour(value);
+  if (!colour || colour.startsWith("rgba")) return ""; // "rgba" here always means partly or fully see-through
+  if (kind === "text" && colour === standardColour(DEFAULT_TEXT_HEX)) return "";
+  return colour;
+}
+
+// The only formatting a note may keep: bold, italic, underline, strikethrough, colour, highlight
+function allowedStyle(node, tag) {
+  const style = node.style;
+  const parts = [];
+  if (tag === "B" || tag === "STRONG" || style.fontWeight === "bold" || Number(style.fontWeight) >= 600) parts.push("font-weight: bold");
+  if (tag === "I" || tag === "EM" || style.fontStyle === "italic") parts.push("font-style: italic");
+  const decoration = `${style.textDecoration} ${style.textDecorationLine}`;
+  const lines = [];
+  if (tag === "U" || decoration.includes("underline")) lines.push("underline");
+  if (tag === "S" || tag === "STRIKE" || tag === "DEL" || decoration.includes("line-through")) lines.push("line-through");
+  if (lines.length) parts.push(`text-decoration-line: ${lines.join(" ")}`);
+  const colour = cleanColour(tag === "FONT" ? node.getAttribute("color") || style.color : style.color, "text");
+  if (colour) parts.push(`color: ${colour}`);
+  const highlight = cleanColour(style.backgroundColor, "highlight");
+  if (highlight) parts.push(`background-color: ${highlight}`);
+  return parts.join("; ");
+}
+
+function appendClean(source, target) {
+  for (const node of source.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      target.append(node.textContent);
+      continue;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+    const tag = node.tagName.toUpperCase();
+    if (DROP_TAGS.has(tag)) continue;
+    if (tag === "BR") {
+      target.append(document.createElement("br"));
+      continue;
+    }
+    let container = target;
+    if (tag === "DIV" || tag === "P") {
+      const block = document.createElement("div");
+      container.append(block);
+      container = block;
+    }
+    const css = allowedStyle(node, tag);
+    if (css) {
+      const span = document.createElement("span");
+      span.setAttribute("style", css);
+      container.append(span);
+      container = span;
+    }
+    appendClean(node, container);
+    while (container !== target && !container.hasChildNodes()) { // tidy away empty wrappers
+      const parent = container.parentNode;
+      container.remove();
+      container = parent;
+    }
+  }
+}
+
+// Keeps only the formatting the toolbar makes. A <template> is inert, so nothing in it can run or load.
+function cleanNoteHtml(html) {
+  const template = document.createElement("template");
+  template.innerHTML = typeof html === "string" ? html : "";
+  const out = document.createElement("div");
+  appendClean(template.content, out);
+  return out.innerHTML;
+}
+
+function textToHtml(text) {
+  return String(text || "").split("\n").map((line) => {
+    const block = document.createElement("div");
+    if (line) block.textContent = line;
+    else block.append(document.createElement("br"));
+    return block.outerHTML;
+  }).join("");
+}
+
+// Plain text of a note, one line per line break, worked out without needing the page on screen
+function htmlToText(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html || "";
+  const lines = [""];
+  const walk = (parent, inBlock) => {
+    for (const child of parent.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        lines[lines.length - 1] += child.textContent;
+        continue;
+      }
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const tag = child.tagName.toUpperCase();
+      if (tag === "BR") {
+        if (!(inBlock && child === parent.lastChild)) lines.push(""); // a trailing <br> in a line adds no new line
+        continue;
+      }
+      const block = tag === "DIV" || tag === "P";
+      if (block && lines[lines.length - 1] !== "") lines.push("");
+      walk(child, block || inBlock);
+      if (block) lines.push("");
+    }
+  };
+  walk(template.content, false);
+  return lines.join("\n").replace(/ /g, " ").trim();
+}
+
+// Gives every note a clean formatted copy. Old plain notes keep their exact words.
+function convertNote(note) {
+  if (typeof note.html === "string") {
+    const html = cleanNoteHtml(note.html);
+    return { ...note, html, text: htmlToText(html) };
+  }
+  const text = typeof note.text === "string" ? note.text : "";
+  return { ...note, text, html: textToHtml(text) };
+}
+
+// Run once at start-up: written directly, so no note is marked edited
+function migrateNotes() {
+  let list;
+  try {
+    list = diaryStore.load();
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+  const converted = list.map(convertNote);
+  if (JSON.stringify(converted) === JSON.stringify(list)) return;
+  try {
+    diaryStore.save(converted);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ---------- Colour memory ----------
+
+function validColourRow(row, kind) {
+  const ok = Array.isArray(row) ? row.filter((c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c)) : [];
+  return ok.length === 5 ? ok.map((c) => c.toLowerCase()) : [...COLOUR_DEFAULTS[kind]];
+}
+
+function loadColours() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COLOURS_KEY) || "{}");
+    return { text: validColourRow(saved.text, "text"), highlight: validColourRow(saved.highlight, "highlight") };
+  } catch {
+    return { text: [...COLOUR_DEFAULTS.text], highlight: [...COLOUR_DEFAULTS.highlight] };
+  }
+}
+
+function saveColours(colours) {
+  localStorage.setItem(COLOURS_KEY, JSON.stringify(colours));
+}
+
+// A new colour joins at the front and pushes out the oldest. One already in the row stays where it is.
+function rememberColour(kind, hex) {
+  const colours = loadColours();
+  const value = hex.toLowerCase();
+  if (colours[kind].includes(value)) return;
+  colours[kind] = [value, ...colours[kind]].slice(0, 5);
+  try {
+    saveColours(colours);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ---------- The toolbar ----------
+
+let savedRange = null;
+let openPalette = null; // "text", "highlight" or null
+
+function rememberSelection() {
+  const editor = $("diary-text");
+  const selection = document.getSelection();
+  if (editor && selection.rangeCount && editor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+    savedRange = selection.getRangeAt(0).cloneRange();
+  }
+}
+
+function restoreSelection() {
+  const editor = $("diary-text");
+  const selection = document.getSelection();
+  // The cursor is still in the writing box: use where it is now, never an older spot
+  if (document.activeElement === editor && selection.rangeCount && editor.contains(selection.anchorNode)) return;
+  editor.focus();
+  if (savedRange && editor.contains(savedRange.commonAncestorContainer)) {
+    const selection = document.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
+  }
+}
+
+function updateToolbarState() {
+  const editor = $("diary-text");
+  const selection = document.getSelection();
+  const inEditor = Boolean(editor && selection.rangeCount && editor.contains(selection.anchorNode));
+  for (const button of $("diary-toolbar").querySelectorAll("[data-cmd]")) {
+    const command = button.dataset.cmd;
+    if (command === "undo" || command === "redo") continue;
+    let on = false;
+    try {
+      on = inEditor && document.queryCommandState(command);
+    } catch {}
+    button.setAttribute("aria-pressed", String(on));
+  }
+  let text = "", highlight = "";
+  if (inEditor) {
+    try {
+      text = document.queryCommandValue("foreColor");
+      highlight = document.queryCommandValue("hiliteColor") || document.queryCommandValue("backColor");
+    } catch {}
+  }
+  $("text-colour-bar").style.background = inEditor ? cleanColour(text, "text") || DEFAULT_TEXT_HEX : "transparent";
+  $("highlight-colour-bar").style.background = cleanColour(highlight, "highlight") || "transparent";
+}
+
+function runFormat(command, value) {
+  restoreSelection();
+  document.execCommand("styleWithCSS", false, true);
+  document.execCommand(command, false, value);
+  rememberSelection();
+  updateToolbarState();
+  $("diary-error").hidden = true;
+}
+
+function swatchButton(label, colour, className, onPick) {
+  const button = el("button", `swatch ${className}`.trim());
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  if (colour) button.style.background = colour;
+  button.addEventListener("pointerdown", (event) => event.preventDefault()); // keep the text selected
+  button.addEventListener("click", onPick);
+  return button;
+}
+
+function closeColourStrip() {
+  openPalette = null;
+  $("colour-strip").hidden = true;
+  for (const button of $("diary-toolbar").querySelectorAll("[data-palette]")) button.setAttribute("aria-expanded", "false");
+}
+
+function applyColour(kind, hex) {
+  if (kind === "text") runFormat("foreColor", hex || DEFAULT_TEXT_HEX);
+  else runFormat("hiliteColor", hex || "transparent");
+  closeColourStrip();
+}
+
+function openColourStrip(kind) {
+  if (openPalette === kind) {
+    closeColourStrip();
+    return;
+  }
+  openPalette = kind;
+  const row = loadColours()[kind];
+  const pinned = kind === "text"
+    ? swatchButton("Normal colour", DEFAULT_TEXT_HEX, "pinned", () => applyColour(kind, null))
+    : swatchButton("No highlight", null, "pinned none", () => applyColour(kind, null));
+  const plus = swatchButton("More colours", null, "plus", () => {
+    rememberSelection();
+    const picker = $("colour-picker");
+    picker.dataset.kind = kind;
+    picker.value = row[0];
+    picker.click(); // opens Android's own colour picker
+  });
+  plus.textContent = "＋";
+  $("colour-strip").replaceChildren(
+    pinned,
+    ...row.map((hex) => swatchButton(hex, hex, "", () => applyColour(kind, hex))),
+    plus
+  );
+  $("colour-strip").hidden = false;
+  for (const button of $("diary-toolbar").querySelectorAll("[data-palette]")) {
+    button.setAttribute("aria-expanded", String(button.dataset.palette === kind));
+  }
+}
+
+$("colour-picker").addEventListener("change", () => {
+  const picker = $("colour-picker");
+  const kind = picker.dataset.kind;
+  if (!kind) return;
+  rememberColour(kind, picker.value);
+  applyColour(kind, picker.value);
+});
+
+for (const button of $("diary-toolbar").querySelectorAll("button")) {
+  button.addEventListener("pointerdown", (event) => event.preventDefault()); // keep the text selected
+  button.addEventListener("click", () => {
+    if (button.dataset.palette) openColourStrip(button.dataset.palette);
+    else runFormat(button.dataset.cmd);
+  });
+}
+
+document.addEventListener("selectionchange", () => {
+  const editor = $("diary-text");
+  const selection = document.getSelection();
+  if (editor && selection.rangeCount && editor.contains(selection.anchorNode)) {
+    rememberSelection();
+    updateToolbarState();
+  }
+});
+
+function wireEditor(editor) {
+  editor.addEventListener("input", () => ($("diary-error").hidden = true));
+  editor.addEventListener("paste", (event) => { // pasted text always arrives plain
+    event.preventDefault();
+    const text = (event.clipboardData || window.clipboardData).getData("text/plain");
+    document.execCommand("insertText", false, text);
+  });
+}
+
+// A fresh editor element each time a note opens, so undo history starts clean for every note
+function resetEditor(html) {
+  const old = $("diary-text");
+  const fresh = old.cloneNode(false);
+  old.replaceWith(fresh);
+  fresh.innerHTML = cleanNoteHtml(html);
+  wireEditor(fresh);
+  savedRange = null;
+  closeColourStrip();
+  updateToolbarState();
+}
+
+function noteHtmlOf(note) {
+  return typeof note.html === "string" ? note.html : textToHtml(note.text || "");
+}
+
+wireEditor($("diary-text"));
+
 function noteWhen(note) {
   const when = new Date(note.createdAt || `${note.date}T00:00:00`);
   const stamp = when.toLocaleString("en-GB", {
@@ -963,12 +1317,13 @@ function noteWhen(note) {
 }
 
 function noteFields() {
-  return { title: $("diary-title").value.trim(), text: $("diary-text").value.trim() };
+  const html = cleanNoteHtml($("diary-text").innerHTML);
+  return { title: $("diary-title").value.trim(), html, text: htmlToText(html) };
 }
 
 function noteIsDirty() {
   const now = noteFields();
-  return now.title !== noteOpenedWith.title || now.text !== noteOpenedWith.text;
+  return now.title !== noteOpenedWith.title || now.html !== noteOpenedWith.html; // formatting-only changes count
 }
 
 function showNoteError(message) {
@@ -980,7 +1335,7 @@ function openNoteEditor(note) {
   editingNoteId = note ? note.id : null;
   $("diary-note-title").textContent = note ? "Edit note" : "New note";
   $("diary-title").value = note ? note.title || "" : "";
-  $("diary-text").value = note ? note.text || "" : "";
+  resetEditor(note ? noteHtmlOf(note) : "");
   $("diary-when").textContent = note ? noteWhen(note) : "";
   $("diary-when").hidden = !note;
   $("delete-note").hidden = !note;
@@ -1011,24 +1366,26 @@ function openNote(id) {
 $("diary-new").addEventListener("click", () => openNoteEditor(null));
 $("close-note").addEventListener("click", () => history.back());
 
-for (const field of [$("diary-title"), $("diary-text")]) {
-  field.addEventListener("input", () => ($("diary-error").hidden = true));
-}
+$("diary-title").addEventListener("input", () => ($("diary-error").hidden = true));
 
 // Used by the Save button and by Back. Returns "saved", "nothing" or "failed".
 function saveNoteNow() {
   if (savingNote) return "nothing";
-  const { title, text } = noteFields();
+  const { title, text, html } = noteFields();
   // Nothing worth saving: an empty new note, or an existing note whose boxes were cleared (left as it was)
   if (!title && !text) return "nothing";
+  if (text.length > NOTE_MAX_CHARS) {
+    showNoteError(`This note is too long to save (${NOTE_MAX_CHARS.toLocaleString("en-US")} characters max). Your writing is still here.`);
+    return "failed";
+  }
   savingNote = true;
   const finalTitle = title || text.split("\n")[0].slice(0, 60);
   try {
     if (editingNoteId) {
-      diaryStore.update(editingNoteId, { title: finalTitle, text });
+      diaryStore.update(editingNoteId, { title: finalTitle, text, html });
     } else {
       const id = newId();
-      diaryStore.add({ id, title: finalTitle, text, date: todayISO(), createdAt: new Date().toISOString() });
+      diaryStore.add({ id, title: finalTitle, text, html, date: todayISO(), createdAt: new Date().toISOString() });
       editingNoteId = id; // later saves update this note instead of adding another
     }
   } catch (err) {
@@ -1201,7 +1558,7 @@ $("rates-form").addEventListener("submit", (event) => {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 4, // 2 added My Skin, 3 the daily message, 4 the diary notes
+    version: 5, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -1210,6 +1567,7 @@ function makeBackup() {
     skin: loadSkin(),
     daily: loadDaily(),
     diary: diaryStore.load(),
+    colors: loadColours(),
   };
 }
 
@@ -1276,8 +1634,13 @@ function checkBackup(backup) {
     throw new Error("Backup has a damaged daily message");
   }
   // Backups made before My Diary existed (version 3 and older) have no "diary", and those leave notes untouched
-  if (backup.diary !== undefined && (!Array.isArray(backup.diary) || !backup.diary.every((n) => n && typeof n.id === "string"))) {
+  if (backup.diary !== undefined && (!Array.isArray(backup.diary)
+    || !backup.diary.every((n) => n && typeof n.id === "string" && (n.html === undefined || typeof n.html === "string")))) {
     throw new Error("Backup has damaged notes");
+  }
+  // Backups made before Build 9.6 (version 4 and older) have no "colors", and those leave your colours untouched
+  if (backup.colors !== undefined && (typeof backup.colors !== "object" || backup.colors === null || Array.isArray(backup.colors))) {
+    throw new Error("Backup has damaged colours");
   }
   return backup;
 }
@@ -1318,7 +1681,7 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -1326,7 +1689,11 @@ $("restore-yes").addEventListener("click", () => {
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
     if (backup.skin) saveSkin(backup.skin);
     if (backup.daily) saveDaily(backup.daily);
-    if (backup.diary) diaryStore.save(backup.diary);
+    if (backup.diary) diaryStore.save(backup.diary.map(convertNote)); // older notes converted, all notes cleaned
+    if (backup.colors) saveColours({
+      text: validColourRow(backup.colors.text, "text"),
+      highlight: validColourRow(backup.colors.highlight, "highlight"),
+    });
   } catch (err) {
     console.error(err);
     // Put everything back the way it was
@@ -1589,6 +1956,7 @@ $("tab-savings").addEventListener("click", () => showTab("savings"));
 
 fillAddForm();
 fillSavingForm();
+migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 renderDashboard();
 renderSavings();
 $("build-info").textContent = `My Journal · Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
