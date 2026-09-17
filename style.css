@@ -225,6 +225,14 @@ textarea {
   text-overflow: ellipsis;
 }
 #diary-note-page { padding-block: 20px 28px; }
+.saved-note {
+  align-self: center;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #2e7d32;
+  transition: opacity 0.4s ease;
+}
+.saved-note.is-fading { opacity: 0; }
 
 .amount-row {
   display: grid;

@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.3", date: "2026-09-17" };
+const BUILD = { number: "9.4", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -989,6 +989,8 @@ function openNoteEditor(note) {
   $("diary-when").hidden = !note;
   $("delete-note").hidden = !note;
   $("diary-error").hidden = true;
+  clearTimeout(savedTimer);
+  $("diary-saved").hidden = true;
   toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
   noteOpenedWith = noteFields();
   leavingNote = false;
@@ -1029,7 +1031,9 @@ function saveNoteNow() {
     if (editingNoteId) {
       diaryStore.update(editingNoteId, { title: finalTitle, text });
     } else {
-      diaryStore.add({ id: newId(), title: finalTitle, text, date: todayISO(), createdAt: new Date().toISOString() });
+      const id = newId();
+      diaryStore.add({ id, title: finalTitle, text, date: todayISO(), createdAt: new Date().toISOString() });
+      editingNoteId = id; // later saves update this note instead of adding another
     }
   } catch (err) {
     console.error(err);
@@ -1042,15 +1046,50 @@ function saveNoteNow() {
   return "saved";
 }
 
+// After a save the page stays open: it now edits that note, and nothing counts as unsaved
+function markNoteSaved() {
+  let note;
+  try {
+    note = diaryStore.load().find((n) => n.id === editingNoteId);
+  } catch (err) {
+    console.error(err);
+  }
+  if (note) {
+    $("diary-note-title").textContent = "Edit note";
+    $("diary-when").textContent = noteWhen(note);
+    $("diary-when").hidden = false;
+    $("delete-note").hidden = false;
+  }
+  noteOpenedWith = noteFields();
+}
+
+let savedTimer;
+
+function showSaved() {
+  clearTimeout(savedTimer);
+  const status = $("diary-saved");
+  status.classList.remove("is-fading");
+  status.hidden = false;
+  savedTimer = setTimeout(() => {
+    status.classList.add("is-fading");
+    savedTimer = setTimeout(() => (status.hidden = true), 400);
+  }, 2000);
+}
+
 $("save-note").addEventListener("click", () => {
+  $("diary-error").hidden = true;
+  if (editingNoteId && !noteIsDirty()) {
+    showSaved(); // nothing new to save
+    return;
+  }
   const result = saveNoteNow();
   if (result === "failed") return;
   if (result === "nothing") {
     showNoteError("Write something first.");
     return;
   }
-  leavingNote = true;
-  history.back();
+  markNoteSaved();
+  showSaved();
 });
 
 $("delete-note").addEventListener("click", () => {
