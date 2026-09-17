@@ -214,6 +214,18 @@
     </nav>
   </dialog>
 
+  <!-- Delete a note straight from the list -->
+  <dialog id="note-delete-dialog" aria-labelledby="note-delete-title">
+    <div class="dialog-head">
+      <h2 id="note-delete-title">Delete this note?</h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="note-delete-no">No, keep it</button>
+      <button type="button" class="btn danger-fill" id="note-delete-yes">Yes, delete</button>
+    </div>
+  </dialog>
+
   <!-- Settings page (whole app) -->
   <div class="page" id="settings-page" hidden>
     <header class="settings-head">

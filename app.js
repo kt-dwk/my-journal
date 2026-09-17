@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.2", date: "2026-09-17" };
+const BUILD = { number: "9.3", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -761,9 +761,13 @@ function renderDiary() {
     console.error(err);
     loadProblem = true;
   }
-  // Newest first. Sorting on date and createdAt only, so editing a note never moves it.
+  // Pinned first, then newest. Sorting on date and createdAt only, so editing a note never moves it.
+  closeSwipe();
   sortedNotes = [...notes].sort(
-    (a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || "")
+    (a, b) =>
+      Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) ||
+      (b.date || "").localeCompare(a.date || "") ||
+      (b.createdAt || "").localeCompare(a.createdAt || "")
   );
   $("diary-log").replaceChildren(...sortedNotes.slice(0, RECENT_NOTE_COUNT).map(noteRow));
   $("open-diary-log").hidden = sortedNotes.length <= RECENT_NOTE_COUNT;
@@ -803,18 +807,156 @@ $("open-diary-log").addEventListener("click", () => {
 $("diary-page-prev").addEventListener("click", () => changeDiaryPage(-1));
 $("diary-page-next").addEventListener("click", () => changeDiaryPage(1));
 
+const BIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const UNPIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function iconButton(className, label, icon, onClick) {
+  const button = el("button", className);
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.innerHTML = icon; // fixed icons, never anything you typed
+  button.addEventListener("click", onClick);
+  return button;
+}
+
 function noteRow(note) {
+  const li = el("li", "swipe");
+
+  const actions = el("div", "swipe-actions");
+  actions.append(
+    iconButton("swipe-btn", note.pinned ? "Unpin" : "Pin", note.pinned ? UNPIN_ICON : PIN_ICON, () => togglePin(note.id)),
+    iconButton("swipe-btn bin", "Delete", BIN_ICON, () => askDeleteNote(note.id))
+  );
+
   const row = el("button", "log-row note-row");
   row.type = "button";
   row.append(
+    el("span", "note-pin", note.pinned ? "📌" : ""),
     el("span", "log-date", note.date ? shortDate(note.date, true) : ""),
     el("span", "log-item", note.title || "(untitled)")
   );
-  row.addEventListener("click", () => openNote(note.id));
-  const li = el("li");
-  li.append(row);
+  addSwipe(li, row, () => openNote(note.id));
+
+  li.append(actions, row);
   return li;
 }
+
+// ---------- Swipe a row to reveal Pin and Delete ----------
+
+const SWIPE_WIDTH = 112;        // the two buttons side by side
+let openSwipeRow = null;
+
+function closeSwipe() {
+  if (!openSwipeRow) return;
+  openSwipeRow.classList.remove("is-open");
+  openSwipeRow = null;
+}
+
+function addSwipe(li, row, onTap) {
+  let startX = 0, startY = 0, dragging = false, decided = false, offset = 0;
+  let dragged = false; // per row, so a swipe here never swallows a tap on another row
+
+  row.addEventListener("click", () => {
+    if (dragged) {
+      dragged = false;
+      return;
+    }
+    if (li.classList.contains("is-open")) {
+      closeSwipe();
+      return;
+    }
+    onTap();
+  });
+
+  row.addEventListener("touchstart", (event) => {
+    const touch = event.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    dragging = true;
+    decided = false;
+    dragged = false;
+    offset = li.classList.contains("is-open") ? -SWIPE_WIDTH : 0;
+  }, { passive: true });
+
+  row.addEventListener("touchmove", (event) => {
+    if (!dragging) return;
+    const touch = event.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    if (!decided) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      decided = true;
+      if (Math.abs(dy) > Math.abs(dx)) { dragging = false; return; } // a scroll, not a swipe
+    }
+    dragged = true;
+    const start = li.classList.contains("is-open") ? -SWIPE_WIDTH : 0;
+    offset = Math.max(-SWIPE_WIDTH, Math.min(0, start + dx));
+    row.style.transform = `translateX(${offset}px)`;
+  }, { passive: true });
+
+  row.addEventListener("touchend", () => {
+    if (!dragging) return;
+    dragging = false;
+    row.style.transform = "";
+    if (offset <= -SWIPE_WIDTH / 2) {
+      if (openSwipeRow && openSwipeRow !== li) closeSwipe();
+      li.classList.add("is-open");
+      openSwipeRow = li;
+    } else {
+      li.classList.remove("is-open");
+      if (openSwipeRow === li) openSwipeRow = null;
+    }
+  });
+}
+
+// Tapping anywhere else, or scrolling, closes the open row
+document.addEventListener("click", (event) => {
+  if (openSwipeRow && !openSwipeRow.contains(event.target)) closeSwipe();
+}, true);
+window.addEventListener("scroll", closeSwipe, { passive: true });
+
+function togglePin(id) {
+  try {
+    const list = diaryStore.load();
+    const note = list.find((n) => n.id === id);
+    if (!note) return;
+    if (note.pinned) delete note.pinned;
+    else note.pinned = true;
+    diaryStore.save(list); // written directly, so pinning never marks the note edited
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+  closeSwipe();
+  renderDiary();
+}
+
+let noteToDelete = null;
+
+function askDeleteNote(id) {
+  noteToDelete = id;
+  $("note-delete-dialog").showModal();
+}
+
+$("note-delete-no").addEventListener("click", () => {
+  noteToDelete = null;
+  $("note-delete-dialog").close();
+});
+
+$("note-delete-yes").addEventListener("click", () => {
+  if (noteToDelete) {
+    try {
+      diaryStore.remove(noteToDelete);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  noteToDelete = null;
+  $("note-delete-dialog").close();
+  closeSwipe();
+  renderDiary();
+});
 
 function noteWhen(note) {
   const when = new Date(note.createdAt || `${note.date}T00:00:00`);

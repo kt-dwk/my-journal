@@ -189,7 +189,35 @@ textarea {
   resize: vertical;
 }
 .note-text { min-height: 45vh; }
-.log-row.note-row { grid-template-columns: 6.2rem 1fr; }
+.log-row.note-row { grid-template-columns: 1.3rem 6.2rem 1fr; }
+.note-pin { font-size: 0.85rem; line-height: 1.4; }
+
+/* Swipe a note row left to reveal Pin and Delete */
+.swipe { position: relative; overflow: hidden; }
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 1px;
+  display: flex;
+}
+.swipe-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  border: 0;
+  background: var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.swipe-btn.bin { background: var(--error); color: #fff; }
+.swipe .log-row {
+  position: relative;
+  background: var(--bg);
+  transition: transform 0.18s ease;
+}
+.swipe.is-open .log-row { transform: translateX(-112px); }
 /* Diary titles stay on one line and end in … when too long */
 .note-row .log-item {
   overflow: hidden;
