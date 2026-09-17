@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.1", date: "2026-09-17" };
+const BUILD = { number: "9.2", date: "2026-09-17" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -847,7 +847,6 @@ function openNoteEditor(note) {
   $("diary-when").hidden = !note;
   $("delete-note").hidden = !note;
   $("diary-error").hidden = true;
-  $("diary-leave-confirm").hidden = true;
   toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
   noteOpenedWith = noteFields();
   leavingNote = false;
@@ -876,13 +875,12 @@ for (const field of [$("diary-title"), $("diary-text")]) {
   field.addEventListener("input", () => ($("diary-error").hidden = true));
 }
 
-$("save-note").addEventListener("click", () => {
-  if (savingNote) return;
+// Used by the Save button and by Back. Returns "saved", "nothing" or "failed".
+function saveNoteNow() {
+  if (savingNote) return "nothing";
   const { title, text } = noteFields();
-  if (!title && !text) {
-    showNoteError("Write something first.");
-    return;
-  }
+  // Nothing worth saving: an empty new note, or an existing note whose boxes were cleared (left as it was)
+  if (!title && !text) return "nothing";
   savingNote = true;
   const finalTitle = title || text.split("\n")[0].slice(0, 60);
   try {
@@ -895,10 +893,20 @@ $("save-note").addEventListener("click", () => {
     console.error(err);
     savingNote = false;
     showNoteError("Sorry, this note couldn't be saved. Your writing is still here.");
-    return;
+    return "failed";
   }
   savingNote = false;
   renderDiary();
+  return "saved";
+}
+
+$("save-note").addEventListener("click", () => {
+  const result = saveNoteNow();
+  if (result === "failed") return;
+  if (result === "nothing") {
+    showNoteError("Write something first.");
+    return;
+  }
   leavingNote = true;
   history.back();
 });
@@ -924,17 +932,6 @@ $("diary-delete-yes").addEventListener("click", () => {
     return;
   }
   renderDiary();
-  leavingNote = true;
-  history.back();
-});
-
-$("diary-leave-no").addEventListener("click", () => {
-  toggleConfirm("diary-leave-confirm", "diary-form-actions", false);
-  $("diary-text").focus();
-});
-
-$("diary-leave-yes").addEventListener("click", () => {
-  toggleConfirm("diary-leave-confirm", "diary-form-actions", false);
   leavingNote = true;
   history.back();
 });
@@ -980,13 +977,12 @@ window.addEventListener("popstate", (event) => {
     applyPages("note");
     return;
   }
-  // Leaving the writing page with unsaved text: ask first, and put the history entry back
+  // Back with unsaved writing saves it, exactly like tapping Save
   if (!$("diary-note-page").hidden && !leavingNote && noteIsDirty()) {
-    history.pushState({ view: currentView, note: true }, "");
-    toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
-    toggleConfirm("diary-leave-confirm", "diary-form-actions", true);
-    $("diary-leave-no").focus();
-    return;
+    if (saveNoteNow() === "failed") {
+      history.pushState({ view: currentView, note: true }, ""); // saving failed, so stay on the page
+      return;
+    }
   }
   const noteWasOpen = !$("diary-note-page").hidden;
   leavingNote = false;
