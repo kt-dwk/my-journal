@@ -554,3 +554,52 @@ textarea {
 }
 .tab[aria-selected="true"] { color: var(--ink); font-weight: 700; border-top-color: var(--ink); }
 .tab:focus-visible { outline: 3px solid #6b9cff; outline-offset: -3px; }
+
+/* ---------- Brain dump (Build 10) ---------- */
+.brain-bar {                 /* half width, on the right under ⚙, within reach of the right thumb */
+  display: block;
+  width: 50%;
+  min-height: 44px;
+  margin: -4px 0 14px auto;
+  padding: 10px 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.brain-bar:active { background: var(--line); }
+.brain-bar:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.brain-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.brain-tile { min-height: 76px; margin-bottom: 0; align-items: center; text-align: center; }
+.log-row.brain-row {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.brain-write {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+#brain-text {
+  flex: 1;
+  min-width: 0;
+  max-height: calc(4 * 1.45em + 22px);  /* grows to about 4 lines, then scrolls */
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+}
+.brain-flash { margin-top: 8px; }
+#brain-error { margin: 8px 0 0; }
+

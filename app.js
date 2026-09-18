@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.8", date: "2026-09-18" };
+const BUILD = { number: "10", date: "2026-09-18" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -682,7 +682,7 @@ function dailyLineFor(dateISO) {
 
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
-const VIEWS = ["home", "money", "skin", "diary"];
+const VIEWS = ["home", "money", "skin", "diary", "brain"];
 let currentView = "home";
 
 // overlay: "" (a normal page), "settings", or "note" (the diary writing page)
@@ -706,6 +706,8 @@ function showView(view, { push = false } = {}) {
   if (view === "home") renderHome();
   if (view === "skin") renderSkin();
   if (view === "diary") renderDiary();
+  if (view === "brain") renderBrain();
+  if (view !== "brain" && $("brain-dialog").open) $("brain-dialog").close(); // Back left the page with the pop-up open
   applyPages();
   if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
 }
@@ -726,11 +728,142 @@ $("tile-money").addEventListener("click", () => {
 });
 $("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
 $("tile-diary").addEventListener("click", () => showView("diary", { push: true }));
+$("tile-brain").addEventListener("click", () => showView("brain", { push: true }));
 for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
 
 // The skin tile updates after midnight when the app comes back into view
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) renderHome();
+});
+
+// ---------- Brain dump (Build 10) ----------
+
+const BRAIN_KEY = "myjournal.braindump";
+const brainStore = makeStore(BRAIN_KEY);   // To keep thoughts only. Let go thoughts are never saved.
+
+let brainMode = "keep";                    // "keep", "letgo" or "edit"
+let editingThoughtId = null;
+let brainFlashTimer;
+
+function renderBrain() {
+  let thoughts = [];
+  let loadProblem = false;
+  try {
+    thoughts = brainStore.load();
+  } catch (err) {
+    console.error(err);
+    loadProblem = true;
+  }
+  thoughts.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); // newest first; editing never moves one
+  $("brain-list").replaceChildren(...thoughts.map((thought) => {
+    const li = el("li");
+    const row = el("button", "log-row brain-row", thought.text);
+    row.type = "button";
+    row.addEventListener("click", () => openBrainWriter("edit", thought));
+    li.append(row);
+    return li;
+  }));
+  $("brain-empty").textContent = loadProblem ? "Sorry, your thoughts couldn't be loaded." : "Nothing to keep yet.";
+  $("brain-empty").hidden = thoughts.length > 0;
+}
+
+function fitBrainBox() {
+  const box = $("brain-text");
+  box.style.height = "auto";
+  box.style.height = `${box.scrollHeight + 2}px`; // grows with the thought, up to the max-height in style.css
+}
+
+function openBrainWriter(mode, thought = null) {
+  brainMode = mode;
+  editingThoughtId = thought ? thought.id : null;
+  $("brain-title").textContent = { keep: "To keep", letgo: "Let go", edit: "Edit thought" }[mode];
+  $("brain-text").value = thought ? thought.text : "";
+  clearTimeout(brainFlashTimer);
+  $("brain-flash").hidden = true;
+  $("brain-error").hidden = true;
+  $("brain-dialog").showModal();
+  fitBrainBox();
+  $("brain-text").focus();
+}
+
+function flashBrain(message) {
+  clearTimeout(brainFlashTimer);
+  const flash = $("brain-flash");
+  flash.textContent = message;
+  flash.classList.remove("is-fading");
+  flash.hidden = false;
+  brainFlashTimer = setTimeout(() => {
+    flash.classList.add("is-fading");
+    brainFlashTimer = setTimeout(() => (flash.hidden = true), 400);
+  }, 1500);
+}
+
+function sendThought() {
+  const box = $("brain-text");
+  const text = box.value.replace(/[\r\n]+/g, " ").trim();
+  $("brain-error").hidden = true;
+  if (!text) {                                   // an empty box sends nothing
+    box.value = "";
+    fitBrainBox();
+    box.focus();
+    return;
+  }
+  try {
+    if (brainMode === "keep") brainStore.add({ id: newId(), text, createdAt: new Date().toISOString() });
+    if (brainMode === "edit") brainStore.update(editingThoughtId, { text });
+  } catch (err) {
+    console.error(err);
+    $("brain-error").textContent = "Sorry, this thought couldn't be saved. Your writing is still here.";
+    $("brain-error").hidden = false;
+    return;
+  }
+  renderBrain();
+  if (brainMode === "edit") {
+    $("brain-dialog").close();
+    return;
+  }
+  box.value = "";                                // Let go: gone, never stored anywhere
+  fitBrainBox();
+  flashBrain(brainMode === "keep" ? "Kept ✓" : "Let go ✓");
+  box.focus();                                   // stays open, keyboard up, for the next thought
+}
+
+$("close-brain").addEventListener("click", goHome);
+$("brain-keep").addEventListener("click", () => openBrainWriter("keep"));
+$("brain-letgo").addEventListener("click", () => openBrainWriter("letgo"));
+$("brain-send").addEventListener("pointerdown", (event) => event.preventDefault()); // keep the keyboard up
+$("brain-send").addEventListener("click", sendThought);
+$("brain-dialog").addEventListener("close", () => ($("brain-text").value = "")); // nothing lingers after closing
+
+// Enter sends. Keyboards report it differently, so it's caught three ways.
+$("brain-text").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.isComposing) {
+    event.preventDefault();
+    sendThought();
+  }
+});
+$("brain-text").addEventListener("beforeinput", (event) => {
+  if (event.inputType === "insertLineBreak" || event.inputType === "insertParagraph") {
+    event.preventDefault();
+    sendThought();
+  }
+});
+$("brain-text").addEventListener("input", () => {
+  $("brain-error").hidden = true;
+  if (/[\r\n]/.test($("brain-text").value)) { // a line break slipped through, so treat it as Enter
+    sendThought();
+    return;
+  }
+  fitBrainBox();
+});
+// Pasted text arrives on one line
+$("brain-text").addEventListener("paste", (event) => {
+  event.preventDefault();
+  const text = (event.clipboardData || window.clipboardData).getData("text/plain").replace(/\s*[\r\n]+\s*/g, " ");
+  const box = $("brain-text");
+  box.setRangeText(text, box.selectionStart, box.selectionEnd, "end");
+  if (box.value.length > 1000) box.value = box.value.slice(0, 1000);
+  fitBrainBox();
 });
 
 // ---------- My Diary ----------
@@ -1610,7 +1743,7 @@ $("rates-form").addEventListener("submit", (event) => {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 5, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours
+    version: 6, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -1620,13 +1753,15 @@ function makeBackup() {
     daily: loadDaily(),
     diary: diaryStore.load(),
     colors: loadColours(),
+    braindump: brainStore.load(),
   };
 }
 
 function backupSummary(backup) {
   const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   return `${count(backup.expenses.length, "expense")} · ${count(backup.savings.length, "saving")}`
-    + ` · ${count((backup.diary || []).length, "note")}`;
+    + ` · ${count((backup.diary || []).length, "note")}`
+    + ` · ${count((backup.braindump || []).length, "thought")}`;
 }
 
 $("backup-btn").addEventListener("click", async () => {
@@ -1700,6 +1835,11 @@ function checkBackup(backup) {
   if (backup.colors !== undefined && (typeof backup.colors !== "object" || backup.colors === null || Array.isArray(backup.colors))) {
     throw new Error("Backup has damaged colours");
   }
+  // Backups made before Brain dump (version 5 and older) have no "braindump", and those leave To keep untouched
+  if (backup.braindump !== undefined && (!Array.isArray(backup.braindump)
+    || !backup.braindump.every((t) => t && typeof t.id === "string" && typeof t.text === "string"))) {
+    throw new Error("Backup has damaged thoughts");
+  }
   return backup;
 }
 
@@ -1739,7 +1879,7 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -1752,6 +1892,7 @@ $("restore-yes").addEventListener("click", () => {
       text: validColourRow(backup.colors.text, "text"),
       highlight: validColourRow(backup.colors.highlight, "highlight"),
     });
+    if (backup.braindump) brainStore.save(backup.braindump);
   } catch (err) {
     console.error(err);
     // Put everything back the way it was
@@ -1765,6 +1906,7 @@ $("restore-yes").addEventListener("click", () => {
   renderSavings();
   renderSkin();
   renderDiary();
+  renderBrain();
   renderHome();
   fillRateInputs();
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);

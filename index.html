@@ -17,6 +17,7 @@
       <h1>My Journal</h1>
       <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
     </header>
+    <button type="button" class="brain-bar" id="tile-brain">🧠 Brain dump</button>
     <div class="sticky-note">
       <p class="daily-line" id="daily-line"></p>
     </div>
@@ -150,6 +151,39 @@
       <button type="button" class="btn more" id="open-diary-log" hidden>View more</button>
     </section>
   </div>
+
+  <!-- Brain dump (Build 10) -->
+  <div class="page" id="brain-page" hidden>
+    <header class="settings-head">
+      <button type="button" class="btn back" id="close-brain">← Back</button>
+      <h1>Brain dump</h1>
+    </header>
+    <div class="brain-tiles">
+      <button type="button" class="tile brain-tile" id="brain-keep"><span class="tile-name">To keep</span></button>
+      <button type="button" class="tile brain-tile" id="brain-letgo"><span class="tile-name">Let go</span></button>
+    </div>
+    <section>
+      <h3>To keep</h3>
+      <ul id="brain-list"></ul>
+      <p class="small" id="brain-empty" hidden>Nothing to keep yet.</p>
+    </section>
+  </div>
+
+  <!-- Brain dump: writing pop-up -->
+  <dialog id="brain-dialog" aria-labelledby="brain-title">
+    <div class="dialog-head">
+      <h2 id="brain-title">To keep</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="brain-write">
+      <textarea id="brain-text" rows="2" maxlength="1000" enterkeyhint="send" autocomplete="off" aria-labelledby="brain-title"></textarea>
+      <button type="button" class="btn primary icon-only" id="brain-send" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <p class="saved-note brain-flash" id="brain-flash" role="status" hidden></p>
+    <p class="error" id="brain-error" hidden></p>
+  </dialog>
 
   <!-- My Skin: one day pop-up -->
   <dialog id="skin-day-dialog" aria-labelledby="skin-day-title">
