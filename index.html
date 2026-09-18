@@ -162,6 +162,7 @@
       <button type="button" class="tile brain-tile" id="brain-keep"><span class="tile-name">To keep</span></button>
       <button type="button" class="tile brain-tile" id="brain-letgo"><span class="tile-name">Let go</span></button>
     </div>
+    <p class="saved-note" id="brain-page-flash" role="status" hidden></p>
     <section>
       <h3>To keep</h3>
       <ul id="brain-list"></ul>
@@ -274,6 +275,18 @@
     <div class="actions">
       <button type="button" class="btn" id="note-delete-no">No, keep it</button>
       <button type="button" class="btn danger-fill" id="note-delete-yes">Yes, delete</button>
+    </div>
+  </dialog>
+
+  <!-- Brain dump: delete a thought (Build 10.1) -->
+  <dialog id="brain-delete-dialog" aria-labelledby="brain-delete-title">
+    <div class="dialog-head">
+      <h2 id="brain-delete-title">Delete this thought?</h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="brain-delete-no">No, keep it</button>
+      <button type="button" class="btn danger-fill" id="brain-delete-yes">Yes, delete</button>
     </div>
   </dialog>
 

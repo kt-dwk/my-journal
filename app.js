@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "10", date: "2026-09-18" };
+const BUILD = { number: "10.1", date: "2026-09-18" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -743,7 +743,6 @@ const brainStore = makeStore(BRAIN_KEY);   // To keep thoughts only. Let go thou
 
 let brainMode = "keep";                    // "keep", "letgo" or "edit"
 let editingThoughtId = null;
-let brainFlashTimer;
 
 function renderBrain() {
   let thoughts = [];
@@ -755,16 +754,97 @@ function renderBrain() {
     loadProblem = true;
   }
   thoughts.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); // newest first; editing never moves one
-  $("brain-list").replaceChildren(...thoughts.map((thought) => {
-    const li = el("li");
-    const row = el("button", "log-row brain-row", thought.text);
-    row.type = "button";
-    row.addEventListener("click", () => openBrainWriter("edit", thought));
-    li.append(row);
-    return li;
-  }));
+  $("brain-list").replaceChildren(...thoughts.map(thoughtRow));
   $("brain-empty").textContent = loadProblem ? "Sorry, your thoughts couldn't be loaded." : "Nothing to keep yet.";
   $("brain-empty").hidden = thoughts.length > 0;
+}
+
+// Build 10.1: swipe a thought for 📖 To diary and 🗑 Delete, the same swipe as My Diary
+function thoughtRow(thought) {
+  const li = el("li", "swipe");
+  const actions = el("div", "swipe-actions");
+  actions.append(
+    iconButton("swipe-btn", "Move to My Diary", BOOK_ICON, () => moveThoughtToDiary(thought.id)),
+    iconButton("swipe-btn bin", "Delete", BIN_ICON, () => askDeleteThought(thought.id))
+  );
+  const row = el("button", "log-row brain-row", thought.text);
+  row.type = "button";
+  addSwipe(li, row, () => openBrainWriter("edit", thought));
+  li.append(actions, row);
+  return li;
+}
+
+let thoughtToDelete = null;
+
+function askDeleteThought(id) {
+  thoughtToDelete = id;
+  $("brain-delete-dialog").showModal();
+}
+
+$("brain-delete-no").addEventListener("click", () => {
+  thoughtToDelete = null;
+  $("brain-delete-dialog").close();
+});
+
+$("brain-delete-yes").addEventListener("click", () => {
+  if (thoughtToDelete) {
+    try {
+      brainStore.remove(thoughtToDelete);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  thoughtToDelete = null;
+  $("brain-delete-dialog").close();
+  closeSwipe();
+  renderBrain();
+});
+
+// A diary title holds 80 characters: longer thoughts are cut at a word with "…" and kept whole in the note text
+function thoughtTitle(text) {
+  if (text.length <= 80) return text;
+  let cut = text.slice(0, 79);
+  const space = cut.lastIndexOf(" ");
+  if (space > 50) cut = cut.slice(0, space);
+  return `${cut.trimEnd()}…`;
+}
+
+function moveThoughtToDiary(id) {
+  let thought;
+  try {
+    thought = brainStore.load().find((t) => t.id === id);
+  } catch (err) {
+    console.error(err);
+  }
+  if (!thought) return;
+  const long = thought.text.length > 80;
+  const noteId = newId();
+  try {
+    diaryStore.add({
+      id: noteId,
+      title: thoughtTitle(thought.text),
+      text: long ? thought.text : "",
+      html: long ? textToHtml(thought.text) : "",
+      date: todayISO(),                      // dated the day it's moved, like writing a new note
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error(err);
+    flashOn("brain-page-flash", "Sorry, this thought couldn't be moved.", true);
+    return;
+  }
+  try {
+    brainStore.remove(id);
+  } catch (err) {
+    console.error(err);
+    try { diaryStore.remove(noteId); } catch {} // never leave it in both places
+    flashOn("brain-page-flash", "Sorry, this thought couldn't be moved.", true);
+    return;
+  }
+  closeSwipe();
+  renderBrain();
+  renderDiary();
+  flashOn("brain-page-flash", "Moved to My Diary ✓");
 }
 
 function fitBrainBox() {
@@ -778,7 +858,7 @@ function openBrainWriter(mode, thought = null) {
   editingThoughtId = thought ? thought.id : null;
   $("brain-title").textContent = { keep: "To keep", letgo: "Let go", edit: "Edit thought" }[mode];
   $("brain-text").value = thought ? thought.text : "";
-  clearTimeout(brainFlashTimer);
+  clearTimeout(flashTimers["brain-flash"]);
   $("brain-flash").hidden = true;
   $("brain-error").hidden = true;
   $("brain-dialog").showModal();
@@ -786,16 +866,23 @@ function openBrainWriter(mode, thought = null) {
   $("brain-text").focus();
 }
 
-function flashBrain(message) {
-  clearTimeout(brainFlashTimer);
-  const flash = $("brain-flash");
+// A brief green message that fades (red for a problem). Used in the pop-up and on the Brain dump page.
+const flashTimers = {};
+function flashOn(id, message, problem = false) {
+  clearTimeout(flashTimers[id]);
+  const flash = $(id);
   flash.textContent = message;
+  flash.classList.toggle("is-problem", problem);
   flash.classList.remove("is-fading");
   flash.hidden = false;
-  brainFlashTimer = setTimeout(() => {
+  flashTimers[id] = setTimeout(() => {
     flash.classList.add("is-fading");
-    brainFlashTimer = setTimeout(() => (flash.hidden = true), 400);
-  }, 1500);
+    flashTimers[id] = setTimeout(() => (flash.hidden = true), 400);
+  }, problem ? 3000 : 1500);
+}
+
+function flashBrain(message) {
+  flashOn("brain-flash", message);
 }
 
 function sendThought() {
@@ -936,6 +1023,7 @@ $("open-diary-log").addEventListener("click", () => {
 $("diary-page-prev").addEventListener("click", () => changeDiaryPage(-1));
 $("diary-page-next").addEventListener("click", () => changeDiaryPage(1));
 
+const BOOK_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const BIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const UNPIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';

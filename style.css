@@ -603,3 +603,7 @@ textarea {
 .brain-flash { margin-top: 8px; }
 #brain-error { margin: 8px 0 0; }
 
+/* Build 10.1: Brain dump page message */
+#brain-page-flash { margin: 0 0 8px; }
+.saved-note.is-problem { color: var(--error); }
+
