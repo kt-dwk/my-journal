@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "9.7", date: "2026-09-17" };
+const BUILD = { number: "9.8", date: "2026-09-18" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1640,12 +1640,17 @@ $("backup-btn").addEventListener("click", async () => {
     return;
   }
 
-  const name = `my-journal-backup-${todayISO()}.json`;
-  const file = new File([JSON.stringify(backup, null, 2)], name, { type: "application/json" });
+  // Build 9.8: the time in the name gives every backup its own file, so Chrome never asks "download again?"
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+  const name = `my-journal-backup-${todayISO()}-${time}`;
+  const contents = JSON.stringify(backup, null, 2);
+  // Chrome on Android won't share a .json file, but it will share .txt. Same backup inside; Restore accepts both.
+  const shareFile = new File([contents], `${name}.txt`, { type: "text/plain" });
 
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+  if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
     try {
-      await navigator.share({ files: [file], title: "My Journal backup" });
+      await navigator.share({ files: [shareFile], title: "My Journal backup" });
       showSettingsStatus("backup-status", `Backup shared ✓ (${backupSummary(backup)})`);
       return;
     } catch (err) {
@@ -1657,15 +1662,16 @@ $("backup-btn").addEventListener("click", async () => {
     }
   }
 
+  const file = new File([contents], `${name}.json`, { type: "application/json" });
   const url = URL.createObjectURL(file);
   const link = el("a");
   link.href = url;
-  link.download = name;
+  link.download = file.name;
   document.body.append(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
-  showSettingsStatus("backup-status", `Backup saved to Downloads ✓ (${backupSummary(backup)})`);
+  showSettingsStatus("backup-status", `Sharing isn't available here, so the backup was saved to Downloads ✓ (${backupSummary(backup)})`);
 });
 
 // Restore: check the file, show what's in it, then replace everything after "Yes, restore"
