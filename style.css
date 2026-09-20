@@ -398,6 +398,18 @@ textarea {
   gap: 8px;
   margin-bottom: 12px;
 }
+/* Build 10.2: the top bar stays put while the page scrolls under it */
+.app-head,
+.settings-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  /* stretched past the body's side padding, so nothing shows through at the edges */
+  margin-inline: -16px;
+  padding: 6px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
 .app-head h1 { margin: 0; flex: 1; }
 .go-home svg { display: block; margin: auto; }
 
@@ -460,6 +472,18 @@ textarea {
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+}
+/* Short screens (the cover screen): a slimmer bar, so more of the page shows */
+@media (max-height: 480px) {
+  .app-head,
+  .settings-head {
+    padding-block: 2px;
+    margin-bottom: 10px;
+  }
+  .app-head h1,
+  .settings-head h1 { font-size: 1.25rem; }
+  .icon-btn { width: 40px; height: 40px; font-size: 1.35rem; }
+  .btn.back { padding: 8px 10px; }
 }
 .settings-head h1 { margin: 0; }
 .btn.back { padding: 10px 12px; }
