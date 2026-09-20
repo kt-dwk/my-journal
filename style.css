@@ -6,6 +6,7 @@
   --bg: #fafafa;
   --card: #fff;
   --error: #b3261e;
+  --bar-height: 56px;      /* the pinned top bar (Build 10.4) */
   color-scheme: light;
 }
 
@@ -13,13 +14,9 @@
 
 [hidden] { display: none !important; }
 
-/* Build 10.3: no bounce past the top or bottom, so the frozen bar never moves */
-html { overscroll-behavior-y: none; }
-
 body {
   margin: 0;
   padding: 0 16px;
-  overscroll-behavior-y: none;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   color: var(--ink);
@@ -30,7 +27,7 @@ body {
   max-width: 520px;
   margin: 0 auto;
   /* bottom space so the tab bar never covers the last row */
-  padding-block: 20px calc(96px + env(safe-area-inset-bottom));
+  padding-block: calc(var(--bar-height) + 16px) calc(96px + env(safe-area-inset-bottom));
 }
 
 h1 { margin: 0 0 12px; font-size: 1.6rem; }
@@ -313,7 +310,7 @@ textarea {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-#diary-note-page { padding-block: 20px 28px; }
+#diary-note-page { padding-block: calc(var(--bar-height) + 16px) 28px; }
 .saved-note {
   align-self: center;
   margin: 0;
@@ -402,15 +399,19 @@ textarea {
   gap: 8px;
   margin-bottom: 12px;
 }
-/* Build 10.2: the top bar stays put while the page scrolls under it */
+/* Build 10.2/10.4: the top bar is pinned to the screen, so it can't move with the page at all */
 .app-head,
 .settings-head {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 5;
-  /* stretched past the body's side padding, so nothing shows through at the edges */
-  margin-inline: -16px;
-  padding: 6px 16px;
+  box-sizing: border-box;
+  height: var(--bar-height);
+  margin: 0;
+  /* the content lines up with the page, which is 520px wide at most */
+  padding: 6px max(16px, calc((100vw - 520px) / 2));
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
@@ -479,11 +480,9 @@ textarea {
 }
 /* Short screens (the cover screen): a slimmer bar, so more of the page shows */
 @media (max-height: 480px) {
+  :root { --bar-height: 44px; }
   .app-head,
-  .settings-head {
-    padding-block: 2px;
-    margin-bottom: 10px;
-  }
+  .settings-head { padding-block: 2px; }
   .app-head h1,
   .settings-head h1 { font-size: 1.25rem; }
   .icon-btn { width: 40px; height: 40px; font-size: 1.35rem; }
