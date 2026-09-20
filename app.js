@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "10.4", date: "2026-09-20" };
+const BUILD = { number: "10.5", date: "2026-09-20" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -683,6 +683,7 @@ function dailyLineFor(dateISO) {
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
 const VIEWS = ["home", "money", "skin", "diary", "brain"];
+const SESSION_VIEW_KEY = "myjournal.session-view";
 let currentView = "home";
 
 // overlay: "" (a normal page), "settings", or "note" (the diary writing page)
@@ -703,6 +704,10 @@ function renderHome() {
 
 function showView(view, { push = false } = {}) {
   currentView = view;
+  // Remembered for this session only: a refresh keeps you here, closing the app forgets it (Build 10.5)
+  try {
+    sessionStorage.setItem(SESSION_VIEW_KEY, view);
+  } catch {}
   if (view === "home") renderHome();
   if (view === "skin") renderSkin();
   if (view === "diary") renderDiary();
@@ -2255,9 +2260,19 @@ try {
 } catch {}
 showTab(startTab);
 
-// A fresh start (the app fully closed and reopened) always opens on Home
-showView("home");
+// A fresh start (the app fully closed and reopened) always opens on Home (Build 9.5).
+// A refresh keeps you on the page you were on, because the session is still alive (Build 10.5).
+let startView = "home";
+try {
+  const sameSession = sessionStorage.getItem(SESSION_VIEW_KEY);
+  if (VIEWS.includes(sameSession)) startView = sameSession;
+} catch {}
 history.replaceState({ view: "home" }, "");
+if (startView === "home") {
+  showView("home");
+} else {
+  showView(startView, { push: true }); // so Back still goes Home after a refresh
+}
 
 // Lets the app open without internet once it's been added to the home screen
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
