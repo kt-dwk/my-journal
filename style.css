@@ -688,9 +688,27 @@ textarea {
   .switch-btn { min-height: 38px; font-size: 0.95rem; }
   .month-card { margin-bottom: 8px; }
   .total strong { font-size: 1.9rem; }
-  .cat-head { margin-top: 6px; padding-bottom: 3px; font-size: 1rem; }
-  .row { padding: 4px 0; }
-  .fab { width: 52px; height: 52px; font-size: 1.7rem; }
+  .cat-head { margin-top: 5px; padding-bottom: 3px; font-size: 1rem; }
+  .row { padding: 3px 0; }
+  .fab { width: 46px; height: 46px; font-size: 1.5rem; }
+  /* Build 12.8: the add sheets fit without scrolling — chips slide sideways instead of wrapping */
+  dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  dialog.sheet .dialog-head { margin-bottom: 6px; }
+  dialog.sheet .dialog-head h2 { font-size: 1.05rem; }
+  dialog.sheet .close { width: 36px; height: 36px; }
+  dialog.sheet .field { margin-bottom: 8px; }
+  dialog.sheet .label { margin-bottom: 2px; font-size: 0.8rem; }
+  /* one sliding row of chips: the item names say enough without the Need / Want labels here */
+  dialog.sheet #item-choices { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  dialog.sheet #item-choices::-webkit-scrollbar { display: none; }
+  dialog.sheet .item-group { margin: 0; }
+  dialog.sheet .item-group-label { display: none; }
+  dialog.sheet .item-buttons { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  dialog.sheet .item-buttons::-webkit-scrollbar { display: none; }
+  dialog.sheet .item-btn span { white-space: nowrap; }
+  dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 36px; }
+  dialog.sheet .actions .btn { min-height: 38px; }
+
   /* Build 12.3: on the cover screen both cards are a single row */
   .month-card { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
   .month-nav { display: contents; }
@@ -704,6 +722,19 @@ textarea {
   .total-card .total strong { font-size: 1.5rem; }
   .total-card .total .small { order: -1; }
   .total-card { margin-bottom: 8px; }
+  /* Build 12.8: the month bar matches the switch above it, and the arrows lose their boxes */
+  .month-card { min-height: 38px; padding: 0 8px; }
+  .month-nav h2 { font-size: 0.85rem; }
+  .month-card .total strong { font-size: 1.1rem; }
+  .month-arrow {
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+    font-size: 1.1rem;
+    background: none;
+    border: 0;
+  }
+
   .goal-row { gap: 10px; padding: 4px 0; }
   #panel-savings { padding-bottom: 56px; }   /* the last goal clears the floating + */
   .goal-name { font-size: 0.95rem; }
