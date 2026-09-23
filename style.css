@@ -27,7 +27,7 @@ body {
   max-width: 520px;
   margin: 0 auto;
   /* bottom space so the tab bar never covers the last row */
-  padding-block: calc(var(--bar-height) + 16px) calc(96px + env(safe-area-inset-bottom));
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) calc(96px + env(safe-area-inset-bottom));
 }
 
 h1 { margin: 0 0 12px; font-size: 1.6rem; }
@@ -310,7 +310,7 @@ textarea {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-#diary-note-page { padding-block: calc(var(--bar-height) + 16px) 28px; }
+#diary-note-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) 28px; }
 .saved-note {
   align-self: center;
   margin: 0;
@@ -408,10 +408,11 @@ textarea {
   right: 0;
   z-index: 5;
   box-sizing: border-box;
-  height: var(--bar-height);
+  /* Build 11.2: the phone's status bar sits on top of the app, so the bar makes room for it */
+  height: calc(var(--bar-height) + env(safe-area-inset-top));
   margin: 0;
   /* the content lines up with the page, which is 520px wide at most */
-  padding: 6px max(16px, calc((100vw - 520px) / 2));
+  padding: calc(8px + env(safe-area-inset-top)) max(16px, calc((100vw - 520px) / 2)) 8px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
@@ -422,8 +423,8 @@ textarea {
 #home-page {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
-  padding-block: calc(var(--bar-height) + 12px) 16px;
+  min-height: 100dvh;   /* the height the phone gives the app right now */
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 12px) calc(12px + env(safe-area-inset-bottom));
 }
 .home-top { display: flex; justify-content: flex-end; }
 .brain-button {              /* round, no label, under ⚙ for the right thumb */
@@ -450,7 +451,9 @@ textarea {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: min(230px, 26vh);
+  height: min(230px, 24vh);
+  max-width: 100%;
+  max-height: 100%;   /* on a tight screen the note gives way rather than being cut off */
   padding: 18px;
   text-align: center;
   background: #fdf3bf;
@@ -469,7 +472,7 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  height: min(380px, 44vh);
+  height: min(380px, 42vh);
   padding-top: 16px;
   border-top: 2px dashed var(--line);
 }
@@ -526,11 +529,11 @@ textarea {
   .settings-head h1 { font-size: 1.25rem; }
   .icon-btn { width: 40px; height: 40px; font-size: 1.15rem; }
   .btn.back { padding: 8px 10px; }
-  #home-page { padding-block: calc(var(--bar-height) + 8px) 12px; }
+  #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 8px) calc(10px + env(safe-area-inset-bottom)); }
   .brain-button { width: 50px; height: 50px; font-size: 1.4rem; }
-  .sticky-note { width: min(190px, 34vh); height: min(190px, 34vh); padding: 12px; } /* square on the cover screen */
+  .sticky-note { width: min(190px, 30vh); height: min(190px, 30vh); padding: 12px; } /* square on the cover screen */
   .daily-line { font-size: 1rem; }
-  .tile-dock { height: min(210px, 38vh); gap: 12px; padding-top: 12px; }
+  .tile-dock { height: min(210px, 34vh); gap: 12px; padding-top: 12px; }
   .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
   .tile-name { font-size: 1rem; }
   .tile-sub { font-size: 0.8rem; }
