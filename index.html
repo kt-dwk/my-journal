@@ -322,11 +322,11 @@
       <h3 class="section-label">Exchange rates</h3>
       <form id="rates-form" novalidate>
         <div class="rate-row">
-          <label class="label" for="rate-USD">1 USD = ? LAK</label>
+          <label class="label" id="rate-USD-label" for="rate-USD">1 USD = ? LAK</label>
           <input id="rate-USD" type="text" inputmode="decimal" autocomplete="off" placeholder="22,500">
         </div>
         <div class="rate-row">
-          <label class="label" for="rate-THB">1 THB = ? LAK</label>
+          <label class="label" id="rate-THB-label" for="rate-THB">1 THB = ? LAK</label>
           <input id="rate-THB" type="text" inputmode="decimal" autocomplete="off" placeholder="690">
         </div>
         <p class="error" id="rates-error" hidden>Both rates must be above 0.</p>
@@ -338,7 +338,7 @@
     </section>
 
     <section>
-      <h3 class="section-label">Backup &amp; Restore</h3>
+      <h3 class="section-label" id="backup-heading">Backup &amp; Restore</h3>
       <div class="settings-actions" id="backup-actions">
         <button type="button" class="btn" id="backup-btn">Backup</button>
         <button type="button" class="btn" id="restore-btn">Restore</button>

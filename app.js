@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "12.3", date: "2026-09-23" };
+const BUILD = { number: "12.4", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -164,12 +164,12 @@ function onCoverScreen() {
 // Whole amounts, no decimals: "$1,200 of $2,000" as the design writes them
 function formatWhole(amount, currency) {
   const { symbol } = CURRENCIES[currency];
-  return symbol + " " + Math.round(amount).toLocaleString("en-US");
+  return symbol + Math.round(amount).toLocaleString("en-US");
 }
 
 function formatMoney(amount, currency) {
   const { symbol, decimals } = CURRENCIES[currency];
-  return symbol + " " + amount.toLocaleString("en-US", {
+  return symbol + amount.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
@@ -278,8 +278,10 @@ function renderDashboard() {
   const total = items.reduce((sum, e) => sum + e.lak, 0);
   const sumWhere = (test) => items.filter(test).reduce((sum, e) => sum + e.lak, 0);
 
-  $("month-label").textContent = new Date(viewYear, viewMonth, 1)
-    .toLocaleDateString("en-GB", { month: onCoverScreen() ? "short" : "long", year: "numeric" });
+  const monthDate = new Date(viewYear, viewMonth, 1);
+  $("month-label").textContent = onCoverScreen()
+    ? `${monthDate.toLocaleDateString("en-US", { month: "short" })} ${viewYear}`   // "Sep 2026"
+    : monthDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   $("total").textContent = formatMoney(total, "LAK");
 
   // Build 12: Need and Want are headings with their own totals, their items underneath
@@ -1782,9 +1784,20 @@ function fillRateInputs() {
   }
 }
 
+// Build 12.4: the cover screen uses the wireframe's shorter labels
+function applyCoverWording() {
+  const short = onCoverScreen();
+  $("rate-USD-label").textContent = short ? "1 USD =" : "1 USD = ? LAK";
+  $("rate-THB-label").textContent = short ? "1 THB =" : "1 THB = ? LAK";
+  $("backup-heading").textContent = short ? "Backup" : "Backup & Restore";
+  const built = `Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
+  $("build-info").textContent = short ? built : `My Journal · ${built}`;
+}
+
 function openSettings() {
   fillRateInputs();
   showLastBackup();
+  applyCoverWording();
   for (const id of ["rates-error", "rates-status", "backup-status"]) $(id).hidden = true;
   cancelRestore();
   applyPages("settings");
@@ -2287,6 +2300,10 @@ savingForm.addEventListener("submit", (event) => {
 // ---------- Tabs ----------
 
 function showTab(name) {
+  // Build 12.4: redraw on opening, so the wording always suits the screen in use
+  if (name === "expenses") renderDashboard();
+  else renderSavings();
+  applyCoverWording();
   for (const tab of ["expenses", "savings"]) {
     const selected = tab === name;
     $(`tab-${tab}`).setAttribute("aria-selected", String(selected));
@@ -2301,6 +2318,7 @@ function showTab(name) {
 COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
   renderDashboard();
   renderSavings();
+  applyCoverWording();
 });
 
 $("tab-expenses").addEventListener("click", () => showTab("expenses"));
@@ -2313,7 +2331,7 @@ fillSavingForm();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 renderDashboard();
 renderSavings();
-$("build-info").textContent = `My Journal · Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
+applyCoverWording();
 
 // Build 11.1: the screen's own numbers, so a layout question can be answered from the phone
 // Build 11.4: after a refresh the app starts at the top, instead of the phone putting back the old scroll position
