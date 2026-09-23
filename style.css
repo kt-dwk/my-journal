@@ -675,6 +675,18 @@ textarea {
   .total strong { font-size: 1.9rem; }
   .cat-head { margin-top: 12px; font-size: 1.05rem; }
   .fab { width: 52px; height: 52px; font-size: 1.7rem; }
+  /* Build 12.3: on the cover screen both cards are a single row */
+  .month-card { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+  .month-nav { display: contents; }
+  .month-nav h2 { flex: 0 0 auto; text-align: left; }
+  .month-card .total { order: 3; flex: 1; margin: 0; text-align: right; }
+  .month-card .total strong { font-size: 1.5rem; }
+  .month-card .total .small { display: none; }
+  #next-month { order: 4; }
+  .total-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
+  .total-card .total { display: contents; }
+  .total-card .total strong { font-size: 1.5rem; }
+  .total-card .total .small { order: -1; }
   .total-card { margin-bottom: 14px; padding: 12px; }
   .goal-row { gap: 12px; padding: 10px 0; }
   .goal-name { font-size: 1.05rem; }

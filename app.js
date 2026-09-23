@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "12.2", date: "2026-09-23" };
+const BUILD = { number: "12.3", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -155,6 +155,18 @@ function newId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+// Build 12.3: the cover screen shows the same numbers more tightly
+const COVER_SCREEN = window.matchMedia("(max-height: 480px), (min-aspect-ratio: 3 / 4)");
+function onCoverScreen() {
+  return COVER_SCREEN.matches;
+}
+
+// Whole amounts, no decimals: "$1,200 of $2,000" as the design writes them
+function formatWhole(amount, currency) {
+  const { symbol } = CURRENCIES[currency];
+  return symbol + " " + Math.round(amount).toLocaleString("en-US");
+}
+
 function formatMoney(amount, currency) {
   const { symbol, decimals } = CURRENCIES[currency];
   return symbol + " " + amount.toLocaleString("en-US", {
@@ -267,7 +279,7 @@ function renderDashboard() {
   const sumWhere = (test) => items.filter(test).reduce((sum, e) => sum + e.lak, 0);
 
   $("month-label").textContent = new Date(viewYear, viewMonth, 1)
-    .toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    .toLocaleDateString("en-GB", { month: onCoverScreen() ? "short" : "long", year: "numeric" });
   $("total").textContent = formatMoney(total, "LAK");
 
   // Build 12: Need and Want are headings with their own totals, their items underneath
@@ -2050,7 +2062,7 @@ function renderSavings() {
   }
 
   const total = all.reduce((sum, s) => sum + s.amount, 0);
-  $("savings-total").textContent = formatMoney(total, "USD");
+  $("savings-total").textContent = onCoverScreen() ? formatWhole(total, "USD") : formatMoney(total, "USD");
 
   // Build 12.2: a jar per goal, filling from the bottom with its percentage inside
   $("goals").replaceChildren(
@@ -2075,7 +2087,7 @@ function renderSavings() {
       const text = el("div", "goal-text");
       text.append(
         el("div", "goal-name", g.name),
-        el("div", "goal-amount", `${formatMoney(saved, "USD")} of ${formatMoney(g.target, "USD")}`),
+        el("div", "goal-amount", `${formatWhole(saved, "USD")} of ${formatWhole(g.target, "USD")}`),
         el("div", "small", goalStatus(saved, g))
       );
 
@@ -2102,6 +2114,7 @@ function goalStatus(saved, goal) {
   const today = new Date();
   const finish = new Date(today.getFullYear(), today.getMonth() + months, 1)
     .toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  if (onCoverScreen()) return `${months} mo left`;   // the cover screen keeps it short
   return `${months} ${months === 1 ? "month" : "months"} left · about ${finish}`;
 }
 
@@ -2284,6 +2297,11 @@ function showTab(name) {
   } catch {}
   window.scrollTo(0, 0);
 }
+
+COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
+  renderDashboard();
+  renderSavings();
+});
 
 $("tab-expenses").addEventListener("click", () => showTab("expenses"));
 $("tab-savings").addEventListener("click", () => showTab("savings"));
