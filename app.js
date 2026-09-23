@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "11", date: "2026-09-23" };
+const BUILD = { number: "11.1", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -2254,6 +2254,14 @@ migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy,
 renderDashboard();
 renderSavings();
 $("build-info").textContent = `My Journal · Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
+
+// Build 11.1: the screen's own numbers, so a layout question can be answered from the phone
+function showScreenInfo() {
+  const compact = window.matchMedia("(max-height: 480px), (min-aspect-ratio: 3 / 4)").matches;
+  $("screen-info").textContent = `Screen ${Math.round(window.innerWidth)} × ${Math.round(window.innerHeight)} · ${compact ? "cover" : "main"} layout`;
+}
+showScreenInfo();
+window.addEventListener("resize", showScreenInfo);
 
 let startTab = "expenses";
 try {

@@ -450,7 +450,7 @@ textarea {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 230px;
+  height: min(230px, 26vh);
   padding: 18px;
   text-align: center;
   background: #fdf3bf;
@@ -469,7 +469,7 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  height: 380px;
+  height: min(380px, 44vh);
   padding-top: 16px;
   border-top: 2px dashed var(--line);
 }
@@ -516,7 +516,9 @@ textarea {
   margin-bottom: 20px;
 }
 /* Short screens (the cover screen): a slimmer bar, so more of the page shows */
-@media (max-height: 480px) {
+/* Build 11.1: the cover screen is nearly square (1048 × 948), the main screen is tall and narrow (1080 × 2520).
+   Shape is the reliable test: a screen that isn't tall and narrow gets the compact layout. */
+@media (max-height: 480px), (min-aspect-ratio: 3 / 4) {
   :root { --bar-height: 42px; }
   .app-head,
   .settings-head { padding-block: 2px; }
@@ -526,9 +528,9 @@ textarea {
   .btn.back { padding: 8px 10px; }
   #home-page { padding-block: calc(var(--bar-height) + 8px) 12px; }
   .brain-button { width: 50px; height: 50px; font-size: 1.4rem; }
-  .sticky-note { width: 132px; height: 132px; padding: 12px; }
+  .sticky-note { width: min(190px, 34vh); height: min(190px, 34vh); padding: 12px; } /* square on the cover screen */
   .daily-line { font-size: 1rem; }
-  .tile-dock { height: 150px; gap: 12px; padding-top: 12px; }
+  .tile-dock { height: min(210px, 38vh); gap: 12px; padding-top: 12px; }
   .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
   .tile-name { font-size: 1rem; }
   .tile-sub { font-size: 0.8rem; }
