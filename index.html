@@ -52,31 +52,30 @@
       <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
     </header>
 
-    <div id="panel-expenses" role="tabpanel" aria-labelledby="tab-expenses">
-    <div class="month-nav">
-      <button type="button" class="btn" id="prev-month" aria-label="Previous month">&lt;</button>
-      <h2 id="month-label"></h2>
-      <button type="button" class="btn" id="next-month" aria-label="Next month">&gt;</button>
+    <div class="switch" role="tablist" aria-label="My Money">
+      <button type="button" class="switch-btn" role="tab" id="tab-expenses" aria-controls="panel-expenses" aria-selected="true">Expenses</button>
+      <button type="button" class="switch-btn" role="tab" id="tab-savings" aria-controls="panel-savings" aria-selected="false">Savings</button>
     </div>
-    <p class="total">
-      <span class="small">Total spent</span>
-      <strong id="total"></strong>
-    </p>
+
+    <div id="panel-expenses" role="tabpanel" aria-labelledby="tab-expenses">
+    <div class="month-card">
+      <div class="month-nav">
+        <button type="button" class="btn month-arrow" id="prev-month" aria-label="Previous month">&lt;</button>
+        <h2 id="month-label"></h2>
+        <button type="button" class="btn month-arrow" id="next-month" aria-label="Next month">&gt;</button>
+      </div>
+      <p class="total">
+        <strong id="total"></strong>
+        <span class="small">total spent</span>
+      </p>
+    </div>
 
     <section>
-      <h3>By category</h3>
-      <ul id="by-group"></ul>
+      <div id="by-category"></div>
     </section>
 
     <section>
-      <h3>By Item</h3>
-      <div id="by-item"></div>
-    </section>
-
-    <button type="button" class="btn primary wide" id="open-add">+ Add transaction</button>
-
-    <section>
-      <h3>Transaction log</h3>
+      <h3 class="section-label">Log</h3>
       <ul id="log"></ul>
       <p class="small" id="log-empty" hidden>No transactions this month.</p>
     </section>
@@ -103,6 +102,8 @@
         <button type="button" class="btn more" id="open-saving-log" hidden>View more log</button>
       </section>
     </div>
+
+    <button type="button" class="fab" id="open-add" aria-label="Add transaction">+</button>
   </main>
 
   <!-- Habit (placeholder until the section is planned) -->
@@ -362,13 +363,8 @@
     </div>
   </div>
 
-  <nav class="tabbar" id="tabbar" role="tablist" aria-label="My Money">
-    <button type="button" class="tab" role="tab" id="tab-expenses" aria-controls="panel-expenses" aria-selected="true">Expenses</button>
-    <button type="button" class="tab" role="tab" id="tab-savings" aria-controls="panel-savings" aria-selected="false">Savings</button>
-  </nav>
-
   <!-- Add transaction pop-up -->
-  <dialog id="add-dialog" aria-labelledby="add-title">
+  <dialog class="sheet" id="add-dialog" aria-labelledby="add-title">
     <form id="add-form" novalidate>
       <div class="dialog-head">
         <h2 id="add-title">Add transaction</h2>
@@ -391,14 +387,15 @@
         <p class="error" id="rate-error" hidden><span id="rate-error-text"></span></p>
       </div>
 
-      <div class="field">
-        <label class="label" for="date">Date</label>
-        <input id="date" type="date">
-      </div>
-
-      <div class="field">
-        <label class="label" for="note">Note <span class="small">(optional)</span></label>
-        <input id="note" type="text" maxlength="120" autocomplete="off" placeholder="e.g. for mom">
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="date">Date</label>
+          <input id="date" type="date">
+        </div>
+        <div class="field">
+          <label class="label" for="note">Note <span class="small">(optional)</span></label>
+          <input id="note" type="text" maxlength="120" autocomplete="off" placeholder="e.g. for mom">
+        </div>
       </div>
 
       <p class="error" id="add-error" hidden>Sorry, this couldn't be saved. Please try again.</p>

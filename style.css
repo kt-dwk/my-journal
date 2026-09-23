@@ -87,16 +87,83 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- Month + total ---------- */
+/* ---------- My Money (Build 12 design pass) ---------- */
+.switch {                    /* Expenses | Savings, at the top instead of a bottom tab bar */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.switch-btn {
+  min-height: 44px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--card);
+  border: 0;
+  cursor: pointer;
+}
+.switch-btn[aria-selected="true"] { color: #fff; background: var(--ink); }
+.month-card {
+  margin-bottom: 20px;
+  padding: 14px 16px 18px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+}
 .month-nav {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.month-nav h2 { flex: 1; text-align: center; }
-.month-nav .btn { width: 44px; padding: 0; font-size: 1.2rem; }
+.month-nav h2 { flex: 1; text-align: center; font-size: 0.95rem; font-weight: 500; color: var(--muted); }
+.month-arrow { width: 44px; padding: 0; font-size: 1.1rem; }
 
-.total { margin: 8px 0 24px; text-align: center; }
-.total strong { display: block; font-size: 2rem; }
+.total { margin: 10px 0 0; text-align: center; }
+.total strong { display: block; font-size: 2.4rem; line-height: 1.1; }
+.cat-head {                  /* Need / Want, each with its own total */
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-bottom: 6px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-bottom: 2px solid var(--ink);
+}
+.cat-list .row { color: #555; }
+.fab {                       /* adding is a floating round button */
+  position: fixed;
+  right: max(16px, calc((100vw - 520px) / 2));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 6;
+  width: 64px;
+  height: 64px;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--card);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.fab:active { background: #eef3fd; }
+.fab:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+dialog.sheet {               /* the add form rises from the bottom, above the keyboard */
+  width: 100%;
+  max-width: 520px;
+  margin: auto auto 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+}
+dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
+.sheet-pair { display: flex; gap: 12px; }
+.sheet-pair .field { flex: 1; }
+.sheet .actions .btn.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
 
 /* ---------- Summary rows ---------- */
 .row {
@@ -538,6 +605,12 @@ textarea {
   .tile-dock { height: min(210px, 34vh); gap: 12px; padding-top: 12px; }
   .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
   .tile-name { font-size: 1rem; }
+  .switch { margin-bottom: 12px; }
+  .switch-btn { min-height: 40px; }
+  .month-card { margin-bottom: 14px; padding: 10px 14px 14px; }
+  .total strong { font-size: 1.9rem; }
+  .cat-head { margin-top: 12px; font-size: 1.05rem; }
+  .fab { width: 52px; height: 52px; font-size: 1.7rem; }
   .tile-sub { font-size: 0.8rem; }
 }
 .settings-head h1 { margin: 0; }
@@ -645,29 +718,6 @@ textarea {
 .cal-cell.is-off { color: #bbb; background: none; cursor: default; }
 .cal-cell:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
 
-/* ---------- Bottom tab bar ---------- */
-.tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--card);
-  border-top: 1px solid var(--line);
-}
-.tab {
-  min-height: 56px;
-  font-size: 1rem;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-top: 3px solid transparent;
-  cursor: pointer;
-}
-.tab[aria-selected="true"] { color: var(--ink); font-weight: 700; border-top-color: var(--ink); }
 .tab:focus-visible { outline: 3px solid #6b9cff; outline-offset: -3px; }
 
 /* ---------- Brain dump (Build 10) ---------- */

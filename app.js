@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "11.5", date: "2026-09-23" };
+const BUILD = { number: "12", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -270,17 +270,16 @@ function renderDashboard() {
     .toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   $("total").textContent = formatMoney(total, "LAK");
 
-  $("by-group").replaceChildren(
-    ...GROUPS.map((g) => summaryRow(g, sumWhere((e) => groupOf(e) === g)))
-  );
-
-  $("by-item").replaceChildren(
+  // Build 12: Need and Want are headings with their own totals, their items underneath
+  $("by-category").replaceChildren(
     ...GROUPS.flatMap((g) => {
-      const list = el("ul");
+      const head = el("div", "cat-head");
+      head.append(el("span", "", g), el("span", "row-amount", formatMoney(sumWhere((e) => groupOf(e) === g), "LAK")));
+      const list = el("ul", "cat-list");
       for (const c of CATEGORIES.filter((c) => c.group === g)) {
         list.append(summaryRow(c.name, sumWhere((e) => e.category === c.name)));
       }
-      return [el("h4", "", g), list];
+      return [head, list];
     })
   );
 
@@ -691,7 +690,6 @@ function applyPages(overlay = "") {
   for (const view of VIEWS) $(`${view}-page`).hidden = overlay !== "" || view !== currentView;
   $("settings-page").hidden = overlay !== "settings";
   $("diary-note-page").hidden = overlay !== "note";
-  $("tabbar").hidden = overlay !== "" || currentView !== "money";
   window.scrollTo(0, 0);
 }
 
