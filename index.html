@@ -82,24 +82,22 @@
     </div>
 
     <div id="panel-savings" role="tabpanel" aria-labelledby="tab-savings" hidden>
-      <h2>Savings</h2>
-      <p class="total">
-        <span class="small">Total saved</span>
-        <strong id="savings-total"></strong>
-      </p>
+      <div class="total-card">
+        <p class="total">
+          <strong id="savings-total"></strong>
+          <span class="small">total saved</span>
+        </p>
+      </div>
 
       <section>
-        <h3>Goals</h3>
         <div id="goals"></div>
       </section>
 
-      <button type="button" class="btn primary wide" id="open-saving">+ Add saving</button>
-
       <section>
-        <h3>Saving log</h3>
+        <h3 class="section-label">Saving log</h3>
         <ul id="saving-log"></ul>
         <p class="small" id="saving-log-empty" hidden>No savings yet.</p>
-        <button type="button" class="btn more" id="open-saving-log" hidden>View more log</button>
+        <button type="button" class="link-btn" id="open-saving-log" hidden>View more log</button>
       </section>
     </div>
 
@@ -419,7 +417,7 @@
   </dialog>
 
   <!-- Add / Edit saving pop-up -->
-  <dialog id="saving-dialog" aria-labelledby="saving-title">
+  <dialog class="sheet" id="saving-dialog" aria-labelledby="saving-title">
     <form id="saving-form" novalidate>
       <div class="dialog-head">
         <h2 id="saving-title">Add saving</h2>
@@ -433,19 +431,23 @@
       </fieldset>
 
       <div class="field">
-        <label class="label" for="saving-amount">Amount ($ USD)</label>
-        <input id="saving-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+        <label class="label" for="saving-amount">Amount</label>
+        <div class="amount-row">
+          <span class="currency-fixed">$ USD</span>
+          <input id="saving-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+        </div>
         <p class="error" id="saving-amount-error" hidden>Please enter an amount above 0.</p>
       </div>
 
-      <div class="field">
-        <label class="label" for="saving-date">Date</label>
-        <input id="saving-date" type="date">
-      </div>
-
-      <div class="field">
-        <label class="label" for="saving-note">Note <span class="small">(optional)</span></label>
-        <input id="saving-note" type="text" maxlength="120" autocomplete="off">
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="saving-date">Date</label>
+          <input id="saving-date" type="date">
+        </div>
+        <div class="field">
+          <label class="label" for="saving-note">Note <span class="small">(optional)</span></label>
+          <input id="saving-note" type="text" maxlength="120" autocomplete="off">
+        </div>
       </div>
 
       <p class="error" id="saving-error" hidden>Sorry, this couldn't be saved. Please try again.</p>

@@ -429,16 +429,79 @@ textarea {
 .item-btn input:focus-visible + span { outline: 3px solid #6b9cff; outline-offset: 2px; }
 
 /* ---------- Savings ---------- */
-.goal { padding: 12px 0; border-bottom: 1px solid var(--line); }
-.goal-name { font-weight: 600; }
-.bar {
-  height: 10px;
-  margin: 6px 0 4px;
-  border-radius: 5px;
-  background: var(--line);
-  overflow: hidden;
+/* ---------- Savings (Build 12.2 design pass) ---------- */
+.total-card {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 18px;
 }
-.bar-fill { height: 100%; background: var(--ink); }
+.goal-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.goal-text { min-width: 0; }
+.goal-name { font-size: 1.15rem; font-weight: 600; }
+.goal-amount { font-size: 1rem; }
+.jar { flex: 0 0 auto; }            /* lid on top of the body, filling from the bottom */
+.jar-lid {
+  width: 34px;
+  height: 9px;
+  margin: 0 auto;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+}
+.jar-body {
+  position: relative;
+  width: 62px;
+  height: 84px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 7px 7px 18px 18px;
+}
+.jar-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--ink);
+}
+.jar-percent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.jar-percent.on-fill { color: #fff; }
+.link-btn {
+  display: block;
+  margin-top: 12px;
+  padding: 8px 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.currency-fixed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  font-weight: 600;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
 .log-row.with-year { grid-template-columns: 6.2rem 1fr auto; }
 .log-row.with-year .log-date { white-space: nowrap; }
 .btn.more { display: block; width: 100%; margin-top: 12px; }
@@ -612,6 +675,12 @@ textarea {
   .total strong { font-size: 1.9rem; }
   .cat-head { margin-top: 12px; font-size: 1.05rem; }
   .fab { width: 52px; height: 52px; font-size: 1.7rem; }
+  .total-card { margin-bottom: 14px; padding: 12px; }
+  .goal-row { gap: 12px; padding: 10px 0; }
+  .goal-name { font-size: 1.05rem; }
+  .jar-lid { width: 22px; height: 6px; }
+  .jar-body { width: 40px; height: 54px; }
+  .jar-percent { font-size: 0.8rem; }
   .tile-sub { font-size: 0.8rem; }
 }
 .settings-head h1 { margin: 0; }

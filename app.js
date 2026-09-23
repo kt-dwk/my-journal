@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "12.1", date: "2026-09-23" };
+const BUILD = { number: "12.2", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -367,6 +367,10 @@ function setMode(id) {
 }
 
 $("open-add").addEventListener("click", () => {
+  if (!$("panel-savings").hidden) {   // Build 12.2: the same + adds a saving on the Savings tab
+    openAddSaving();
+    return;
+  }
   resetAddForm();
   setMode(null);
   addDialog.showModal();
@@ -2048,25 +2052,36 @@ function renderSavings() {
   const total = all.reduce((sum, s) => sum + s.amount, 0);
   $("savings-total").textContent = formatMoney(total, "USD");
 
+  // Build 12.2: a jar per goal, filling from the bottom with its percentage inside
   $("goals").replaceChildren(
     ...GOALS.map((g) => {
       const saved = all.filter((s) => s.goal === g.name).reduce((sum, s) => sum + s.amount, 0);
-      const card = el("div", "goal");
-      card.append(
+      const percent = Math.min(100, g.target ? Math.round((saved / g.target) * 100) : 0);
+
+      const jar = el("div", "jar");
+      jar.setAttribute("role", "progressbar");
+      jar.setAttribute("aria-label", `${g.name} progress`);
+      jar.setAttribute("aria-valuemin", "0");
+      jar.setAttribute("aria-valuemax", String(g.target));
+      jar.setAttribute("aria-valuenow", String(Math.min(saved, g.target)));
+      const body = el("div", "jar-body");
+      const fill = el("div", "jar-fill");
+      fill.style.height = `${percent}%`;
+      // the number reads white once the fill covers the middle of the jar, dark while it doesn't
+      const label = el("div", `jar-percent${percent >= 50 ? " on-fill" : ""}`, `${percent}%`);
+      body.append(fill, label);
+      jar.append(el("div", "jar-lid"), body);
+
+      const text = el("div", "goal-text");
+      text.append(
         el("div", "goal-name", g.name),
-        el("div", "", `${formatMoney(saved, "USD")} / ${formatMoney(g.target, "USD")}`)
+        el("div", "goal-amount", `${formatMoney(saved, "USD")} of ${formatMoney(g.target, "USD")}`),
+        el("div", "small", goalStatus(saved, g))
       );
-      const bar = el("div", "bar");
-      bar.setAttribute("role", "progressbar");
-      bar.setAttribute("aria-label", `${g.name} progress`);
-      bar.setAttribute("aria-valuemin", "0");
-      bar.setAttribute("aria-valuemax", String(g.target));
-      bar.setAttribute("aria-valuenow", String(Math.min(saved, g.target)));
-      const fill = el("div", "bar-fill");
-      fill.style.width = `${Math.min(100, g.target ? (saved / g.target) * 100 : 0)}%`;
-      bar.append(fill);
-      card.append(bar, el("div", "small", `${formatMoney(g.monthly, "USD")} a month`), el("div", "small", goalStatus(saved, g)));
-      return card;
+
+      const row = el("div", "goal-row");
+      row.append(jar, text);
+      return row;
     })
   );
 
@@ -2087,7 +2102,7 @@ function goalStatus(saved, goal) {
   const today = new Date();
   const finish = new Date(today.getFullYear(), today.getMonth() + months, 1)
     .toLocaleDateString("en-US", { month: "short", year: "numeric" });
-  return `${months} ${months === 1 ? "month" : "months"} left · est. ${finish}`;
+  return `${months} ${months === 1 ? "month" : "months"} left · about ${finish}`;
 }
 
 function savingRow(s) {
@@ -2168,11 +2183,11 @@ function setSavingMode(id) {
   toggleConfirm("saving-delete-confirm", "saving-form-actions", false);
 }
 
-$("open-saving").addEventListener("click", () => {
+function openAddSaving() {
   resetSavingForm();
   setSavingMode(null);
   savingDialog.showModal();
-});
+}
 
 function openSavingEdit(id) {
   let saving;
