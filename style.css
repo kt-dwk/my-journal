@@ -423,10 +423,11 @@ textarea {
 #home-page {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;   /* the height the phone gives the app right now */
+  min-height: 100svh;   /* the height left when the phone shows its own bars, so nothing shifts after a refresh */
   padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 12px) calc(12px + env(safe-area-inset-bottom));
 }
 .home-top { display: flex; justify-content: flex-end; }
+.brain-button { margin-top: 6px; }
 .brain-button {              /* round, no label, under ⚙ for the right thumb */
   width: 64px;
   height: 64px;
@@ -527,10 +528,10 @@ textarea {
   .settings-head { padding-block: 2px; }
   .app-head h1,
   .settings-head h1 { font-size: 1.25rem; }
-  .icon-btn { width: 40px; height: 40px; font-size: 1.15rem; }
+  .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
   .btn.back { padding: 8px 10px; }
   #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 8px) calc(10px + env(safe-area-inset-bottom)); }
-  .brain-button { width: 50px; height: 50px; font-size: 1.4rem; }
+  .brain-button { width: 56px; height: 56px; margin-top: 10px; font-size: 1.5rem; } /* further from ⚙, so they are not confused */
   .sticky-note { width: min(190px, 30vh); height: min(190px, 30vh); padding: 12px; } /* square on the cover screen */
   .daily-line { font-size: 1rem; }
   .tile-dock { height: min(210px, 34vh); gap: 12px; padding-top: 12px; }
