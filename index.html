@@ -17,20 +17,29 @@
       <h1>My Journal</h1>
       <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
     </header>
-    <button type="button" class="brain-bar" id="tile-brain">🧠 Brain dump</button>
-    <div class="sticky-note">
-      <p class="daily-line" id="daily-line"></p>
+    <div class="home-top">
+      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump">🧠</button>
     </div>
-    <button type="button" class="tile" id="tile-money">
-      <span class="tile-name">💰 My Money</span>
-    </button>
-    <button type="button" class="tile" id="tile-skin">
-      <span class="tile-name">🧴 My Skin</span>
-      <span class="tile-sub" id="skin-tile-tonight"></span>
-    </button>
-    <button type="button" class="tile" id="tile-diary">
-      <span class="tile-name">📓 My Diary</span>
-    </button>
+    <div class="note-space">
+      <div class="sticky-note">
+        <p class="daily-line" id="daily-line"></p>
+      </div>
+    </div>
+    <div class="tile-dock">
+      <button type="button" class="tile" id="tile-money">
+        <span class="tile-name">💰 Money</span>
+      </button>
+      <button type="button" class="tile" id="tile-skin">
+        <span class="tile-name">🧴 Skin</span>
+        <span class="tile-sub" id="skin-tile-tonight"></span>
+      </button>
+      <button type="button" class="tile" id="tile-diary">
+        <span class="tile-name">📓 Diary</span>
+      </button>
+      <button type="button" class="tile" id="tile-habit">
+        <span class="tile-name">🌱 Habit</span>
+      </button>
+    </div>
   </div>
 
   <!-- My Money -->
@@ -96,7 +105,20 @@
     </div>
   </main>
 
-  <!-- My Skin (placeholder until Build 7) -->
+  <!-- Habit (placeholder until the section is planned) -->
+  <div class="page" id="habit-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>Habit</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+    </header>
+    <p>Coming in a later build.</p>
+    <p class="small">We'll plan this section together first: what counts as a habit, and how the week is shown.</p>
+  </div>
+
+  <!-- My Skin -->
   <div class="page" id="skin-page" hidden>
     <header class="app-head">
       <button type="button" class="icon-btn go-home" aria-label="Home">

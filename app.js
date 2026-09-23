@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "10.5", date: "2026-09-20" };
+const BUILD = { number: "11", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -682,7 +682,7 @@ function dailyLineFor(dateISO) {
 
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
-const VIEWS = ["home", "money", "skin", "diary", "brain"];
+const VIEWS = ["home", "money", "skin", "diary", "brain", "habit"];
 const SESSION_VIEW_KEY = "myjournal.session-view";
 let currentView = "home";
 
@@ -699,7 +699,7 @@ function renderHome() {
   const today = todayISO();
   $("daily-line").textContent = dailyLineFor(today);
   const done = loadSkin()[today] === "done";
-  $("skin-tile-tonight").textContent = `Tonight: ${skinNightFor(today)}${done ? " ✓" : ""}`;
+  $("skin-tile-tonight").textContent = `${skinNightFor(today)}${done ? " ✓" : ""}`; // the tile is narrower now, so no "Tonight:" prefix
 }
 
 function showView(view, { push = false } = {}) {
@@ -734,6 +734,7 @@ $("tile-money").addEventListener("click", () => {
 $("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
 $("tile-diary").addEventListener("click", () => showView("diary", { push: true }));
 $("tile-brain").addEventListener("click", () => showView("brain", { push: true }));
+$("tile-habit").addEventListener("click", () => showView("habit", { push: true }));
 for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
 
 // The skin tile updates after midnight when the app comes back into view

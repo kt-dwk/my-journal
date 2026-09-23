@@ -6,7 +6,7 @@
   --bg: #fafafa;
   --card: #fff;
   --error: #b3261e;
-  --bar-height: 56px;      /* the pinned top bar (Build 10.4) */
+  --bar-height: 52px;      /* the pinned top bar (Build 10.4, slimmer in 11) */
   color-scheme: light;
 }
 
@@ -418,26 +418,60 @@ textarea {
 .app-head h1 { margin: 0; flex: 1; }
 .go-home svg { display: block; margin: auto; }
 
-/* Sticky note holding the daily message (plain placeholder, design pass later) */
+/* ---------- Home (Build 11 design pass): nothing scrolls ---------- */
+#home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-block: calc(var(--bar-height) + 12px) 16px;
+}
+.home-top { display: flex; justify-content: flex-end; }
+.brain-button {              /* round, no label, under ⚙ for the right thumb */
+  width: 64px;
+  height: 64px;
+  font-size: 1.8rem;
+  line-height: 1;
+  background: #eef3fd;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.brain-button:active { background: #dbe6fb; }
+.brain-button:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.note-space {                /* the note sits centred in whatever is left */
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
 .sticky-note {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 180px;          /* square, like a real 76 mm sticky note */
-  aspect-ratio: 1;
-  margin: 4px auto 22px;
-  padding: 16px;
+  width: 100%;
+  height: 230px;
+  padding: 18px;
   text-align: center;
   background: #fdf3bf;
+  border: 2px solid #d9cf8a;
   border-radius: 2px;
   box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.15);
-  transform: rotate(-1.5deg);
+  transform: rotate(-1deg);
 }
 .daily-line {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.35rem;
   line-height: 1.4;
   color: var(--ink);
+}
+.tile-dock {                 /* four tiles in reach of the thumb */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: 380px;
+  padding-top: 16px;
+  border-top: 2px dashed var(--line);
 }
 
 /* Home page tiles */
@@ -448,26 +482,29 @@ textarea {
   gap: 4px;
   width: 100%;
   min-height: 88px;
-  margin-bottom: 12px;
   padding: 16px 18px;
   text-align: left;
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
   cursor: pointer;
 }
 .tile:active { background: var(--line); }
 .tile:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
-.tile-name { font-size: 1.25rem; font-weight: 600; }
-.tile-sub { font-size: 0.95rem; color: var(--muted); }
-.icon-btn {
+.tile-name { font-size: 1.2rem; font-weight: 600; }
+.tile-sub { font-size: 0.85rem; color: var(--muted); }
+.icon-btn {                  /* Build 11: circled, as in the design pass */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   line-height: 1;
+  color: var(--ink);
   background: none;
-  border: 0;
-  border-radius: 8px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
   cursor: pointer;
 }
 .icon-btn:focus-visible { outline: 3px solid #6b9cff; }
@@ -480,13 +517,21 @@ textarea {
 }
 /* Short screens (the cover screen): a slimmer bar, so more of the page shows */
 @media (max-height: 480px) {
-  :root { --bar-height: 44px; }
+  :root { --bar-height: 42px; }
   .app-head,
   .settings-head { padding-block: 2px; }
   .app-head h1,
   .settings-head h1 { font-size: 1.25rem; }
-  .icon-btn { width: 40px; height: 40px; font-size: 1.35rem; }
+  .icon-btn { width: 40px; height: 40px; font-size: 1.15rem; }
   .btn.back { padding: 8px 10px; }
+  #home-page { padding-block: calc(var(--bar-height) + 8px) 12px; }
+  .brain-button { width: 50px; height: 50px; font-size: 1.4rem; }
+  .sticky-note { width: 132px; height: 132px; padding: 12px; }
+  .daily-line { font-size: 1rem; }
+  .tile-dock { height: 150px; gap: 12px; padding-top: 12px; }
+  .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
+  .tile-name { font-size: 1rem; }
+  .tile-sub { font-size: 0.8rem; }
 }
 .settings-head h1 { margin: 0; }
 .btn.back { padding: 10px 12px; }
@@ -583,23 +628,6 @@ textarea {
 .tab:focus-visible { outline: 3px solid #6b9cff; outline-offset: -3px; }
 
 /* ---------- Brain dump (Build 10) ---------- */
-.brain-bar {                 /* half width, on the right under ⚙, within reach of the right thumb */
-  display: block;
-  width: 50%;
-  min-height: 44px;
-  margin: -4px 0 14px auto;
-  padding: 10px 14px;
-  font-size: 1rem;
-  font-weight: 600;
-  text-align: left;
-  color: var(--ink);
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  cursor: pointer;
-}
-.brain-bar:active { background: var(--line); }
-.brain-bar:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
 .brain-tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;
