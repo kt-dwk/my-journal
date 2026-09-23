@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "11.3", date: "2026-09-23" };
+const BUILD = { number: "11.4", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -2256,16 +2256,9 @@ renderSavings();
 $("build-info").textContent = `My Journal · Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
 
 // Build 11.1: the screen's own numbers, so a layout question can be answered from the phone
-function showScreenInfo() {
-  const height = window.innerHeight;
-  const compact = window.matchMedia("(max-height: 480px), (min-aspect-ratio: 3 / 4)").matches;
-  $("screen-info").textContent = `Screen ${Math.round(window.innerWidth)} × ${Math.round(height)} · ${compact ? "cover" : "main"} layout`;
-}
-showScreenInfo();
-window.addEventListener("resize", showScreenInfo);
-window.addEventListener("orientationchange", showScreenInfo);
-window.addEventListener("pageshow", showScreenInfo);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) showScreenInfo(); });
+// Build 11.4: after a refresh the app starts at the top, instead of the phone putting back the old scroll position
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+window.addEventListener("pageshow", () => window.scrollTo(0, 0));
 
 let startTab = "expenses";
 try {
