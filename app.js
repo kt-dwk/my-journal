@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "12.4", date: "2026-09-23" };
+const BUILD = { number: "12.5", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1784,6 +1784,21 @@ function fillRateInputs() {
   }
 }
 
+// Build 12.5 (temporary): what the phone really gives the app, so the cover layout can be sized exactly
+function showScreenNumbers() {
+  const probe = getComputedStyle($("inset-probe"));
+  const inset = (side) => Math.round(parseFloat(probe.getPropertyValue(`padding-${side}`)) || 0);
+  const view = window.visualViewport;
+  const round = (n) => Math.round(n);
+  $("screen-info").textContent = [
+    `win ${round(innerWidth)}×${round(innerHeight)}`,
+    view ? `view ${round(view.width)}×${round(view.height)}` : "",
+    `screen ${round(screen.width)}×${round(screen.height)}`,
+    `dpr ${window.devicePixelRatio}`,
+    `safe ${inset("top")}/${inset("bottom")}`,
+  ].filter(Boolean).join(" · ");
+}
+
 // Build 12.4: the cover screen uses the wireframe's shorter labels
 function applyCoverWording() {
   const short = onCoverScreen();
@@ -1798,6 +1813,7 @@ function openSettings() {
   fillRateInputs();
   showLastBackup();
   applyCoverWording();
+  showScreenNumbers();
   for (const id of ["rates-error", "rates-status", "backup-status"]) $(id).hidden = true;
   cancelRestore();
   applyPages("settings");
@@ -2319,7 +2335,9 @@ COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes h
   renderDashboard();
   renderSavings();
   applyCoverWording();
+  showScreenNumbers();
 });
+window.addEventListener("resize", showScreenNumbers);
 
 $("tab-expenses").addEventListener("click", () => showTab("expenses"));
 $("tab-savings").addEventListener("click", () => showTab("savings"));

@@ -837,3 +837,11 @@ textarea {
 #brain-page-flash { margin: 0 0 8px; }
 .saved-note.is-problem { color: var(--error); }
 
+
+/* Build 12.5 (temporary): reads the space the phone reserves at the edges */
+#inset-probe {
+  height: 0;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+#screen-info { margin: 4px 0 0; font-size: 0.72rem; }
