@@ -540,6 +540,7 @@ textarea {
 .tile-dock {                 /* four tiles in reach of the thumb */
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;  /* equal rows, so the Skin tile's second line doesn't make it taller */
   gap: 16px;
   height: min(380px, 42vh);
   padding-top: 16px;
