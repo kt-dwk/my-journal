@@ -161,6 +161,16 @@ dialog.sheet {               /* the add form rises from the bottom, above the ke
   border-radius: 20px 20px 0 0;
 }
 dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
+dialog.sheet {
+  max-height: calc(100svh / var(--cover-zoom, 1));
+  overflow-y: auto;      /* a short screen scrolls the form … */
+}
+.sheet .actions {
+  position: sticky;      /* … while Cancel and Save stay in reach */
+  bottom: 0;
+  padding: 8px 0 0;
+  background: var(--card);
+}
 .sheet-pair { display: flex; gap: 12px; }
 .sheet-pair .field { flex: 1; }
 .sheet .actions .btn.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
@@ -257,7 +267,7 @@ textarea {
   border-radius: 8px;
   resize: vertical;
 }
-.note-text { min-height: 45vh; }
+.note-text { min-height: calc(45vh / var(--cover-zoom, 1)); }
 
 /* ---------- Formatting toolbar (Build 9.6) ---------- */
 /* Build 9.7: pinned to the bottom, riding just above the keyboard, so Android's Cut/Copy menu can't cover it */
@@ -554,7 +564,7 @@ textarea {
 #home-page {
   display: flex;
   flex-direction: column;
-  min-height: 100svh;   /* the height left when the phone shows its own bars, so nothing shifts after a refresh */
+  min-height: calc(100svh / var(--cover-zoom, 1));   /* the height left when the phone shows its own bars, so nothing shifts after a refresh */
   padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 12px) calc(12px + env(safe-area-inset-bottom));
 }
 .home-top { display: flex; justify-content: flex-end; }
@@ -655,6 +665,10 @@ textarea {
 /* Build 11.1: the cover screen is nearly square (1048 × 948), the main screen is tall and narrow (1080 × 2520).
    Shape is the reliable test: a screen that isn't tall and narrow gets the compact layout. */
 @media (max-height: 480px), (min-aspect-ratio: 3 / 4) {
+  /* Build 12.7: the phone hands this screen a 598×530 layout and scales it onto a small panel,
+     so everything is drawn about half size. One zoom puts it back to a comfortable size. */
+  :root { --cover-zoom: 1.6; }
+  body { zoom: var(--cover-zoom); }
   :root { --bar-height: 42px; }
   .app-head,
   .settings-head { padding-block: 2px; }
@@ -662,20 +676,20 @@ textarea {
   .settings-head h1 { font-size: 1.25rem; }
   .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
   .btn.back { padding: 8px 10px; }
-  #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 8px) calc(10px + env(safe-area-inset-bottom)); }
-  .brain-button { width: 50px; height: 50px; margin-top: 8px; font-size: 1.35rem; } /* further from ⚙, so they are not confused */
-  .sticky-note { width: min(190px, 33vh); height: min(190px, 33vh); padding: 8px; } /* square on the cover screen */
-  .daily-line { font-size: clamp(0.7rem, 3.4vh, 1rem); line-height: 1.3; }   /* the line always fits inside the note */
-  .tile-dock { height: min(210px, 33vh); gap: 10px; padding-top: 10px; }
+  #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 6px) calc(8px + env(safe-area-inset-bottom)); }
+  .brain-button { width: 46px; height: 46px; margin-top: 4px; font-size: 1.25rem; } /* further from ⚙, so they are not confused */
+  .sticky-note { width: min(190px, 28vh / var(--cover-zoom)); height: min(190px, 28vh / var(--cover-zoom)); padding: 8px; } /* square on the cover screen */
+  .daily-line { font-size: clamp(0.65rem, 2.6vh / var(--cover-zoom), 1rem); line-height: 1.3; }   /* the line always fits inside the note */
+  .tile-dock { height: min(210px, 30vh / var(--cover-zoom)); gap: 8px; padding-top: 8px; }
   .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
   .tile-name { font-size: 0.95rem; }
-  .switch { margin-bottom: 8px; }
-  section { margin-bottom: 12px; }
+  .switch { margin-bottom: 6px; }
+  section { margin-bottom: 6px; }
   .switch-btn { min-height: 38px; font-size: 0.95rem; }
-  .month-card { margin-bottom: 10px; }
+  .month-card { margin-bottom: 8px; }
   .total strong { font-size: 1.9rem; }
-  .cat-head { margin-top: 8px; padding-bottom: 4px; font-size: 1rem; }
-  .row { padding: 5px 0; }
+  .cat-head { margin-top: 6px; padding-bottom: 3px; font-size: 1rem; }
+  .row { padding: 4px 0; }
   .fab { width: 52px; height: 52px; font-size: 1.7rem; }
   /* Build 12.3: on the cover screen both cards are a single row */
   .month-card { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
@@ -689,21 +703,22 @@ textarea {
   .total-card .total { display: contents; }
   .total-card .total strong { font-size: 1.5rem; }
   .total-card .total .small { order: -1; }
-  .total-card { margin-bottom: 10px; }
-  .goal-row { gap: 10px; padding: 6px 0; }
-  #panel-savings { padding-bottom: 68px; }   /* the last goal clears the floating + */
-  .goal-name { font-size: 1rem; }
-  .goal-amount { font-size: 0.9rem; }
-  .jar-lid { width: 20px; height: 5px; }
-  .jar-body { width: 34px; height: 46px; }
+  .total-card { margin-bottom: 8px; }
+  .goal-row { gap: 10px; padding: 4px 0; }
+  #panel-savings { padding-bottom: 56px; }   /* the last goal clears the floating + */
+  .goal-name { font-size: 0.95rem; }
+  .goal-amount { font-size: 0.85rem; }
+  .jar-lid { width: 18px; height: 5px; }
+  .jar-body { width: 30px; height: 40px; }
   .jar-percent { font-size: 0.72rem; }
   /* Settings on a 354 px tall screen: trim the rows so Backup and Restore stay above the fold */
-  .rate-row { padding: 4px 0; }
-  .rate-row input { min-height: 38px; }
-  .rate-save { margin-top: 6px; }
-  .section-label { margin-bottom: 6px; }
-  .settings-actions .btn { min-height: 44px; }
-  .btn { min-height: 40px; }
+  .page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }   /* less air under the bar */
+  .rate-row { padding: 2px 0; }
+  .rate-row input { min-height: 32px; }
+  .rate-save { margin-top: 2px; }
+  .section-label { margin-bottom: 3px; font-size: 0.72rem; }
+  .settings-actions .btn { min-height: 38px; }
+  .btn { min-height: 38px; }
   .build-foot { margin-top: 10px; padding-top: 10px; }
   .tile-sub { font-size: 0.75rem; }
 }
@@ -744,7 +759,7 @@ textarea {
 #settings-page {
   display: flex;
   flex-direction: column;
-  min-height: 100svh;
+  min-height: calc(100svh / var(--cover-zoom, 1));
   /* no room needed for My Money's tab bar here, so build info can sit at the bottom edge */
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }

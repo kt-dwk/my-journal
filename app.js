@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "12.6", date: "2026-09-23" };
+const BUILD = { number: "12.7", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1784,18 +1784,6 @@ function fillRateInputs() {
   }
 }
 
-// Build 12.6: the cover screen hands the page a window wider than the display itself (598 against 400),
-// so Chrome shrinks everything to fit. Laying out at the display's real width keeps things their proper size.
-const VIEWPORT_BASE = "initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content";
-function fitViewport() {
-  const meta = document.querySelector('meta[name="viewport"]');
-  if (!meta || !window.screen || !screen.width) return;
-  const tooWide = window.innerWidth > screen.width * 1.15;   // the window can't really be wider than the screen
-  const wanted = `width=${tooWide ? Math.round(screen.width) : "device-width"}, ${VIEWPORT_BASE}`;
-  if (meta.content !== wanted) meta.content = wanted;
-}
-fitViewport();
-
 // Build 12.5 (temporary): what the phone really gives the app, so the cover layout can be sized exactly
 function showScreenNumbers() {
   const probe = getComputedStyle($("inset-probe"));
@@ -2344,13 +2332,12 @@ function showTab(name) {
 }
 
 COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
-  fitViewport();
   renderDashboard();
   renderSavings();
   applyCoverWording();
   showScreenNumbers();
 });
-window.addEventListener("resize", () => { fitViewport(); showScreenNumbers(); });
+window.addEventListener("resize", showScreenNumbers);
 
 $("tab-expenses").addEventListener("click", () => showTab("expenses"));
 $("tab-savings").addEventListener("click", () => showTab("savings"));
