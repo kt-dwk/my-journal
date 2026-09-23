@@ -320,24 +320,26 @@
     </header>
 
     <section>
-      <h3>Exchange rates</h3>
+      <h3 class="section-label">Exchange rates</h3>
       <form id="rates-form" novalidate>
-        <div class="field">
+        <div class="rate-row">
           <label class="label" for="rate-USD">1 USD = ? LAK</label>
-          <input id="rate-USD" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 22,500">
+          <input id="rate-USD" type="text" inputmode="decimal" autocomplete="off" placeholder="22,500">
         </div>
-        <div class="field">
+        <div class="rate-row">
           <label class="label" for="rate-THB">1 THB = ? LAK</label>
-          <input id="rate-THB" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 690">
+          <input id="rate-THB" type="text" inputmode="decimal" autocomplete="off" placeholder="690">
         </div>
         <p class="error" id="rates-error" hidden>Both rates must be above 0.</p>
-        <button type="submit" class="btn primary full">Save rates</button>
+        <div class="rate-save">
+          <button type="submit" class="btn accent">Save rates</button>
+        </div>
         <p class="status" id="rates-status" role="status" hidden></p>
       </form>
     </section>
 
     <section>
-      <h3>Backup &amp; Restore</h3>
+      <h3 class="section-label">Backup &amp; Restore</h3>
       <div class="settings-actions" id="backup-actions">
         <button type="button" class="btn" id="backup-btn">Backup</button>
         <button type="button" class="btn" id="restore-btn">Restore</button>
@@ -351,13 +353,13 @@
           <button type="button" class="btn danger-fill" id="restore-yes">Yes, restore</button>
         </div>
       </div>
+      <p class="small" id="last-backup"></p>
       <p class="status" id="backup-status" role="status" hidden></p>
     </section>
 
-    <section>
-      <h3>Build info</h3>
+    <div class="build-foot">
       <p class="small" id="build-info"></p>
-    </section>
+    </div>
   </div>
 
   <nav class="tabbar" id="tabbar" role="tablist" aria-label="My Money">

@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "11.4", date: "2026-09-23" };
+const BUILD = { number: "11.5", date: "2026-09-23" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1186,6 +1186,7 @@ $("note-delete-yes").addEventListener("click", () => {
 const NOTE_MAX_CHARS = 10000;
 const DEFAULT_TEXT_HEX = "#222222";            // the normal ink colour
 const COLOURS_KEY = "myjournal.colors";
+const LAST_BACKUP_KEY = "myjournal.lastbackup";  // Build 11.5: shown in Settings, not part of the backup
 const COLOUR_DEFAULTS = {
   text: ["#e53935", "#1e88e5", "#43a047", "#8e24aa", "#fb8c00"],       // red, blue, green, purple, orange
   highlight: ["#fff176", "#a5d6a7", "#f8bbd0", "#90caf9", "#ffcc80"],  // yellow, green, pink, blue, orange
@@ -1769,6 +1770,7 @@ function fillRateInputs() {
 
 function openSettings() {
   fillRateInputs();
+  showLastBackup();
   for (const id of ["rates-error", "rates-status", "backup-status"]) $(id).hidden = true;
   cancelRestore();
   applyPages("settings");
@@ -1834,6 +1836,31 @@ $("rates-form").addEventListener("submit", (event) => {
 
 // Backup: one file with everything, shared through the phone's Share menu (or downloaded)
 
+function rememberBackupTime() {
+  try {
+    localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+  } catch (err) {
+    console.error(err);
+  }
+  showLastBackup();
+}
+
+function showLastBackup() {
+  let when = null;
+  try {
+    when = localStorage.getItem(LAST_BACKUP_KEY);
+  } catch (err) {
+    console.error(err);
+  }
+  if (!when) {
+    $("last-backup").textContent = "No backup yet";
+    return;
+  }
+  const made = new Date(when);
+  const time = made.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  $("last-backup").textContent = `Last backup: ${shortDate(when.slice(0, 10), true)}, ${time}`;
+}
+
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
@@ -1880,6 +1907,7 @@ $("backup-btn").addEventListener("click", async () => {
   if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
     try {
       await navigator.share({ files: [shareFile], title: "My Journal backup" });
+      rememberBackupTime();
       showSettingsStatus("backup-status", `Backup shared ✓ (${backupSummary(backup)})`);
       return;
     } catch (err) {
@@ -1900,6 +1928,7 @@ $("backup-btn").addEventListener("click", async () => {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
+  rememberBackupTime();
   showSettingsStatus("backup-status", `Sharing isn't available here, so the backup was saved to Downloads ✓ (${backupSummary(backup)})`);
 });
 

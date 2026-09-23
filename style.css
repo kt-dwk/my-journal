@@ -7,6 +7,7 @@
   --card: #fff;
   --error: #b3261e;
   --bar-height: 52px;      /* the pinned top bar (Build 10.4, slimmer in 11) */
+  --accent: #2a5fd6;       /* one blue, only for actions (design pass) */
   color-scheme: light;
 }
 
@@ -542,8 +543,44 @@ textarea {
 .settings-head h1 { margin: 0; }
 .btn.back { padding: 10px 12px; }
 .btn.full { display: block; width: 100%; }
-.settings-actions { display: flex; gap: 8px; }
-.settings-actions .btn { flex: 1; }
+/* ---------- Settings (Build 11.5 design pass) ---------- */
+.section-label {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rate-row {                  /* label on the left, field on the right */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.rate-row .label { margin: 0; }
+.rate-row input { width: 140px; text-align: right; }
+.rate-save { display: flex; justify-content: flex-end; margin-top: 12px; }
+.btn.accent {
+  color: var(--accent);
+  background: var(--card);
+  border: 2px solid var(--accent);
+  font-weight: 600;
+}
+.btn.accent:active { background: #eef3fd; }
+.settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.settings-actions .btn { min-height: 56px; }
+#last-backup { margin: 10px 0 0; }
+.build-foot { margin-top: auto; padding-top: 24px; }
+#settings-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  /* no room needed for My Money's tab bar here, so build info can sit at the bottom edge */
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
 .status { margin: 8px 0 0; font-size: 0.9rem; color: #2e7d32; }
 .status.is-problem { color: var(--error); }
 
