@@ -675,7 +675,9 @@ textarea {
   .app-head h1,
   .settings-head h1 { font-size: 1.25rem; }
   .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
-  .btn.back { padding: 8px 10px; }
+  .btn.back { width: 40px; min-height: 40px; font-size: 1.35rem; }
+  /* Build 12.9: on the cover screen the Skin tile puts tonight's step beside the name */
+  .tile { flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 6px) calc(8px + env(safe-area-inset-bottom)); }
   .brain-button { width: 46px; height: 46px; margin-top: 4px; font-size: 1.25rem; } /* further from ⚙, so they are not confused */
   .sticky-note { width: min(190px, 28vh / var(--cover-zoom)); height: min(190px, 28vh / var(--cover-zoom)); padding: 8px; } /* square on the cover screen */
@@ -754,7 +756,18 @@ textarea {
   .tile-sub { font-size: 0.75rem; }
 }
 .settings-head h1 { margin: 0; }
-.btn.back { padding: 10px 12px; }
+.btn.back {                  /* Build 12.9: a bare arrow, no box */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+}
 .btn.full { display: block; width: 100%; }
 /* ---------- Settings (Build 11.5 design pass) ---------- */
 .section-label {
@@ -895,11 +908,3 @@ textarea {
 #brain-page-flash { margin: 0 0 8px; }
 .saved-note.is-problem { color: var(--error); }
 
-
-/* Build 12.5 (temporary): reads the space the phone reserves at the edges */
-#inset-probe {
-  height: 0;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-#screen-info { margin: 4px 0 0; font-size: 0.72rem; }
