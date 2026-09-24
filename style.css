@@ -713,8 +713,8 @@ textarea {
 
   /* Build 12.3: on the cover screen both cards are a single row */
   .month-card { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
-  .month-nav { display: contents; }
-  .month-nav h2 { flex: 0 0 auto; text-align: left; }
+  .month-card .month-nav { display: contents; }
+  .month-card .month-nav h2 { flex: 0 0 auto; text-align: left; }
   .month-card .total { order: 3; flex: 1; margin: 0; text-align: right; }
   .month-card .total strong { font-size: 1.5rem; }
   .month-card .total .small { display: none; }
@@ -726,7 +726,7 @@ textarea {
   .total-card { margin-bottom: 8px; }
   /* Build 12.8: the month bar matches the switch above it, and the arrows lose their boxes */
   .month-card { min-height: 38px; padding: 0 8px; }
-  .month-nav h2 { font-size: 0.85rem; }
+  .month-card .month-nav h2 { font-size: 0.85rem; }
   .month-card .total strong { font-size: 1.1rem; }
   .month-arrow {
     width: 34px;
@@ -754,6 +754,7 @@ textarea {
   .btn { min-height: 38px; }
   .build-foot { margin-top: 10px; padding-top: 10px; }
   .tile-sub { font-size: 0.75rem; }
+
 }
 .settings-head h1 { margin: 0; }
 .btn.back {                  /* Build 12.9: a bare arrow, no box */
@@ -811,30 +812,37 @@ textarea {
 .status.is-problem { color: var(--error); }
 
 /* ---------- My Skin ---------- */
+/* Build 13: the card lies sideways — the bottle on the left, tonight's night on the right */
 .tonight {
-  margin-bottom: 24px;
+  display: flex;
+  align-items: stretch;      /* the bottle's box is as tall as the card */
+  gap: 14px;
+  margin-bottom: 20px;
   padding: 14px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 14px;
 }
-.tonight-label {
-  margin: 4px 0 0;
-  font-size: 1.15rem;
-  font-weight: 600;
-  line-height: 1.2;
+.tonight-icon {
+  flex: 0 0 44%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 14px 0;
+  font-size: 3rem;
+  line-height: 1;
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
+.tonight-body { flex: 1; min-width: 0; text-align: center; }
 .tonight-name {
-  margin: 0 0 10px;
+  margin: 2px 0 10px;
   font-size: 1.8rem;
   font-weight: 700;
   line-height: 1.1;
 }
-.tonight-icon {
-  margin: 0 0 14px;
-  font-size: 2rem;
-  line-height: 1;
-}
+.cal-key { margin-top: 10px; }
 
 .cal-head, .cal-grid {
   display: grid;
@@ -870,6 +878,20 @@ textarea {
 .cal-cell.is-done .cal-mark { color: #2e7d32; }
 .cal-cell.is-off { color: #bbb; background: none; cursor: default; }
 .cal-cell:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+
+/* Build 13: My Skin on the cover screen — the card, this week and the key, all above the fold.
+   These sit after the rules above on purpose: the cover block higher up would lose to them. */
+@media (max-height: 480px), (min-aspect-ratio: 3 / 4) {
+  #skin-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar on this page */
+  .tonight { gap: 10px; margin-bottom: 8px; padding: 8px 10px; }
+  .tonight-icon { padding: 4px 0; font-size: 2.4rem; border-radius: 10px; }
+  .tonight-body .small { margin: 0; }
+  .tonight-name { margin: 2px 0 6px; font-size: 1.3rem; }
+  #skin-done-actions .btn { min-height: 34px; }
+  #skin-month-nav, #skin-week-nav { margin-bottom: 2px; }
+  .cal-cell { min-height: 40px; }
+  .cal-key { margin: 6px 0 0; font-size: 0.7rem; }
+}
 
 .tab:focus-visible { outline: 3px solid #6b9cff; outline-offset: -3px; }
 

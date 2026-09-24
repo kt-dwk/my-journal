@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "12.9", date: "2026-09-24" };
+const BUILD = { number: "13", date: "2026-09-24" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -518,6 +518,18 @@ function daysBetween(fromISO, toISO) {
   return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
 }
 
+function addDays(iso, days) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const moved = new Date(y, m - 1, d + days);
+  return isoDate(moved.getFullYear(), moved.getMonth(), moved.getDate());
+}
+
+// Weeks start on Monday here, the same as the calendar header
+function mondayOf(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return addDays(iso, -((new Date(y, m - 1, d).getDay() + 6) % 7));
+}
+
 // The cycle follows the calendar, and "tonight" ends at midnight (local date)
 function skinNightIndex(dateISO) {
   const n = SKIN_CYCLE.length;
@@ -561,24 +573,40 @@ function setSkinDay(dateISO, done) {
 
 let skinViewYear = now.getFullYear();
 let skinViewMonth = now.getMonth();
+let skinWeekAnchor = todayISO();   // which week the cover screen is showing
 
 function isoDate(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function renderSkin() {
-  const map = loadSkin();
-  const today = todayISO();
+function weekdayShort(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { weekday: "short" });
+}
 
-  // Tonight card
-  $("skin-today").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-  $("skin-tonight").textContent = skinNightFor(today);
-  const doneTonight = map[today] === "done";
-  $("skin-done-btn").textContent = doneTonight ? "✓ Done" : "Done";
-  $("skin-done-btn").classList.toggle("primary", doneTonight);
-  toggleConfirm("skin-undo-confirm", "skin-done-actions", false);
+// One day of the calendar, used by both the month grid and the cover screen's week
+function dayCell(dateISO, map, today) {
+  const done = map[dateISO] === "done";
+  const canTap = dateISO <= today && dateISO >= SKIN_START.date;
+  const cell = el("button", "cal-cell");
+  cell.type = "button";
+  cell.append(
+    el("span", "cal-day", String(Number(dateISO.slice(8)))),
+    el("span", "cal-letter", skinLetterFor(dateISO)),
+    el("span", "cal-mark", done ? "✓" : "")
+  );
+  if (dateISO === today) cell.classList.add("is-today");
+  if (done) cell.classList.add("is-done");
+  if (canTap) cell.addEventListener("click", () => openSkinDay(dateISO));
+  else {
+    cell.classList.add("is-off");
+    cell.disabled = true;
+  }
+  cell.setAttribute("aria-label", `${shortDate(dateISO, true)}, ${skinNightFor(dateISO)}${done ? ", done" : ""}`);
+  return cell;
+}
 
-  // Month calendar
+function renderSkinMonth(map, today) {
   $("skin-month-label").textContent = new Date(skinViewYear, skinViewMonth, 1)
     .toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const daysInMonth = new Date(skinViewYear, skinViewMonth + 1, 0).getDate();
@@ -586,27 +614,43 @@ function renderSkin() {
   const cells = [];
   for (let i = 0; i < blanks; i++) cells.push(el("span", "cal-cell cal-blank"));
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = isoDate(skinViewYear, skinViewMonth, day);
-    const done = map[date] === "done";
-    const canTap = date <= today && date >= SKIN_START.date;
-    const cell = el("button", "cal-cell");
-    cell.type = "button";
-    cell.append(
-      el("span", "cal-day", String(day)),
-      el("span", "cal-letter", skinLetterFor(date)),
-      el("span", "cal-mark", done ? "✓" : "")
-    );
-    if (date === today) cell.classList.add("is-today");
-    if (done) cell.classList.add("is-done");
-    if (canTap) cell.addEventListener("click", () => openSkinDay(date));
-    else {
-      cell.classList.add("is-off");
-      cell.disabled = true;
-    }
-    cell.setAttribute("aria-label", `${shortDate(date, true)}, ${skinNightFor(date)}${done ? ", done" : ""}`);
-    cells.push(cell);
+    cells.push(dayCell(isoDate(skinViewYear, skinViewMonth, day), map, today));
   }
   $("skin-calendar").replaceChildren(...cells);
+}
+
+// Build 13: the cover screen shows this week only, so the card and the week both fit
+function renderSkinWeek(map, today) {
+  const start = mondayOf(skinWeekAnchor);
+  const end = addDays(start, 6);
+  const sameMonth = start.slice(0, 7) === end.slice(0, 7);
+  const from = sameMonth
+    ? `${weekdayShort(start)} ${Number(start.slice(8))}`
+    : `${weekdayShort(start)} ${shortDate(start)}`;
+  $("skin-week-label").textContent = `${from} – ${weekdayShort(end)} ${shortDate(end)}`;
+  const cells = [];
+  for (let i = 0; i < 7; i++) cells.push(dayCell(addDays(start, i), map, today));
+  $("skin-calendar").replaceChildren(...cells);
+}
+
+function renderSkin() {
+  const map = loadSkin();
+  const today = todayISO();
+
+  // Tonight card
+  $("skin-today").textContent = `Tonight · ${weekdayShort(today)} ${shortDate(today)}`;
+  $("skin-tonight").textContent = skinNightFor(today);
+  const doneTonight = map[today] === "done";
+  $("skin-done-btn").textContent = doneTonight ? "✓ Done" : "Done";
+  $("skin-done-btn").classList.toggle("primary", doneTonight);
+  toggleConfirm("skin-undo-confirm", "skin-done-actions", false);
+
+  // The month on the main screen, this week on the cover screen
+  const week = onCoverScreen();
+  $("skin-month-nav").hidden = week;
+  $("skin-week-nav").hidden = !week;
+  if (week) renderSkinWeek(map, today);
+  else renderSkinMonth(map, today);
 }
 
 function changeSkinMonth(delta) {
@@ -618,6 +662,14 @@ function changeSkinMonth(delta) {
 
 $("skin-prev-month").addEventListener("click", () => changeSkinMonth(-1));
 $("skin-next-month").addEventListener("click", () => changeSkinMonth(1));
+
+function changeSkinWeek(delta) {
+  skinWeekAnchor = addDays(mondayOf(skinWeekAnchor), delta * 7);
+  renderSkin();
+}
+
+$("skin-prev-week").addEventListener("click", () => changeSkinWeek(-1));
+$("skin-next-week").addEventListener("click", () => changeSkinWeek(1));
 
 // Tonight's Done button toggles: tap again and confirm to clear it
 $("skin-done-btn").addEventListener("click", () => {
@@ -2318,6 +2370,7 @@ function showTab(name) {
 COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
   renderDashboard();
   renderSavings();
+  renderSkin();
   applyCoverWording();
 });
 
