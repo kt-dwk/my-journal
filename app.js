@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "13.1", date: "2026-09-24" };
+const BUILD = { number: "14", date: "2026-09-24" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1056,7 +1056,7 @@ function renderDiary() {
       (b.date || "").localeCompare(a.date || "") ||
       (b.createdAt || "").localeCompare(a.createdAt || "")
   );
-  $("diary-log").replaceChildren(...sortedNotes.slice(0, RECENT_NOTE_COUNT).map(noteRow));
+  $("diary-log").replaceChildren(...diaryListItems(sortedNotes.slice(0, RECENT_NOTE_COUNT)));
   $("open-diary-log").hidden = sortedNotes.length <= RECENT_NOTE_COUNT;
   $("diary-empty").textContent = loadProblem ? "Your saved notes couldn't be read." : "No notes yet.";
   $("diary-empty").hidden = sortedNotes.length > 0;
@@ -1072,7 +1072,7 @@ function renderFullDiaryLog() {
   const start = notePage * NOTE_PAGE_SIZE;
   const pageRows = sortedNotes.slice(start, start + NOTE_PAGE_SIZE);
 
-  $("diary-log-full").replaceChildren(...pageRows.map(noteRow));
+  $("diary-log-full").replaceChildren(...pageRows.map((note) => noteRow(note, true)));
   $("diary-log-range").textContent = count ? `${start + 1}\u2013${start + pageRows.length} of ${count}` : "No notes yet.";
   $("diary-page-label").textContent = `Page ${notePage + 1} of ${pages}`;
   $("diary-page-prev").disabled = notePage === 0;
@@ -1108,7 +1108,24 @@ function iconButton(className, label, icon, onClick) {
   return button;
 }
 
-function noteRow(note) {
+// Pinned notes sit on top with no heading; a year heading opens each year below them (Build 14)
+function diaryListItems(notes) {
+  const items = [];
+  let lastYear = null;
+  for (const note of notes) {
+    if (!note.pinned) {
+      const year = (note.date || "").slice(0, 4) || String(now.getFullYear());
+      if (year !== lastYear) {
+        items.push(el("li", "year-head", year));
+        lastYear = year;
+      }
+    }
+    items.push(noteRow(note));
+  }
+  return items;
+}
+
+function noteRow(note, withYear = false) {
   const li = el("li", "swipe");
 
   const actions = el("div", "swipe-actions");
@@ -1121,7 +1138,7 @@ function noteRow(note) {
   row.type = "button";
   row.append(
     el("span", "note-pin", note.pinned ? "📌" : ""),
-    el("span", "log-date", note.date ? shortDate(note.date, true) : ""),
+    el("span", "log-date", note.date ? shortDate(note.date, withYear) : ""),
     el("span", "log-item", note.title || "(untitled)")
   );
   addSwipe(li, row, () => openNote(note.id));
