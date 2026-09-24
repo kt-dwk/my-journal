@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "13", date: "2026-09-24" };
+const BUILD = { number: "13.1", date: "2026-09-24" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -643,7 +643,6 @@ function renderSkin() {
   const doneTonight = map[today] === "done";
   $("skin-done-btn").textContent = doneTonight ? "✓ Done" : "Done";
   $("skin-done-btn").classList.toggle("primary", doneTonight);
-  toggleConfirm("skin-undo-confirm", "skin-done-actions", false);
 
   // The month on the main screen, this week on the cover screen
   const week = onCoverScreen();
@@ -671,23 +670,21 @@ function changeSkinWeek(delta) {
 $("skin-prev-week").addEventListener("click", () => changeSkinWeek(-1));
 $("skin-next-week").addEventListener("click", () => changeSkinWeek(1));
 
-// Tonight's Done button toggles: tap again and confirm to clear it
+// Tonight's Done button toggles: tap again and the question opens as a pop-up (Build 13.1)
 $("skin-done-btn").addEventListener("click", () => {
   const today = todayISO();
   if (loadSkin()[today] === "done") {
-    toggleConfirm("skin-undo-confirm", "skin-done-actions", true);
-    $("skin-undo-no").focus();
+    $("skin-undo-state").textContent = `${weekdayShort(today)} ${shortDate(today)} · ${skinNightFor(today)}`;
+    $("skin-undo-dialog").showModal();
   } else {
     setSkinDay(today, true);
   }
 });
 
-$("skin-undo-no").addEventListener("click", () => {
-  toggleConfirm("skin-undo-confirm", "skin-done-actions", false);
-  $("skin-done-btn").focus();
+$("skin-undo-yes").addEventListener("click", () => {
+  setSkinDay(todayISO(), false);
+  $("skin-undo-dialog").close();
 });
-
-$("skin-undo-yes").addEventListener("click", () => setSkinDay(todayISO(), false));
 
 // Fixing one day from the calendar
 let skinDayDate = null;

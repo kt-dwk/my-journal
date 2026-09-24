@@ -882,9 +882,13 @@ textarea {
 /* Build 13: My Skin on the cover screen — the card, this week and the key, all above the fold.
    These sit after the rules above on purpose: the cover block higher up would lose to them. */
 @media (max-height: 480px), (min-aspect-ratio: 3 / 4) {
-  #skin-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar on this page */
-  .tonight { gap: 10px; margin-bottom: 8px; padding: 8px 10px; }
-  .tonight-icon { padding: 4px 0; font-size: 2.4rem; border-radius: 10px; }
+  /* Build 13.1: the page starts a little lower and the card takes the space that was left over */
+  #skin-page {
+    padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 16px);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));   /* no tab bar on this page */
+  }
+  .tonight { gap: 10px; min-height: 118px; margin-bottom: 10px; padding: 8px 10px; }
+  .tonight-icon { padding: 4px 0; font-size: 3rem; border-radius: 10px; }
   .tonight-body .small { margin: 0; }
   .tonight-name { margin: 2px 0 6px; font-size: 1.3rem; }
   #skin-done-actions .btn { min-height: 34px; }

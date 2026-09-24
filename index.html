@@ -134,13 +134,6 @@
         <div id="skin-done-actions">
           <button type="button" class="btn" id="skin-done-btn">Done</button>
         </div>
-        <div class="confirm" id="skin-undo-confirm" hidden>
-          <p>Mark tonight as not done?</p>
-          <div class="actions">
-            <button type="button" class="btn" id="skin-undo-no">No, keep it</button>
-            <button type="button" class="btn danger-fill" id="skin-undo-yes">Yes</button>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -224,6 +217,19 @@
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="skin-day-done">✓ Mark done</button>
       <button type="button" class="btn" id="skin-day-not-done">Mark not done</button>
+    </div>
+  </dialog>
+
+  <!-- My Skin: the undo question, as a pop-up (Build 13.1) -->
+  <dialog id="skin-undo-dialog" aria-labelledby="skin-undo-title">
+    <div class="dialog-head">
+      <h2 id="skin-undo-title">Mark tonight as not done?</h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <p class="small" id="skin-undo-state"></p>
+    <div class="actions">
+      <button type="button" class="btn" data-close>No, keep it</button>
+      <button type="button" class="btn danger-fill" id="skin-undo-yes">Yes</button>
     </div>
   </dialog>
 
