@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.1", date: "2026-09-26" };
+const BUILD = { number: "16.2", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -455,7 +455,11 @@ $("delete-yes").addEventListener("click", () => {
   renderDashboard();
 });
 
-$("item-choices").addEventListener("change", () => ($("item-error").hidden = true));
+$("item-choices").addEventListener("change", () => {
+  $("item-error").hidden = true;
+  // Build 16.2: item, then amount — the order you always use, so the cursor goes there for you
+  if ($("add-dialog").open) $("amount").focus();
+});
 
 amountEl.addEventListener("input", () => {
   amountEl.value = formatWhileTyping(amountEl.value, CURRENCIES[currencyEl.value].decimals);

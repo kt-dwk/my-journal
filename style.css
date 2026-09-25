@@ -172,6 +172,23 @@ dialog.sheet {               /* the add form rises from the bottom, above the ke
   border-radius: 20px 20px 0 0;
 }
 dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
+/* Build 16.2: with a keyboard up the window is short, so the sheet tightens to keep every field
+   above the Cancel / Save line. This only changes spacing inside the sheet — it never switches
+   between the main and cover layouts, which is decided by shape and width (Build 14.3). */
+@media (max-height: 460px) {
+  dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  dialog.sheet .dialog-head { margin-bottom: 4px; }
+  dialog.sheet .dialog-head h2 { font-size: 1.05rem; }
+  dialog.sheet .close { width: 36px; height: 36px; }
+  dialog.sheet .field { margin-bottom: 6px; }
+  dialog.sheet .label { margin-bottom: 2px; font-size: 0.78rem; }
+  dialog.sheet .item-group { margin-bottom: 4px; }
+  dialog.sheet .item-btn span { min-height: 38px; padding: 7px 12px; }   /* about 46 px tall, ≈ 8.8 mm */
+  dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 38px; }
+  dialog.sheet .actions { padding-top: 4px; }
+  dialog.sheet .actions .btn { min-height: 36px; padding: 4px 14px; font-size: 0.9rem; }
+  dialog.sheet .actions .btn.icon-only { width: 40px; padding: 0; }
+}
 dialog.sheet {
   max-height: calc(100svh / var(--cover-zoom, 1));
   overflow-y: auto;      /* a short screen scrolls the form … */
@@ -527,9 +544,10 @@ textarea {
 
 .amount-row {
   display: grid;
-  grid-template-columns: 6rem 1fr;
+  grid-template-columns: 5.3rem 1fr;   /* Build 16.2: narrower — it only ever holds ₮ LAK, $ USD or ฿ THB */
   gap: 8px;
 }
+.amount-row select { padding-inline: 6px; }
 
 .error { margin: 6px 0 0; font-size: 0.9rem; color: var(--error); }
 .error .link { color: var(--error); }
