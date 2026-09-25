@@ -164,6 +164,7 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
 dialog.sheet {
   max-height: calc(100svh / var(--cover-zoom, 1));
   overflow-y: auto;      /* a short screen scrolls the form … */
+  scroll-padding-bottom: 96px;   /* Build 14.5: a field scrolled into view stops above Cancel and Save */
 }
 .sheet .actions {
   position: sticky;      /* … while Cancel and Save stay in reach */
@@ -832,7 +833,10 @@ textarea {
   dialog.sheet .item-buttons::-webkit-scrollbar { display: none; }
   dialog.sheet .item-btn span { white-space: nowrap; }
   dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 36px; }
-  dialog.sheet .actions .btn { min-height: 38px; }
+  /* Build 14.5: a slimmer Cancel / Save row, so the field you are typing in keeps its room */
+  dialog.sheet .actions { padding-top: 4px; }
+  dialog.sheet .actions .btn { min-height: 34px; padding: 4px 12px; font-size: 0.9rem; }
+  dialog.sheet .actions .btn.icon-only { width: 40px; padding: 0; }
 
   /* Build 12.3: on the cover screen both cards are a single row */
   .month-card { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }

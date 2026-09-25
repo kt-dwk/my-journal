@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "14.4", date: "2026-09-25" };
+const BUILD = { number: "14.5", date: "2026-09-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1900,6 +1900,36 @@ $("note-delete-item").addEventListener("click", () => {
   closeNoteMenu();
   askDeleteNote(editingNoteId);
 });
+
+// ---------- Keeping the field you type in above the sheet's buttons (Build 14.5) ----------
+// The Cancel / Save row is pinned to the bottom of the sheet, and on the cover screen the keyboard
+// leaves so little room that a focused field can end up behind it.
+
+function keepFieldAboveActions(sheet, field) {
+  // the sheet's own Cancel / Save row, not the delete question's buttons hidden inside it
+  const actions = sheet.querySelector("#form-actions, #saving-form-actions");
+  if (!actions || !actions.offsetHeight) return;
+  const overlap = field.getBoundingClientRect().bottom - (actions.getBoundingClientRect().top - 8);
+  if (overlap > 0) sheet.scrollTop += overlap;
+}
+
+for (const id of ["add-dialog", "saving-dialog"]) {
+  const sheet = $(id);
+  sheet.addEventListener("focusin", (event) => {
+    const field = event.target.closest(".field, .amount-row, .sheet-pair") || event.target;
+    // twice: once now, and again after the keyboard has had time to shrink the sheet
+    keepFieldAboveActions(sheet, field);
+    setTimeout(() => keepFieldAboveActions(sheet, field), 250);
+  });
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {   // the keyboard opening mid-typing
+    const active = document.activeElement;
+    const sheet = active && active.closest ? active.closest("dialog.sheet") : null;
+    if (sheet) keepFieldAboveActions(sheet, active.closest(".field, .amount-row, .sheet-pair") || active);
+  });
+}
 
 // ---------- Settings page ----------
 
