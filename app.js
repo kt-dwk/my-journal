@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "14.6", date: "2026-09-25" };
+const BUILD = { number: "15", date: "2026-09-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -826,6 +826,7 @@ function renderBrain() {
   }
   thoughts.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); // newest first; editing never moves one
   $("brain-list").replaceChildren(...thoughts.map(thoughtRow));
+  $("brain-count").textContent = thoughts.length ? `TO KEEP · ${thoughts.length}` : "TO KEEP";   // Build 15
   $("brain-empty").textContent = loadProblem ? "Sorry, your thoughts couldn't be loaded." : "Nothing to keep yet.";
   $("brain-empty").hidden = thoughts.length > 0;
 }
