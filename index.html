@@ -234,18 +234,22 @@
 
   <!-- My Diary: writing page -->
   <div class="page" id="diary-note-page" hidden>
-    <header class="settings-head">
+    <header class="settings-head note-head">
       <button type="button" class="btn back" id="close-note" aria-label="Back">←</button>
-      <h1 id="diary-note-title">New note</h1>
+      <p class="small note-when" id="diary-when" hidden></p>
+      <button type="button" class="note-act" id="save-note" aria-label="Save">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="note-act" id="note-menu-btn" aria-label="More" aria-expanded="false" aria-haspopup="true" hidden>⋯</button>
+      <div class="note-menu" id="note-menu" hidden>
+        <button type="button" class="note-menu-item" id="note-pin-item" aria-label="Pin"></button>
+        <button type="button" class="note-menu-item bin" id="note-delete-item" aria-label="Delete"></button>
+      </div>
     </header>
-    <p class="small" id="diary-when" hidden></p>
 
+    <input id="diary-title" type="text" maxlength="80" autocomplete="off" placeholder="Title" aria-label="Title">
     <div class="field">
-      <label class="label" for="diary-title">Title <span class="small">(optional)</span></label>
-      <input id="diary-title" type="text" maxlength="80" autocomplete="off">
-    </div>
-    <div class="field">
-      <span class="label" id="diary-text-label">Note</span>
+      <span class="label sr-only" id="diary-text-label">Note</span>
       <div class="note-toolbar-wrap" id="diary-toolbar-wrap">
         <div class="colour-strip" id="colour-strip" hidden></div>
         <div class="note-toolbar" id="diary-toolbar" role="toolbar" aria-label="Formatting">
@@ -264,23 +268,7 @@
     </div>
     <p class="error" id="diary-error" hidden></p>
 
-    <div class="confirm" id="diary-delete-confirm" hidden>
-      <p>Delete this note?</p>
-      <div class="actions">
-        <button type="button" class="btn" id="diary-delete-no">No</button>
-        <button type="button" class="btn danger-fill" id="diary-delete-yes">Yes</button>
-      </div>
-    </div>
-
-    <div class="actions" id="diary-form-actions">
-      <button type="button" class="btn danger icon-only" id="delete-note" aria-label="Delete" hidden>
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <p class="saved-note" id="diary-saved" role="status" hidden>Saved ✓</p>
-      <button type="button" class="btn primary icon-only" id="save-note" aria-label="Save">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
+    <p class="sr-only" id="diary-saved" role="status" hidden>Saved ✓</p>
   </div>
 
   <!-- Full diary list pop-up -->

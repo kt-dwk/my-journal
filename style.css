@@ -341,18 +341,16 @@ textarea {
 }
 #diary-text {
   min-width: 0;
-  padding: 10px;
+  padding: 0;                /* Build 14.2: unboxed, flush under the title */
   font-size: 16px;
   line-height: 1.45;
   color: var(--ink);
-  background: var(--card);
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  background: none;
+  border: 0;
   outline: none;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-#diary-text:focus { border-color: var(--ink); }
 .log-row.note-row { grid-template-columns: 1.3rem 6.2rem 1fr; }
 .note-pin { font-size: 0.85rem; line-height: 1.4; }
 /* Build 14: on the page the year sits in a heading, so the row's date column is narrower */
@@ -403,6 +401,84 @@ textarea {
   text-overflow: ellipsis;
 }
 #diary-note-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) 28px; }
+
+/* ---------- The note page (Build 14.2, wireframe 22c) ---------- */
+.sr-only {                   /* read aloud, never seen */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.note-head { gap: 4px; }
+.note-when {                 /* the date takes the middle and shortens if it must */
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.note-act {                  /* 💾 and ⋯, bare like the back arrow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.note-act svg { display: block; }
+.note-act.is-saved { color: #2e7d32; }
+.note-act:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.note-menu {                 /* the little card under ⋯ */
+  position: absolute;
+  top: calc(var(--bar-height) + env(safe-area-inset-top) - 4px);
+  right: max(16px, calc((100vw - 520px) / 2));
+  z-index: 7;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+.note-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.note-menu-item.bin { color: var(--error); }
+.note-menu-item:active { background: var(--line); }
+.note-menu-item:focus-visible { outline: 3px solid #6b9cff; outline-offset: -2px; }
+#diary-title {               /* no box: the title is just the first line of the sheet */
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  min-height: 40px;
+}
+#diary-title::placeholder { color: #aaa; font-weight: 400; }
+#diary-title:focus { outline: none; }
 .saved-note {
   align-self: center;
   margin: 0;
@@ -690,6 +766,10 @@ textarea {
   .settings-head h1 { font-size: 1.25rem; }
   .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
   .btn.back { width: 40px; min-height: 40px; font-size: 1.35rem; }
+  /* Build 14.2: the note bar still fits at 598 × 530 */
+  .note-when { font-size: 0.72rem; }
+  .note-act { width: 40px; height: 40px; font-size: 1.2rem; }
+  #diary-title { font-size: 1.05rem; min-height: 34px; }
   /* Build 12.9: on the cover screen the Skin tile puts tonight's step beside the name */
   .tile { flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 6px) calc(8px + env(safe-area-inset-bottom)); }

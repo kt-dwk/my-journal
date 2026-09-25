@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "14.1", date: "2026-09-24" };
+const BUILD = { number: "14.2", date: "2026-09-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1250,6 +1250,7 @@ $("note-delete-no").addEventListener("click", () => {
 });
 
 $("note-delete-yes").addEventListener("click", () => {
+  const wasOpenNote = noteToDelete && noteToDelete === editingNoteId && !$("diary-note-page").hidden;
   if (noteToDelete) {
     try {
       diaryStore.remove(noteToDelete);
@@ -1261,6 +1262,10 @@ $("note-delete-yes").addEventListener("click", () => {
   $("note-delete-dialog").close();
   closeSwipe();
   renderDiary();
+  if (wasOpenNote) {          // deleting the note you are writing also leaves the page (Build 14.2)
+    leavingNote = true;
+    history.back();
+  }
 });
 
 // ---------- Formatting (Build 9.6) ----------
@@ -1668,11 +1673,12 @@ function noteHtmlOf(note) {
 
 wireEditor($("diary-text"));
 
+// Build 14.2: this now rides in the bar, so it is written short — "21 Sept, 21:14 · edited"
 function noteWhen(note) {
   const when = new Date(note.createdAt || `${note.date}T00:00:00`);
-  const stamp = when.toLocaleString("en-GB", {
-    weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
+  const day = when.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const time = when.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const stamp = `${day}, ${time}`;
   return note.updatedAt ? `${stamp} · edited` : stamp;
 }
 
@@ -1693,16 +1699,17 @@ function showNoteError(message) {
 
 function openNoteEditor(note) {
   editingNoteId = note ? note.id : null;
-  $("diary-note-title").textContent = note ? "Edit note" : "New note";
   $("diary-title").value = note ? note.title || "" : "";
   resetEditor(note ? noteHtmlOf(note) : "");
+  // Build 14.2: the bar holds the date; a note that has never been saved shows nothing there
   $("diary-when").textContent = note ? noteWhen(note) : "";
   $("diary-when").hidden = !note;
-  $("delete-note").hidden = !note;
+  $("note-menu-btn").hidden = !note;
+  closeNoteMenu();
   $("diary-error").hidden = true;
   clearTimeout(savedTimer);
   $("diary-saved").hidden = true;
-  toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
+  showSaveIcon();
   noteOpenedWith = noteFields();
   leavingNote = false;
   savingNote = false;
@@ -1770,24 +1777,33 @@ function markNoteSaved() {
     console.error(err);
   }
   if (note) {
-    $("diary-note-title").textContent = "Edit note";
     $("diary-when").textContent = noteWhen(note);
     $("diary-when").hidden = false;
-    $("delete-note").hidden = false;
+    $("note-menu-btn").hidden = false;
   }
   noteOpenedWith = noteFields();
 }
 
 let savedTimer;
 
+const SAVE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SAVED_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5 10 18 19 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function showSaveIcon() {
+  $("save-note").innerHTML = SAVE_ICON;
+  $("save-note").classList.remove("is-saved");
+}
+
+// Build 14.2: saving turns the disk into a tick for a moment, then back
 function showSaved() {
   clearTimeout(savedTimer);
   const status = $("diary-saved");
-  status.classList.remove("is-fading");
-  status.hidden = false;
+  status.hidden = false;                 // heard by a screen reader, not seen
+  $("save-note").innerHTML = SAVED_ICON;
+  $("save-note").classList.add("is-saved");
   savedTimer = setTimeout(() => {
-    status.classList.add("is-fading");
-    savedTimer = setTimeout(() => (status.hidden = true), 400);
+    showSaveIcon();
+    status.hidden = true;
   }, 2000);
 }
 
@@ -1807,29 +1823,55 @@ $("save-note").addEventListener("click", () => {
   showSaved();
 });
 
-$("delete-note").addEventListener("click", () => {
-  toggleConfirm("diary-delete-confirm", "diary-form-actions", true);
-  $("diary-delete-no").focus();
-});
+// ---------- The ⋯ menu on the note page (Build 14.2): pin and delete ----------
 
-$("diary-delete-no").addEventListener("click", () => {
-  toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
-  $("delete-note").focus();
-});
-
-$("diary-delete-yes").addEventListener("click", () => {
-  if (!editingNoteId) return;
+function noteIsPinned() {
   try {
-    diaryStore.remove(editingNoteId);
+    return Boolean(diaryStore.load().find((n) => n.id === editingNoteId)?.pinned);
   } catch (err) {
     console.error(err);
-    toggleConfirm("diary-delete-confirm", "diary-form-actions", false);
-    showNoteError("Sorry, this note couldn't be deleted.");
-    return;
+    return false;
   }
-  renderDiary();
-  leavingNote = true;
-  history.back();
+}
+
+function closeNoteMenu() {
+  $("note-menu").hidden = true;
+  $("note-menu-btn").setAttribute("aria-expanded", "false");
+}
+
+function openNoteMenu() {
+  const pinned = noteIsPinned();
+  $("note-pin-item").innerHTML = pinned ? UNPIN_ICON : PIN_ICON;   // the same icons the list swipe shows
+  $("note-pin-item").setAttribute("aria-label", pinned ? "Unpin" : "Pin");
+  $("note-delete-item").innerHTML = BIN_ICON;
+  $("note-menu").hidden = false;
+  $("note-menu-btn").setAttribute("aria-expanded", "true");
+}
+
+$("note-menu-btn").addEventListener("click", (event) => {
+  event.stopPropagation();
+  if ($("note-menu").hidden) openNoteMenu();
+  else closeNoteMenu();
+});
+
+document.addEventListener("click", (event) => {   // a tap anywhere else closes it
+  if (!$("note-menu").hidden && !$("note-menu").contains(event.target)) closeNoteMenu();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("note-menu").hidden) closeNoteMenu();
+});
+
+$("note-pin-item").addEventListener("click", () => {
+  if (!editingNoteId) return;
+  togglePin(editingNoteId);
+  closeNoteMenu();
+});
+
+$("note-delete-item").addEventListener("click", () => {
+  if (!editingNoteId) return;
+  closeNoteMenu();
+  askDeleteNote(editingNoteId);
 });
 
 // ---------- Settings page ----------
