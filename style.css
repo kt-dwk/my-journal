@@ -799,7 +799,21 @@ textarea {
   /* Build 15: Brain dump stays compact here — the kept list needs the room.
      Written with the page's id so it wins over the taller main-screen rule further down the file. */
   #brain-page .brain-tile { min-height: 76px; }
-  #brain-page .brain-hint { display: none; }
+  /* Build 15.1: the pop-up fits the window — the title gives up the room, the box keeps its two lines */
+  #brain-dialog {
+    margin-block: 8px auto;
+    max-height: calc(100% - 16px);   /* the browser's own cap was 38px, which squeezed the box out */
+    padding: 8px 12px;
+    overflow-y: auto;
+  }
+  #brain-dialog .dialog-head { margin-bottom: 4px; }
+  #brain-dialog .dialog-head h2 { font-size: 0.95rem; }   /* a small title: the box matters more here */
+  #brain-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
+  /* two ids, so these win over the rules further down the file. The box grows as you type (fitBrainBox),
+     so the cap is what keeps it to two lines here — longer thoughts scroll inside it. */
+  #brain-dialog #brain-text { padding: 6px 8px; max-height: calc(2 * 1.45em + 14px); }
+  #brain-dialog #brain-send { width: 44px; min-height: 44px; height: 44px; }
+  #brain-dialog .brain-flash, #brain-dialog .error { margin-top: 4px; font-size: 0.72rem; }
   #brain-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar here, so no empty scroll */
 
   /* Build 14.4: on the cover screen the title steps aside while you write, and the tools are smaller */
@@ -1066,7 +1080,6 @@ textarea {
 /* Build 15: To keep is solid, Let go is dashed — the one that vanishes */
 .brain-tile { min-height: 132px; margin-bottom: 0; align-items: center; justify-content: center; text-align: center; }
 #brain-letgo { border-style: dashed; }
-.brain-hint { margin: 0 0 12px; text-align: center; }
 .log-row.brain-row {
   display: block;
   white-space: pre-wrap;
