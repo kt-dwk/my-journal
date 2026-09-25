@@ -15,6 +15,12 @@
 
 [hidden] { display: none !important; }
 
+html, body {
+  /* Build 14.6: no stretch at the top or bottom, and no pull-to-refresh (your decision).
+     Refresh from the build line at the bottom of Settings instead. */
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   padding: 0 16px;
@@ -928,6 +934,20 @@ textarea {
 .settings-actions .btn { min-height: 56px; }
 #last-backup { margin: 10px 0 0; }
 .build-foot { margin-top: auto; padding-top: 24px; }
+#build-info {                /* Build 14.6: tap it to reload the app */
+  width: 100%;
+  min-height: 44px;          /* a proper tap target, since this is now the way to refresh */
+  padding: 12px 0;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+#build-info:active { color: var(--ink); }
+#build-info:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
 #settings-page {
   display: flex;
   flex-direction: column;

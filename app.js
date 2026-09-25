@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "14.5", date: "2026-09-25" };
+const BUILD = { number: "14.6", date: "2026-09-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1900,6 +1900,9 @@ $("note-delete-item").addEventListener("click", () => {
   closeNoteMenu();
   askDeleteNote(editingNoteId);
 });
+
+// Build 14.6: pulling down no longer refreshes, so the build line reloads the app instead
+$("build-info").addEventListener("click", () => window.location.reload());
 
 // ---------- Keeping the field you type in above the sheet's buttons (Build 14.5) ----------
 // The Cancel / Save row is pinned to the bottom of the sheet, and on the cover screen the keyboard
