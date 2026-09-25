@@ -376,7 +376,13 @@
       </fieldset>
 
       <div class="field">
-        <label class="label" for="amount">Amount</label>
+        <div class="field-head">
+          <label class="label" for="amount">Amount</label>
+          <span class="head-right">
+            <span class="small" id="amount-preview" hidden></span>
+            <button type="button" class="x1000" id="amount-x1000" aria-pressed="false" hidden>×1000</button>
+          </span>
+        </div>
         <div class="amount-row">
           <select id="currency" aria-label="Currency"></select>
           <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0">

@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.2", date: "2026-09-26" };
+const BUILD = { number: "16.3", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -364,11 +364,45 @@ function hideAddErrors() {
   for (const id of ["item-error", "amount-error", "rate-error", "add-error"]) $(id).hidden = true;
 }
 
+// ---------- Build 16.3: the ×1000 chip ----------
+// LAK amounts are long, so the chip adds the three zeros for you. Nothing is multiplied unless
+// it is lit, and the result is shown beside it before you save.
+
+const THOUSANDS_KEY = "myjournal.x1000";   // kept on the phone only, never in a backup
+let thousandsRemembered = localStorage.getItem(THOUSANDS_KEY) === "on";   // what you last chose
+let thousandsOn = thousandsRemembered;                                    // the sheet that is open now
+
+function thousandsApplies() {
+  return currencyEl.value === DEFAULT_CURRENCY;   // LAK only
+}
+
+function showThousandsChip() {
+  const chip = $("amount-x1000");
+  const preview = $("amount-preview");
+  const applies = thousandsApplies();
+  chip.hidden = !applies;
+  chip.setAttribute("aria-pressed", String(thousandsOn));
+  const typed = readAmount(amountEl.value, 0);
+  const show = applies && thousandsOn && typed > 0;
+  preview.hidden = !show;
+  if (show) preview.textContent = `= ${formatMoney(typed * 1000, DEFAULT_CURRENCY)}`;
+}
+
+$("amount-x1000").addEventListener("click", () => {
+  thousandsOn = !thousandsOn;
+  thousandsRemembered = thousandsOn;                                      // remembered for the next one
+  localStorage.setItem(THOUSANDS_KEY, thousandsOn ? "on" : "off");
+  showThousandsChip();
+  amountEl.focus();
+});
+
 function resetAddForm() {
   addForm.reset();
   currencyEl.value = DEFAULT_CURRENCY;
   dateEl.value = todayISO();
   hideAddErrors();
+  thousandsOn = thousandsRemembered;      // a new transaction starts the way you left it
+  showThousandsChip();
 }
 
 let editingId = null; // null = adding a new transaction
@@ -429,6 +463,8 @@ function openEdit(id) {
   amountEl.value = formatWhileTyping(String(expense.amount), CURRENCIES[expense.currency].decimals);
   dateEl.value = expense.date;
   noteEl.value = expense.note || "";
+  thousandsOn = false;              // an edit shows the amount as saved, so it can never multiply twice
+  showThousandsChip();               // and this doesn't disturb what you last chose for new ones
   addDialog.showModal();
 }
 
@@ -464,11 +500,13 @@ $("item-choices").addEventListener("change", () => {
 amountEl.addEventListener("input", () => {
   amountEl.value = formatWhileTyping(amountEl.value, CURRENCIES[currencyEl.value].decimals);
   $("amount-error").hidden = true;
+  showThousandsChip();
 });
 
 currencyEl.addEventListener("change", () => {
   amountEl.value = formatWhileTyping(amountEl.value, CURRENCIES[currencyEl.value].decimals);
   $("rate-error").hidden = true;
+  showThousandsChip();
 });
 
 addForm.addEventListener("submit", (event) => {
@@ -476,7 +514,8 @@ addForm.addEventListener("submit", (event) => {
 
   const checked = addForm.querySelector('input[name="item"]:checked');
   const currency = currencyEl.value;
-  const amount = readAmount(amountEl.value, CURRENCIES[currency].decimals);
+  const typed = readAmount(amountEl.value, CURRENCIES[currency].decimals);
+  const amount = thousandsOn && currency === DEFAULT_CURRENCY ? typed * 1000 : typed;   // Build 16.3
 
   let original = null;
   if (editingId) {

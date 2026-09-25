@@ -542,6 +542,29 @@ textarea {
 }
 .saved-note.is-fading { opacity: 0; }
 
+/* Build 16.3: the Amount label shares its line with the preview and the ×1000 chip */
+.field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.field-head .label { margin-bottom: 4px; }
+.head-right { display: flex; align-items: center; gap: 8px; }
+.x1000 {
+  position: relative;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--ink);
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.x1000::after {            /* a 44px tap area around a small chip */
+  content: "";
+  position: absolute;
+  inset: -12px -8px;
+}
+.x1000[aria-pressed="true"] { color: #fff; background: var(--ink); }
+.x1000:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+
 .amount-row {
   display: grid;
   grid-template-columns: 5.3rem 1fr;   /* Build 16.2: narrower — it only ever holds ₮ LAK, $ USD or ฿ THB */
