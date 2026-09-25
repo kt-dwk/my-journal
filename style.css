@@ -126,6 +126,8 @@ button { font: inherit; color: inherit; }
 }
 .month-nav h2 { flex: 1; text-align: center; font-size: 0.95rem; font-weight: 500; color: var(--muted); }
 .month-arrow { width: 44px; padding: 0; font-size: 1.1rem; }
+/* Build 16: bare arrows on the money card, as the cover screen has had since 12.8 */
+.month-card .month-arrow { background: none; border: 0; }
 
 .total { margin: 10px 0 0; text-align: center; }
 .total strong { display: block; font-size: 2.4rem; line-height: 1.1; }
@@ -156,6 +158,9 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .fab:active { background: #eef3fd; }
+/* Build 16: the + steps out of the way while you scroll down the log */
+.fab { transition: transform 0.2s ease, opacity 0.2s ease; }
+.fab.is-away { transform: translateY(96px); opacity: 0; pointer-events: none; }
 .fab:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
 dialog.sheet {               /* the add form rises from the bottom, above the keyboard */
   width: 100%;
@@ -191,6 +196,7 @@ dialog.sheet {
   border-bottom: 1px solid var(--line);
 }
 .row-amount { white-space: nowrap; }
+.row.is-zero { color: #aaa; }   /* Build 16: nothing spent on this item this month */
 
 /* ---------- Transaction log ---------- */
 .log-row {
@@ -210,6 +216,7 @@ dialog.sheet {
 .log-row:active { background: var(--line); }
 .log-row:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
 .log-date { color: var(--muted); }
+#log .log-row { grid-template-columns: 4.4rem 1fr auto; }   /* Build 16: "24 Sept" keeps to one line */
 .log-item { min-width: 0; overflow-wrap: anywhere; }
 .log-amount { text-align: right; white-space: nowrap; }
 

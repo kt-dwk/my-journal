@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "15.1", date: "2026-09-25" };
+const BUILD = { number: "16", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -254,7 +254,7 @@ function monthKey(year, month) {
 }
 
 function summaryRow(label, amount) {
-  const li = el("li", "row");
+  const li = el("li", amount ? "row" : "row is-zero");   // Build 16: nothing spent this month reads quieter
   li.append(el("span", "", label), el("span", "row-amount", formatMoney(amount, "LAK")));
   return li;
 }
@@ -379,6 +379,28 @@ function setMode(id) {
   $("delete-transaction").hidden = !id;
   toggleConfirm("delete-confirm", "form-actions", false);
 }
+
+// Build 16: the + slides away while you scroll down the log, so it never covers an amount,
+// and comes back as soon as you stop or scroll up.
+let lastScrollY = 0;
+let fabTimer;
+
+function watchScrollForFab() {
+  const fab = $("open-add");
+  const y = Math.max(0, window.scrollY);
+  const goingDown = y > lastScrollY + 4;
+  const goingUp = y < lastScrollY - 4;
+  if (goingDown && y > 24) fab.classList.add("is-away");
+  else if (goingUp || y <= 24) fab.classList.remove("is-away");
+  lastScrollY = y;
+  clearTimeout(fabTimer);
+  fabTimer = setTimeout(() => fab.classList.remove("is-away"), 600);   // stopped scrolling: bring it back
+}
+
+window.addEventListener("scroll", () => {
+  if ($("money-page").hidden) return;     // the diary's ✎ keeps its own behaviour for now
+  watchScrollForFab();
+}, { passive: true });
 
 $("open-add").addEventListener("click", () => {
   if (!$("panel-savings").hidden) {   // Build 12.2: the same + adds a saving on the Savings tab
