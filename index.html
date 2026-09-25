@@ -236,11 +236,13 @@
   <div class="page" id="diary-note-page" hidden>
     <header class="settings-head note-head">
       <button type="button" class="btn back" id="close-note" aria-label="Back">←</button>
-      <p class="small note-when" id="diary-when" hidden></p>
-      <button type="button" class="note-act" id="save-note" aria-label="Save">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button type="button" class="note-act" id="note-menu-btn" aria-label="More" aria-expanded="false" aria-haspopup="true" hidden>⋯</button>
+      <div class="note-actions">
+        <p class="small note-when" id="diary-when" hidden></p>
+        <button type="button" class="note-act" id="save-note" aria-label="Save">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="note-act" id="note-menu-btn" aria-label="More" aria-expanded="false" aria-haspopup="true">⋯</button>
+      </div>
       <div class="note-menu" id="note-menu" hidden>
         <button type="button" class="note-menu-item" id="note-pin-item" aria-label="Pin"></button>
         <button type="button" class="note-menu-item bin" id="note-delete-item" aria-label="Delete"></button>

@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "14.3", date: "2026-09-25" };
+const BUILD = { number: "14.4", date: "2026-09-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1605,7 +1605,7 @@ document.addEventListener("selectionchange", () => {
 function makeRoomForToolbar() {
   const page = $("diary-note-page");
   if (page.hidden) return;
-  page.style.paddingBottom = `${$("diary-toolbar-wrap").offsetHeight + 28}px`;
+  page.style.paddingBottom = `${$("diary-toolbar-wrap").offsetHeight + 8}px`;
 }
 
 // Normally Chrome shrinks the page above the keyboard (the viewport setting in index.html).
@@ -1633,9 +1633,28 @@ function keepCaretAboveToolbar() {
     spot = line.getBoundingClientRect();
   }
   const toolbarTop = $("diary-toolbar-wrap").getBoundingClientRect().top;
-  const overlap = spot.bottom - (toolbarTop - 8);
-  if (overlap > 0) window.scrollBy(0, overlap);
+  const writing = $("diary-text");
+  const floor = Math.min(toolbarTop, writing.getBoundingClientRect().bottom);
+  const overlap = spot.bottom - (floor - 8);
+  if (overlap > 0) writing.scrollTop += overlap;   // Build 14.4: the writing scrolls, not the page
 }
+
+// Build 14.4: on the cover screen the title row steps aside while the keyboard is up and you are
+// writing the note itself. It comes back when the keyboard closes, or as soon as you tap the title.
+const COVER_KEYBOARD_HEIGHT = 430;   // the cover window is 530 tall; a keyboard takes it well below this
+
+function setWritingMode() {
+  const tight = onCoverScreen() && window.innerHeight < COVER_KEYBOARD_HEIGHT;
+  const writing = document.activeElement === $("diary-text");
+  $("diary-note-page").classList.toggle("is-writing", tight && writing);
+}
+
+for (const id of ["diary-text", "diary-title"]) {
+  $(id).addEventListener("focusin", setWritingMode);
+  $(id).addEventListener("focusout", setWritingMode);
+}
+window.addEventListener("resize", setWritingMode);          // the keyboard opening and closing
+if (window.visualViewport) window.visualViewport.addEventListener("resize", setWritingMode);
 
 if (window.ResizeObserver) new ResizeObserver(makeRoomForToolbar).observe($("diary-toolbar-wrap"));
 if (window.visualViewport) {
@@ -1646,6 +1665,7 @@ if (window.visualViewport) {
 function wireEditor(editor) {
   editor.addEventListener("input", () => {
     $("diary-error").hidden = true;
+    setWritingMode();        // settles the title row even if no resize event arrived
     keepCaretAboveToolbar();
   });
   editor.addEventListener("paste", (event) => { // pasted text always arrives plain
@@ -1704,8 +1724,7 @@ function openNoteEditor(note) {
   // Build 14.2: the bar holds the date; a note that has never been saved shows nothing there
   $("diary-when").textContent = note ? noteWhen(note) : "";
   $("diary-when").hidden = !note;
-  $("note-menu-btn").hidden = !note;
-  closeNoteMenu();
+  closeNoteMenu();            // Build 14.4: ⋯ is always in the bar; its items wake up once the note is saved
   $("diary-error").hidden = true;
   clearTimeout(savedTimer);
   $("diary-saved").hidden = true;
@@ -1717,7 +1736,11 @@ function openNoteEditor(note) {
   makeRoomForToolbar();
   liftToolbarAboveKeyboard();
   history.pushState({ view: currentView, note: true }, ""); // so Back closes the writing page
-  (note ? $("diary-text") : $("diary-title")).focus();
+  // On the cover screen a new note starts in the writing: there is no room for the title with the
+  // keyboard up, and the keyboard's own suggestion row only appears for a text field.
+  const startInWriting = Boolean(note) || onCoverScreen();
+  (startInWriting ? $("diary-text") : $("diary-title")).focus();
+  setWritingMode();
 }
 
 function openNote(id) {
@@ -1779,7 +1802,6 @@ function markNoteSaved() {
   if (note) {
     $("diary-when").textContent = noteWhen(note);
     $("diary-when").hidden = false;
-    $("note-menu-btn").hidden = false;
   }
   noteOpenedWith = noteFields();
 }
@@ -1840,10 +1862,15 @@ function closeNoteMenu() {
 }
 
 function openNoteMenu() {
-  const pinned = noteIsPinned();
+  const saved = Boolean(editingNoteId);      // pinning and deleting need a note that exists
+  const pinned = saved && noteIsPinned();
   $("note-pin-item").innerHTML = pinned ? UNPIN_ICON : PIN_ICON;   // the same icons the list swipe shows
   $("note-pin-item").setAttribute("aria-label", pinned ? "Unpin" : "Pin");
   $("note-delete-item").innerHTML = BIN_ICON;
+  for (const item of [$("note-pin-item"), $("note-delete-item")]) {
+    item.setAttribute("aria-disabled", saved ? "false" : "true");
+    item.disabled = !saved;
+  }
   $("note-menu").hidden = false;
   $("note-menu-btn").setAttribute("aria-expanded", "true");
 }

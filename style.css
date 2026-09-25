@@ -267,7 +267,7 @@ textarea {
   border-radius: 8px;
   resize: vertical;
 }
-.note-text { min-height: calc(45vh / var(--cover-zoom, 1)); }
+/* Build 14.4: the writing no longer has a fixed floor — it fills the page instead */
 
 /* ---------- Formatting toolbar (Build 9.6) ---------- */
 /* Build 9.7: pinned to the bottom, riding just above the keyboard, so Android's Cut/Copy menu can't cover it */
@@ -340,8 +340,11 @@ textarea {
   pointer-events: none;
 }
 #diary-text {
+  flex: 1 1 auto;            /* Build 14.4: takes the space left above the toolbar and scrolls inside itself */
+  min-height: 0;
+  overflow-y: auto;
   min-width: 0;
-  padding: 0;                /* Build 14.2: unboxed, flush under the title */
+  padding: 6px 0 0;          /* Build 14.2: unboxed, flush under the title */
   font-size: 16px;
   line-height: 1.45;
   color: var(--ink);
@@ -400,7 +403,12 @@ textarea {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-#diary-note-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) 28px; }
+#diary-note-page {           /* Build 14.4: a fixed column — the writing fills the space above the toolbar */
+  display: flex;
+  flex-direction: column;
+  height: calc(100svh / var(--cover-zoom, 1));
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) 28px;
+}
 
 /* ---------- The note page (Build 14.2, wireframe 22c) ---------- */
 .sr-only {                   /* read aloud, never seen */
@@ -415,9 +423,14 @@ textarea {
   border: 0;
 }
 .settings-head.note-head { gap: 0; }   /* the buttons are 44px targets already, so the date gets the room */
+.note-actions {              /* Build 14.4: date, 💾 and ⋯ ride together against the right edge */
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-left: auto;
+}
 .note-when {                 /* Build 14.3: sits on the right, just before 💾 */
   flex: 0 1 auto;
-  margin-left: auto;
   min-width: 0;
   font-size: 0.72rem;        /* "Last saved: 25 Sept 2026, 11:08" fits beside the three buttons, with room to spare */
   margin: 0;
@@ -481,6 +494,13 @@ textarea {
 }
 #diary-title::placeholder { color: #aaa; font-weight: 400; }
 #diary-title:focus { outline: none; }
+#diary-title {
+  flex: 0 0 auto;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);   /* shows where the title ends and the writing starts */
+}
+#diary-note-page .field { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }
+.note-menu-item[aria-disabled="true"] { opacity: 0.35; }
 .saved-note {
   align-self: center;
   margin: 0;
@@ -768,6 +788,13 @@ textarea {
   .settings-head h1 { font-size: 1.25rem; }
   .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
   .btn.back { width: 40px; min-height: 40px; font-size: 1.35rem; }
+  /* Build 14.4: on the cover screen the title steps aside while you write, and the tools are smaller */
+  #diary-note-page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }  /* every line counts here */
+  #diary-note-page.is-writing #diary-title { display: none; }
+  .note-toolbar { gap: 3px; padding: 4px 0; }
+  .tool { flex: 0 0 36px; height: 36px; font-size: 0.95rem; }
+  .colour-strip { gap: 3px; padding: 4px 0; }
+  .swatch { width: 32px; height: 32px; }
   /* Build 14.2: the note bar still fits at 598 × 530 */
   .note-when { font-size: 0.66rem; }   /* Build 14.3: "Last saved: …" fits the cover bar too */
   .note-act { width: 40px; height: 40px; font-size: 1.2rem; }
