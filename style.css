@@ -152,7 +152,7 @@ button { font: inherit; color: inherit; }
   font-size: 2rem;
   line-height: 1;
   color: var(--accent);
-  background: var(--card);
+  background: transparent;   /* Build 16.1: see-through, so an amount behind it still reads */
   border: 2px solid var(--accent);
   border-radius: 50%;
   cursor: pointer;
