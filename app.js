@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "14.2", date: "2026-09-25" };
+const BUILD = { number: "14.3", date: "2026-09-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -156,7 +156,7 @@ function newId() {
 }
 
 // Build 12.3: the cover screen shows the same numbers more tightly
-const COVER_SCREEN = window.matchMedia("(max-height: 480px), (min-aspect-ratio: 3 / 4)");
+const COVER_SCREEN = window.matchMedia("(min-aspect-ratio: 3 / 4) and (min-width: 500px)");
 function onCoverScreen() {
   return COVER_SCREEN.matches;
 }
@@ -1673,13 +1673,13 @@ function noteHtmlOf(note) {
 
 wireEditor($("diary-text"));
 
-// Build 14.2: this now rides in the bar, so it is written short — "21 Sept, 21:14 · edited"
+// Build 14.3: the bar says when the note was last saved — "Last saved: 25 Sept 2026, 11:08"
 function noteWhen(note) {
-  const when = new Date(note.createdAt || `${note.date}T00:00:00`);
-  const day = when.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const saved = note.updatedAt || note.createdAt || `${note.date}T00:00:00`;
+  const when = new Date(saved);
+  const day = shortDate(saved.slice(0, 10), true);   // written as everywhere else in the app
   const time = when.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  const stamp = `${day}, ${time}`;
-  return note.updatedAt ? `${stamp} · edited` : stamp;
+  return `Last saved: ${day}, ${time}`;
 }
 
 function noteFields() {

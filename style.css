@@ -414,10 +414,12 @@ textarea {
   white-space: nowrap;
   border: 0;
 }
-.note-head { gap: 4px; }
-.note-when {                 /* the date takes the middle and shortens if it must */
-  flex: 1;
+.settings-head.note-head { gap: 0; }   /* the buttons are 44px targets already, so the date gets the room */
+.note-when {                 /* Build 14.3: sits on the right, just before 💾 */
+  flex: 0 1 auto;
+  margin-left: auto;
   min-width: 0;
+  font-size: 0.72rem;        /* "Last saved: 25 Sept 2026, 11:08" fits beside the three buttons, with room to spare */
   margin: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -754,7 +756,7 @@ textarea {
 /* Short screens (the cover screen): a slimmer bar, so more of the page shows */
 /* Build 11.1: the cover screen is nearly square (1048 × 948), the main screen is tall and narrow (1080 × 2520).
    Shape is the reliable test: a screen that isn't tall and narrow gets the compact layout. */
-@media (max-height: 480px), (min-aspect-ratio: 3 / 4) {
+@media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
   /* Build 12.7: the phone hands this screen a 598×530 layout and scales it onto a small panel,
      so everything is drawn about half size. One zoom puts it back to a comfortable size. */
   :root { --cover-zoom: 1.6; }
@@ -767,7 +769,7 @@ textarea {
   .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
   .btn.back { width: 40px; min-height: 40px; font-size: 1.35rem; }
   /* Build 14.2: the note bar still fits at 598 × 530 */
-  .note-when { font-size: 0.72rem; }
+  .note-when { font-size: 0.66rem; }   /* Build 14.3: "Last saved: …" fits the cover bar too */
   .note-act { width: 40px; height: 40px; font-size: 1.2rem; }
   #diary-title { font-size: 1.05rem; min-height: 34px; }
   /* Build 12.9: on the cover screen the Skin tile puts tonight's step beside the name */
@@ -975,7 +977,7 @@ textarea {
 
 /* Build 13: My Skin on the cover screen — the card, this week and the key, all above the fold.
    These sit after the rules above on purpose: the cover block higher up would lose to them. */
-@media (max-height: 480px), (min-aspect-ratio: 3 / 4) {
+@media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
   /* Build 14: the diary list — a tighter year heading, so one more row fits */
   .year-head { margin: 6px 0 3px; padding-bottom: 3px; font-size: 0.72rem; }
 
