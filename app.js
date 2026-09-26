@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.7", date: "2026-09-26" };
+const BUILD = { number: "16.8", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -920,6 +920,20 @@ document.addEventListener("visibilitychange", () => {
 const BRAIN_KEY = "myjournal.braindump";
 const brainStore = makeStore(BRAIN_KEY);   // To keep thoughts only. Let go thoughts are never saved.
 
+// Build 16.8: ten kept thoughts at most. This page is meant to be emptied, not filled, so the
+// eleventh is refused until one is let go or moved to My Diary. A pile that is already bigger
+// (an old backup) is never cut down — you just can't add to it until it is back under ten.
+const BRAIN_MAX = 10;
+
+function brainIsFull() {
+  try {
+    return brainStore.load().length >= BRAIN_MAX;
+  } catch (err) {
+    console.error(err);
+    return false;            // if the pile can't be read, don't stand in the way of writing
+  }
+}
+
 let brainMode = "keep";                    // "keep", "letgo" or "edit"
 let editingThoughtId = null;
 
@@ -934,7 +948,11 @@ function renderBrain() {
   }
   thoughts.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); // newest first; editing never moves one
   $("brain-list").replaceChildren(...thoughts.map(thoughtRow));
-  $("brain-count").textContent = thoughts.length ? `TO KEEP · ${thoughts.length}` : "TO KEEP";   // Build 15
+  // Build 15: the heading carries the count. Build 16.8: and what it is counting towards.
+  $("brain-count").textContent = thoughts.length ? `TO KEEP · ${thoughts.length} of ${BRAIN_MAX}` : "TO KEEP";
+  const full = thoughts.length >= BRAIN_MAX;
+  $("brain-keep").classList.toggle("is-full", full);
+  $("brain-keep").setAttribute("aria-disabled", String(full));   // not `disabled`: it still takes a tap, to explain itself
   $("brain-empty").textContent = loadProblem ? "Sorry, your thoughts couldn't be loaded." : "Nothing to keep yet.";
   $("brain-empty").hidden = thoughts.length > 0;
 }
@@ -1075,6 +1093,11 @@ function sendThought() {
     box.focus();
     return;
   }
+  if (brainMode === "keep" && brainIsFull()) {   // Build 16.8: holds even if the pile filled while this was open
+    $("brain-error").textContent = `To keep is full (${BRAIN_MAX}). Let one go first — your writing is still here.`;
+    $("brain-error").hidden = false;
+    return;
+  }
   try {
     if (brainMode === "keep") brainStore.add({ id: newId(), text, createdAt: new Date().toISOString() });
     if (brainMode === "edit") brainStore.update(editingThoughtId, { text });
@@ -1096,7 +1119,13 @@ function sendThought() {
 }
 
 $("close-brain").addEventListener("click", goHome);
-$("brain-keep").addEventListener("click", () => openBrainWriter("keep"));
+$("brain-keep").addEventListener("click", () => {
+  if (brainIsFull()) {   // Build 16.8: refuse before the box opens, never after words are typed
+    flashOn("brain-page-flash", `To keep is full. Let one go, or move one to My Diary, first.`, true);
+    return;
+  }
+  openBrainWriter("keep");
+});
 $("brain-letgo").addEventListener("click", () => openBrainWriter("letgo"));
 $("brain-send").addEventListener("pointerdown", (event) => event.preventDefault()); // keep the keyboard up
 $("brain-send").addEventListener("click", sendThought);

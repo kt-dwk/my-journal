@@ -1120,6 +1120,9 @@ textarea {
 /* Build 15: To keep is solid, Let go is dashed — the one that vanishes */
 .brain-tile { min-height: 132px; margin-bottom: 0; align-items: center; justify-content: center; text-align: center; }
 #brain-letgo { border-style: dashed; }
+/* Build 16.8: To keep greys out once ten thoughts are stored. Lighter than the 0.3 used for the
+   small disabled arrows — a 132px tile that faint reads as broken rather than full. */
+.brain-tile.is-full { opacity: 0.45; cursor: default; }
 .log-row.brain-row {
   display: block;
   white-space: pre-wrap;
