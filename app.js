@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.3", date: "2026-09-26" };
+const BUILD = { number: "16.4", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -167,11 +167,13 @@ function formatWhole(amount, currency) {
   return symbol + Math.round(amount).toLocaleString("en-US");
 }
 
+// Build 16.4: cents only when there are cents, so savings read $50 but $50.75 keeps its pennies
 function formatMoney(amount, currency) {
   const { symbol, decimals } = CURRENCIES[currency];
+  const places = Number.isInteger(amount) ? 0 : decimals;
   return symbol + amount.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: places,
+    maximumFractionDigits: places,
   });
 }
 
@@ -2315,7 +2317,7 @@ function renderSavings() {
   $("goals").replaceChildren(
     ...GOALS.map((g) => {
       const saved = all.filter((s) => s.goal === g.name).reduce((sum, s) => sum + s.amount, 0);
-      const percent = Math.min(100, g.target ? Math.round((saved / g.target) * 100) : 0);
+      const percent = Math.min(100, g.target ? Math.floor((saved / g.target) * 100) : 0);   // Build 16.4: rounds down, so 100% only means reached
 
       const jar = el("div", "jar");
       jar.setAttribute("role", "progressbar");
@@ -2543,6 +2545,8 @@ function showTab(name) {
     $(`tab-${tab}`).setAttribute("aria-selected", String(selected));
     $(`panel-${tab}`).hidden = !selected;
   }
+  // Build 16.4: the same + opens a different sheet on each tab, so it says which
+  $("open-add").setAttribute("aria-label", name === "savings" ? "Add saving" : "Add transaction");
   try {
     localStorage.setItem(TAB_KEY, name);
   } catch {}
