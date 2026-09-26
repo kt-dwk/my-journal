@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.6", date: "2026-09-26" };
+const BUILD = { number: "16.7", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -421,8 +421,7 @@ function setMode(id) {
 let lastScrollY = 0;
 let fabTimer;
 
-function watchScrollForFab() {
-  const fab = $("open-add");
+function watchScrollForFab(fab) {
   const y = Math.max(0, window.scrollY);
   const goingDown = y > lastScrollY + 4;
   const goingUp = y < lastScrollY - 4;
@@ -433,9 +432,12 @@ function watchScrollForFab() {
   fabTimer = setTimeout(() => fab.classList.remove("is-away"), 600);   // stopped scrolling: bring it back
 }
 
+// Build 16.7: My Diary's ✎ does the same, so both floating buttons behave alike
 window.addEventListener("scroll", () => {
-  if ($("money-page").hidden) return;     // the diary's ✎ keeps its own behaviour for now
-  watchScrollForFab();
+  const fab = !$("money-page").hidden ? $("open-add")
+            : !$("diary-page").hidden ? $("diary-new")
+            : null;
+  if (fab) watchScrollForFab(fab);
 }, { passive: true });
 
 $("open-add").addEventListener("click", () => {
@@ -861,6 +863,9 @@ function applyPages(overlay = "") {
   $("settings-page").hidden = overlay !== "settings";
   $("diary-note-page").hidden = overlay !== "note";
   window.scrollTo(0, 0);
+  // Build 16.7: leaving a page part-way down must not leave its + or ✎ hidden when you come back
+  for (const id of ["open-add", "diary-new"]) $(id).classList.remove("is-away");
+  lastScrollY = 0;
 }
 
 function renderHome() {
