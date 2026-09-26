@@ -993,6 +993,9 @@ textarea {
 .btn.accent:active { background: #eef3fd; }
 .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .settings-actions .btn { min-height: 56px; }
+/* Build 16.9: same size as Backup — only quieter, because Backup is the one you actually use
+   and Restore replaces everything. The confirm step is what really protects you. */
+#restore-btn { color: var(--muted); border-color: #bbb; }
 #last-backup { margin: 10px 0 0; }
 .build-foot { margin-top: auto; padding-top: 24px; }
 #build-info {                /* Build 14.6: tap it to reload the app */

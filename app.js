@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.8", date: "2026-09-26" };
+const BUILD = { number: "16.9", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -2093,8 +2093,7 @@ function fillRateInputs() {
 // Build 12.4: the cover screen uses the wireframe's shorter labels
 function applyCoverWording() {
   const short = onCoverScreen();
-  $("rate-USD-label").textContent = short ? "1 USD =" : "1 USD = ? LAK";
-  $("rate-THB-label").textContent = short ? "1 THB =" : "1 THB = ? LAK";
+  // Build 16.9: the rate labels read "1 USD =" on both screens now, so they stay in the HTML
   $("backup-heading").textContent = short ? "Backup" : "Backup & Restore";
   const built = `Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
   $("build-info").textContent = short ? built : `My Journal · ${built}`;
@@ -2191,7 +2190,17 @@ function showLastBackup() {
   }
   const made = new Date(when);
   const time = made.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  $("last-backup").textContent = `Last backup: ${shortDate(when.slice(0, 10), true)}, ${time}`;
+  $("last-backup").textContent = `Last backup: ${shortDate(when.slice(0, 10), true)}, ${time} · ${backupAge(when)}`;
+}
+
+// Build 16.9: your data lives on this phone only, so Settings says how long ago the last backup was.
+// Counted in calendar days, not 24-hour blocks, so a backup at 23:00 last night reads "yesterday".
+function backupAge(iso) {
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const days = Math.round((startOfDay(new Date()) - startOfDay(new Date(iso))) / 86400000);
+  if (days <= 0) return "today";                 // <= 0 also covers a clock set backwards
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
 }
 
 function makeBackup() {
