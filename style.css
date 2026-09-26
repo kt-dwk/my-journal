@@ -567,7 +567,7 @@ textarea {
 
 .amount-row {
   display: grid;
-  grid-template-columns: 5.3rem 1fr;   /* Build 16.2: narrower — it only ever holds ₮ LAK, $ USD or ฿ THB */
+  grid-template-columns: 5.3rem 1fr;   /* Build 16.2: narrower — it only ever holds ₭ LAK, $ USD or ฿ THB */
   gap: 8px;
 }
 .amount-row select { padding-inline: 6px; }
@@ -675,7 +675,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 96px;
+  width: 100%;              /* Build 16.5: fills its 5.3rem column instead of overflowing it */
   font-weight: 600;
   border: 1px solid #ccc;
   border-radius: 8px;
