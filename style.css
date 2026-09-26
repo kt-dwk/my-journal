@@ -127,7 +127,10 @@ button { font: inherit; color: inherit; }
 .month-nav h2 { flex: 1; text-align: center; font-size: 0.95rem; font-weight: 500; color: var(--muted); }
 .month-arrow { width: 44px; padding: 0; font-size: 1.1rem; }
 /* Build 16: bare arrows on the money card, as the cover screen has had since 12.8 */
-.month-card .month-arrow { background: none; border: 0; }
+/* Build 16.6: My Skin's month and week arrows too — the only other place the class is used */
+.month-arrow { background: none; border: 0; }
+/* Build 16.6: greyed at the ends of the range, the same look as the log's pager */
+.month-arrow:disabled { opacity: 0.3; cursor: default; }
 
 .total { margin: 10px 0 0; text-align: center; }
 .total strong { display: block; font-size: 2.4rem; line-height: 1.1; }

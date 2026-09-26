@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.5", date: "2026-09-26" };
+const BUILD = { number: "16.6", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -579,6 +579,16 @@ const SKIN_CYCLE = ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"];
 const SKIN_LETTERS = ["E", "R", "M", "M"]; // shown in the calendar: E xfoliate, R etinol, M oist
 const SKIN_START = { date: "2026-09-15", night: 1 }; // 15 Sep 2026 = Retinol
 
+// Build 16.6: how far the calendar arrows may travel — back to January 2026, forward to the end
+// of next calendar year. Worked out fresh each time, so it moves on by itself as the years pass.
+const SKIN_FIRST_MONTH = 2026 * 12 + 0;
+function skinLastMonth() {
+  return (new Date().getFullYear() + 1) * 12 + 11;
+}
+function clampSkinMonth(index) {
+  return Math.min(Math.max(index, SKIN_FIRST_MONTH), skinLastMonth());
+}
+
 function daysBetween(fromISO, toISO) {
   const [y1, m1, d1] = fromISO.split("-").map(Number);
   const [y2, m2, d2] = toISO.split("-").map(Number);
@@ -684,6 +694,10 @@ function renderSkinMonth(map, today) {
     cells.push(dayCell(isoDate(skinViewYear, skinViewMonth, day), map, today));
   }
   $("skin-calendar").replaceChildren(...cells);
+
+  const index = skinViewYear * 12 + skinViewMonth;   // Build 16.6: grey out at each end
+  $("skin-prev-month").disabled = index <= SKIN_FIRST_MONTH;
+  $("skin-next-month").disabled = index >= skinLastMonth();
 }
 
 // Build 13: the cover screen shows this week only, so the card and the week both fit
@@ -698,6 +712,9 @@ function renderSkinWeek(map, today) {
   const cells = [];
   for (let i = 0; i < 7; i++) cells.push(dayCell(addDays(start, i), map, today));
   $("skin-calendar").replaceChildren(...cells);
+
+  $("skin-prev-week").disabled = start <= skinWeekFirst();   // Build 16.6
+  $("skin-next-week").disabled = start >= skinWeekLast();
 }
 
 function renderSkin() {
@@ -719,10 +736,19 @@ function renderSkin() {
   else renderSkinMonth(map, today);
 }
 
+// Build 16.6: opening the page always starts at today, wherever you browsed to last time.
+// Read from a fresh date, not the `now` captured at load, so it stays right overnight.
+function resetSkinView() {
+  const today = new Date();
+  skinViewYear = today.getFullYear();
+  skinViewMonth = today.getMonth();
+  skinWeekAnchor = todayISO();
+}
+
 function changeSkinMonth(delta) {
-  const d = new Date(skinViewYear, skinViewMonth + delta, 1);
-  skinViewYear = d.getFullYear();
-  skinViewMonth = d.getMonth();
+  const index = clampSkinMonth(skinViewYear * 12 + skinViewMonth + delta);
+  skinViewYear = Math.floor(index / 12);
+  skinViewMonth = index % 12;
   renderSkin();
 }
 
@@ -730,8 +756,18 @@ $("skin-prev-month").addEventListener("click", () => changeSkinMonth(-1));
 $("skin-next-month").addEventListener("click", () => changeSkinMonth(1));
 
 function changeSkinWeek(delta) {
-  skinWeekAnchor = addDays(mondayOf(skinWeekAnchor), delta * 7);
+  const moved = addDays(mondayOf(skinWeekAnchor), delta * 7);
+  if (moved < skinWeekFirst() || moved > skinWeekLast()) return;   // Build 16.6: the same range as the months
+  skinWeekAnchor = moved;
   renderSkin();
+}
+
+// The weeks holding the first and last allowed days
+function skinWeekFirst() {
+  return mondayOf("2026-01-01");
+}
+function skinWeekLast() {
+  return mondayOf(`${new Date().getFullYear() + 1}-12-31`);
 }
 
 $("skin-prev-week").addEventListener("click", () => changeSkinWeek(-1));
@@ -841,7 +877,7 @@ function showView(view, { push = false } = {}) {
     sessionStorage.setItem(SESSION_VIEW_KEY, view);
   } catch {}
   if (view === "home") renderHome();
-  if (view === "skin") renderSkin();
+  if (view === "skin") { resetSkinView(); renderSkin(); }   // Build 16.6: opening starts at today
   if (view === "diary") renderDiary();
   if (view === "brain") renderBrain();
   if (view !== "brain" && $("brain-dialog").open) $("brain-dialog").close(); // Back left the page with the pop-up open
