@@ -17,13 +17,17 @@
       <h1>My Journal</h1>
       <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
     </header>
-    <div class="home-top">
-      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump">🧠</button>
-    </div>
     <div class="note-space">
       <div class="sticky-note">
         <p class="daily-line" id="daily-line"></p>
       </div>
+    </div>
+    <!-- Build 16.10 (wireframe 28a): the row under the note. 📖 and ❤️ have no page yet, so they
+         are drawn but do nothing — aria-disabled rather than disabled, which would grey them. -->
+    <div class="home-icons">
+      <button type="button" class="brain-button" id="tile-book" aria-label="Reading list" aria-disabled="true">📖</button>
+      <button type="button" class="brain-button" id="tile-heart" aria-label="Not decided yet" aria-disabled="true">❤️</button>
+      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump">🧠</button>
     </div>
     <div class="tile-dock">
       <button type="button" class="tile" id="tile-money">

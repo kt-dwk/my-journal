@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "16.9", date: "2026-09-26" };
+const BUILD = { number: "16.10", date: "2026-09-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -907,6 +907,8 @@ $("tile-money").addEventListener("click", () => {
 $("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
 $("tile-diary").addEventListener("click", () => showView("diary", { push: true }));
 $("tile-brain").addEventListener("click", () => showView("brain", { push: true }));
+// Build 16.10: #tile-book and #tile-heart have no handler on purpose. The reading list and the
+// ❤️ page aren't planned yet, so the icons are drawn but inert until each has somewhere to go.
 $("tile-habit").addEventListener("click", () => showView("habit", { push: true }));
 for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
 
