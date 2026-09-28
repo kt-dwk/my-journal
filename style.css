@@ -880,14 +880,29 @@ textarea {
   /* Build 12.9: on the cover screen the Skin tile puts tonight's step beside the name */
   .tile { flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 6px) calc(8px + env(safe-area-inset-bottom)); }
-  /* Build 16.10: the cover screen keeps the layout it already had — 🧠 alone in the top right,
-     the note centred below it. Build 17 will look at this screen properly. */
-  #home-page .home-icons { order: -1; justify-content: flex-end; margin-top: 0; margin-bottom: 0; }
-  #home-page #tile-book, #home-page #tile-heart { display: none; }
-  #home-page .note-space { flex: 1; margin-top: 0; }
+  /* Build 17: the cover screen is wider than it is tall (374 × 331 in app units), so Home stops
+     stacking and goes side by side — the note on the left, the three icons in a column on the
+     right, the dock across the bottom. The bar is position:fixed and out of flow, so the grid
+     holds only these three. Written with #home-page so it wins wherever this block sits. */
+  /* No column gap: the note is centred across the whole space from the content edge to the icons,
+     as asked. A gap would sit outside that centring and push the note left of true centre. There
+     is ~80 app units of air either side of it anyway, so nothing crowds the icons. */
+  #home-page { display: grid; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto; column-gap: 0; }
+  #home-page .note-space { grid-column: 1; grid-row: 1; flex: 0 1 auto; margin: 0; }
+  #home-page .home-icons {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+  }
+  #home-page .tile-dock { grid-column: 1 / -1; grid-row: 2; }
   .brain-button { width: 46px; height: 46px; margin-top: 4px; font-size: 1.25rem; } /* further from ⚙, so they are not confused */
-  .sticky-note { width: min(190px, 28vh / var(--cover-zoom)); height: min(190px, 28vh / var(--cover-zoom)); padding: 8px; } /* square on the cover screen */
-  .daily-line { font-size: clamp(0.65rem, 2.6vh / var(--cover-zoom), 1rem); line-height: 1.3; }   /* the line always fits inside the note */
+  /* Build 17: still a square, but 131 rather than 94 app units — nearly twice the area, now that
+     it sits beside the icons instead of under them. min() keeps it shrinking on a shorter window. */
+  .sticky-note { width: min(131px, 40vh / var(--cover-zoom)); height: min(131px, 40vh / var(--cover-zoom)); padding: 10px; }
+  .daily-line { font-size: clamp(0.78rem, 3.4vh / var(--cover-zoom), 1rem); line-height: 1.3; }   /* the longest line still fits inside the note */
   .tile-dock { height: min(210px, 30vh / var(--cover-zoom)); gap: 8px; padding-top: 8px; }
   .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
   .tile-name { font-size: 0.95rem; }
