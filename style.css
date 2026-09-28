@@ -951,7 +951,9 @@ textarea {
   /* Build 12.8: the month bar matches the switch above it, and the arrows lose their boxes */
   .month-card { min-height: 38px; padding: 0 8px; }
   .month-card .month-nav h2 { font-size: 0.85rem; }
-  .month-card .total strong { font-size: 1.1rem; }
+  /* Build 17.1: the month total matches Savings' "Total saved" at 1.5rem above. It was 1.1rem
+     here only because this later rule quietly overrode that one — the number you open the page
+     for was the smaller of the two. The card still holds its 38px, so nothing else moves. */
   .month-arrow {
     width: 34px;
     min-height: 34px;
@@ -962,7 +964,11 @@ textarea {
   }
 
   .goal-row { gap: 10px; padding: 4px 0; }
-  #panel-savings { padding-bottom: 56px; }   /* the last goal clears the floating + */
+  /* Build 17.1: the money and diary pages inherited `padding-bottom: 96px` from `.page`, written
+     to clear the bottom tab bar that Build 12 removed. On the cover screen that is 29% of the
+     height for nothing. 70 is what the floating button actually needs: 46 tall, sitting 16 up.
+     (My Skin and Settings were already 8 and 16 — measured, not assumed.) */
+  #money-page, #diary-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
   .goal-name { font-size: 0.95rem; }
   .goal-amount { font-size: 0.85rem; }
   .jar-lid { width: 18px; height: 5px; }
