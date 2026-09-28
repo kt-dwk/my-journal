@@ -664,6 +664,12 @@ textarea {
   color: var(--ink);
 }
 .jar-percent.on-fill { color: #fff; }
+/* Build 18: the number sits inside the jar and flips to white at 50%, so around the halfway mark
+   the fill line runs straight through the digits and half of each one matches the colour behind
+   it — the top half vanishes at 50%, the bottom half below it. A halo in the opposite colour to
+   the text keeps it readable whichever side of the line it falls on. Measured bad band: ~46–54%. */
+.jar-percent { text-shadow: 0 0 2px var(--card), 0 0 2px var(--card); }
+.jar-percent.on-fill { text-shadow: 0 0 2px var(--ink), 0 0 2px var(--ink); }
 .currency-fixed {
   display: flex;
   align-items: center;
