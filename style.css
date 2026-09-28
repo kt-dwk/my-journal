@@ -974,15 +974,21 @@ textarea {
   .jar-lid { width: 18px; height: 5px; }
   .jar-body { width: 30px; height: 40px; }
   .jar-percent { font-size: 0.72rem; }
-  /* Settings on a 354 px tall screen: trim the rows so Backup and Restore stay above the fold */
+  /* Settings on a 354 px tall screen: trim the rows so Backup and Restore stay above the fold.
+     Build 17.2: these were written in 12.9 and NEVER APPLIED — this block sits earlier in the file
+     than the main-screen rules for the same elements, so at equal specificity the later ones won
+     and the cover screen has been carrying main-screen spacing ever since. The page overflowed by
+     115 app units as a result. Re-written with #settings-page so they win wherever they sit.
+     Scoped to Settings on purpose: the same override also affects .section-label and .btn on the
+     Money and Brain dump cover pages, but those were reviewed and accepted as they render today. */
   .page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }   /* less air under the bar */
-  .rate-row { padding: 2px 0; }
-  .rate-row input { min-height: 32px; }
-  .rate-save { margin-top: 2px; }
-  .section-label { margin-bottom: 3px; font-size: 0.72rem; }
-  .settings-actions .btn { min-height: 38px; }
-  .btn { min-height: 38px; }
-  .build-foot { margin-top: 10px; padding-top: 10px; }
+  #settings-page .rate-row { padding: 2px 0; }
+  #settings-page .rate-row input { min-height: 32px; }
+  #settings-page .rate-save { margin-top: 2px; }
+  #settings-page .section-label { margin-bottom: 3px; font-size: 0.72rem; }
+  #settings-page .settings-actions .btn { min-height: 38px; }
+  #settings-page .rate-save .btn { min-height: 38px; }   /* Save rates — not the back arrow */
+  #settings-page .build-foot { margin-top: auto; padding-top: 10px; }
   .tile-sub { font-size: 0.75rem; }
 
 }
