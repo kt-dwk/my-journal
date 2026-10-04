@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "19", date: "2026-10-03" };
+const BUILD = { number: "20", date: "2026-10-04" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1265,6 +1265,15 @@ let noteToDelete = null;
 
 function askDeleteNote(id) {
   noteToDelete = id;
+  // Build 20: say which note. It opens from the list and from the note page, so the row may be off screen.
+  let note;
+  try {
+    note = diaryStore.load().find((n) => n.id === id);
+  } catch (err) {
+    console.error(err);
+  }
+  $("note-delete-which").textContent = note ? note.title || "(untitled)" : "";
+  $("note-delete-which").hidden = !note;
   $("note-delete-dialog").showModal();
 }
 

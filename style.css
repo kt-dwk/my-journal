@@ -77,10 +77,17 @@ button { font: inherit; color: inherit; }
 .confirm {
   margin-top: 8px;
   padding: 12px;
-  border: 1px solid var(--error);
+  border: 1px solid var(--line);   /* Build 20: a question you asked for is not an error */
   border-radius: 10px;
 }
 .confirm p { margin: 0; font-weight: 600; }
+/* Build 20: the note being deleted, capped at two lines so a long title can't grow the pop-up */
+#note-delete-which {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .btn.wide { display: block; width: 100%; margin-bottom: 24px; }
 
 .link {
