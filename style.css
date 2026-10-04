@@ -854,7 +854,7 @@ textarea {
   .btn.back { width: 40px; min-height: 40px; font-size: 1.35rem; }
   /* Build 15: Brain dump stays compact here — the kept list needs the room.
      Written with the page's id so it wins over the taller main-screen rule further down the file. */
-  #brain-page .brain-tile { min-height: 76px; }
+  #brain-page .brain-tile { min-height: 60px; }   /* Build 19: shorter, so the session list has room */
   /* Build 15.1: the pop-up fits the window — the title gives up the room, the box keeps its two lines */
   #brain-dialog {
     margin-block: 8px auto;
@@ -869,7 +869,9 @@ textarea {
      so the cap is what keeps it to two lines here — longer thoughts scroll inside it. */
   #brain-dialog #brain-text { padding: 6px 8px; max-height: calc(2 * 1.45em + 14px); }
   #brain-dialog #brain-send { width: 44px; min-height: 44px; height: 44px; }
-  #brain-dialog .brain-flash, #brain-dialog .error { margin-top: 4px; font-size: 0.72rem; }
+  #brain-dialog .error { margin-top: 4px; font-size: 0.72rem; }
+  #brain-dialog .session-list { margin-top: 6px; }
+  #brain-dialog .session-thought { padding: 5px 0; font-size: 0.78rem; }
   #brain-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar here, so no empty scroll */
 
   /* Build 14.4: on the cover screen the title steps aside while you write, and the tools are smaller */
@@ -1162,39 +1164,40 @@ textarea {
 .tab:focus-visible { outline: 3px solid #6b9cff; outline-offset: -3px; }
 
 /* ---------- Brain dump (Build 10) ---------- */
-.brain-tiles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-/* Build 15: To keep is solid, Let go is dashed — the one that vanishes */
-.brain-tile { min-height: 132px; margin-bottom: 0; align-items: center; justify-content: center; text-align: center; }
-#brain-letgo { border-style: dashed; }
-/* Build 16.8: To keep greys out once ten thoughts are stored. Lighter than the 0.3 used for the
-   small disabled arrows — a 132px tile that faint reads as broken rather than full. */
-.brain-tile.is-full { opacity: 0.45; cursor: default; }
-.log-row.brain-row {
-  display: block;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 1rem;
-  color: var(--ink);
+/* Build 19: one full-width tile, and nothing else on the page. The To keep / Let go pair, the
+   dashed Let go, the greyed "full" state and the thought rows all went with the list. */
+.brain-tile {
+  min-height: 132px;
+  margin-bottom: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .brain-write {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-end;                /* ➤ rides the box's bottom edge as the box grows */
   gap: 8px;
 }
 #brain-text {
   flex: 1;
   min-width: 0;
-  max-height: calc(4 * 1.45em + 22px);  /* grows to about 4 lines, then scrolls */
+  max-height: calc(5 * 1.45em + 22px);  /* Build 19: grows to about five lines, then scrolls */
   line-height: 1.45;
   resize: none;
   overflow-y: auto;
 }
-.brain-flash { margin-top: 8px; }
+/* Build 19: what you have let go of since opening the box. One line each, read-only, and gone
+   when the pop-up closes — nothing here is ever stored. */
+.session-list { margin: 10px 0 0; padding: 0; list-style: none; }
+.session-thought {
+  padding: 7px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9rem;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
 #brain-error { margin: 8px 0 0; }
 
 /* Build 10.1: Brain dump page message */

@@ -31,7 +31,7 @@ const SAVINGS_KEY = "myjournal.savings";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "18", date: "2026-09-28" };
+const BUILD = { number: "19", date: "2026-10-03" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -884,7 +884,6 @@ function showView(view, { push = false } = {}) {
   if (view === "home") renderHome();
   if (view === "skin") { resetSkinView(); renderSkin(); }   // Build 16.6: opening starts at today
   if (view === "diary") renderDiary();
-  if (view === "brain") renderBrain();
   if (view !== "brain" && $("brain-dialog").open) $("brain-dialog").close(); // Back left the page with the pop-up open
   applyPages();
   if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
@@ -917,88 +916,15 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) renderHome();
 });
 
-// ---------- Brain dump (Build 10) ----------
+// ---------- Brain dump (Build 19: letting go) ----------
+// This section stores nothing. A thought is written, it appears in a list inside the pop-up so you
+// can see it went, and closing the pop-up forgets it. Build 10's To keep list, the ten-thought cap
+// (16.8), the swipes and editing are all gone — anything worth keeping belongs in My Diary.
 
-const BRAIN_KEY = "myjournal.braindump";
-const brainStore = makeStore(BRAIN_KEY);   // To keep thoughts only. Let go thoughts are never saved.
+const BRAIN_KEY = "myjournal.braindump";   // only still named here so the one-time move can find it
 
-// Build 16.8: ten kept thoughts at most. This page is meant to be emptied, not filled, so the
-// eleventh is refused until one is let go or moved to My Diary. A pile that is already bigger
-// (an old backup) is never cut down — you just can't add to it until it is back under ten.
-const BRAIN_MAX = 10;
-
-function brainIsFull() {
-  try {
-    return brainStore.load().length >= BRAIN_MAX;
-  } catch (err) {
-    console.error(err);
-    return false;            // if the pile can't be read, don't stand in the way of writing
-  }
-}
-
-let brainMode = "keep";                    // "keep", "letgo" or "edit"
-let editingThoughtId = null;
-
-function renderBrain() {
-  let thoughts = [];
-  let loadProblem = false;
-  try {
-    thoughts = brainStore.load();
-  } catch (err) {
-    console.error(err);
-    loadProblem = true;
-  }
-  thoughts.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); // newest first; editing never moves one
-  $("brain-list").replaceChildren(...thoughts.map(thoughtRow));
-  // Build 15: the heading carries the count. Build 16.8: and what it is counting towards.
-  $("brain-count").textContent = thoughts.length ? `TO KEEP · ${thoughts.length} of ${BRAIN_MAX}` : "TO KEEP";
-  const full = thoughts.length >= BRAIN_MAX;
-  $("brain-keep").classList.toggle("is-full", full);
-  $("brain-keep").setAttribute("aria-disabled", String(full));   // not `disabled`: it still takes a tap, to explain itself
-  $("brain-empty").textContent = loadProblem ? "Sorry, your thoughts couldn't be loaded." : "Nothing to keep yet.";
-  $("brain-empty").hidden = thoughts.length > 0;
-}
-
-// Build 10.1: swipe a thought for 📖 To diary and 🗑 Delete, the same swipe as My Diary
-function thoughtRow(thought) {
-  const li = el("li", "swipe");
-  const actions = el("div", "swipe-actions");
-  actions.append(
-    iconButton("swipe-btn", "Move to My Diary", BOOK_ICON, () => moveThoughtToDiary(thought.id)),
-    iconButton("swipe-btn bin", "Delete", BIN_ICON, () => askDeleteThought(thought.id))
-  );
-  const row = el("button", "log-row brain-row", thought.text);
-  row.type = "button";
-  addSwipe(li, row, () => openBrainWriter("edit", thought));
-  li.append(actions, row);
-  return li;
-}
-
-let thoughtToDelete = null;
-
-function askDeleteThought(id) {
-  thoughtToDelete = id;
-  $("brain-delete-dialog").showModal();
-}
-
-$("brain-delete-no").addEventListener("click", () => {
-  thoughtToDelete = null;
-  $("brain-delete-dialog").close();
-});
-
-$("brain-delete-yes").addEventListener("click", () => {
-  if (thoughtToDelete) {
-    try {
-      brainStore.remove(thoughtToDelete);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  thoughtToDelete = null;
-  $("brain-delete-dialog").close();
-  closeSwipe();
-  renderBrain();
-});
+// The thoughts dumped since the pop-up was opened. In memory only, never written anywhere.
+let sessionThoughts = [];
 
 // A diary title holds 80 characters: longer thoughts are cut at a word with "…" and kept whole in the note text
 function thoughtTitle(text) {
@@ -1009,42 +935,48 @@ function thoughtTitle(text) {
   return `${cut.trimEnd()}…`;
 }
 
-function moveThoughtToDiary(id) {
-  let thought;
+// Build 19, once only: whatever is still in To keep becomes its own diary note, then the key goes.
+// No flag is needed — an absent key means there is nothing to move, and restore no longer writes
+// one back. Quiet by your choice: no message, however many are moved.
+function moveKeptThoughtsToDiary() {
+  let thoughts;
   try {
-    thought = brainStore.load().find((t) => t.id === id);
+    const raw = localStorage.getItem(BRAIN_KEY);
+    if (!raw) return;
+    thoughts = JSON.parse(raw);
+    if (!Array.isArray(thoughts) || thoughts.length === 0) {
+      localStorage.removeItem(BRAIN_KEY);
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    return;                                  // unreadable: leave it alone rather than lose it
+  }
+  try {
+    // oldest first, so the newest thought ends up newest in the diary
+    const ordered = [...thoughts].sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    for (const thought of ordered) {
+      const text = String(thought && thought.text ? thought.text : "").trim();
+      if (!text) continue;
+      const long = text.length > 80;
+      diaryStore.add({
+        id: newId(),
+        title: thoughtTitle(text),
+        text: long ? text : "",
+        html: long ? textToHtml(text) : "",
+        date: todayISO(),
+        createdAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    return;                                  // keep the thoughts where they are and try again next time
+  }
+  try {
+    localStorage.removeItem(BRAIN_KEY);       // Brain dump stores nothing from here on
   } catch (err) {
     console.error(err);
   }
-  if (!thought) return;
-  const long = thought.text.length > 80;
-  const noteId = newId();
-  try {
-    diaryStore.add({
-      id: noteId,
-      title: thoughtTitle(thought.text),
-      text: long ? thought.text : "",
-      html: long ? textToHtml(thought.text) : "",
-      date: todayISO(),                      // dated the day it's moved, like writing a new note
-      createdAt: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error(err);
-    flashOn("brain-page-flash", "Sorry, this thought couldn't be moved.", true);
-    return;
-  }
-  try {
-    brainStore.remove(id);
-  } catch (err) {
-    console.error(err);
-    try { diaryStore.remove(noteId); } catch {} // never leave it in both places
-    flashOn("brain-page-flash", "Sorry, this thought couldn't be moved.", true);
-    return;
-  }
-  closeSwipe();
-  renderBrain();
-  renderDiary();
-  flashOn("brain-page-flash", "Moved to My Diary ✓");
 }
 
 function fitBrainBox() {
@@ -1053,13 +985,16 @@ function fitBrainBox() {
   box.style.height = `${box.scrollHeight + 2}px`; // grows with the thought, up to the max-height in style.css
 }
 
-function openBrainWriter(mode, thought = null) {
-  brainMode = mode;
-  editingThoughtId = thought ? thought.id : null;
-  $("brain-title").textContent = { keep: "To keep", letgo: "Let go", edit: "Edit thought" }[mode];
-  $("brain-text").value = thought ? thought.text : "";
-  clearTimeout(flashTimers["brain-flash"]);
-  $("brain-flash").hidden = true;
+function renderSessionThoughts() {
+  $("brain-session").replaceChildren(
+    ...sessionThoughts.map((text) => el("li", "session-thought", text))   // read-only: no tap, no swipe
+  );
+}
+
+function openBrainWriter() {
+  sessionThoughts = [];
+  renderSessionThoughts();
+  $("brain-text").value = "";
   $("brain-error").hidden = true;
   $("brain-dialog").showModal();
   fitBrainBox();
@@ -1081,86 +1016,35 @@ function flashOn(id, message, problem = false) {
   }, problem ? 3000 : 1500);
 }
 
-function flashBrain(message) {
-  flashOn("brain-flash", message);
-}
-
 function sendThought() {
   const box = $("brain-text");
-  const text = box.value.replace(/[\r\n]+/g, " ").trim();
+  const text = box.value.trim();              // Build 19: line breaks are kept, so a pasted one survives
   $("brain-error").hidden = true;
-  if (!text) {                                   // an empty box sends nothing
+  if (!text) {                                // an empty box sends nothing
     box.value = "";
     fitBrainBox();
     box.focus();
     return;
   }
-  if (brainMode === "keep" && brainIsFull()) {   // Build 16.8: holds even if the pile filled while this was open
-    $("brain-error").textContent = `To keep is full (${BRAIN_MAX}). Let one go first — your writing is still here.`;
-    $("brain-error").hidden = false;
-    return;
-  }
-  try {
-    if (brainMode === "keep") brainStore.add({ id: newId(), text, createdAt: new Date().toISOString() });
-    if (brainMode === "edit") brainStore.update(editingThoughtId, { text });
-  } catch (err) {
-    console.error(err);
-    $("brain-error").textContent = "Sorry, this thought couldn't be saved. Your writing is still here.";
-    $("brain-error").hidden = false;
-    return;
-  }
-  renderBrain();
-  if (brainMode === "edit") {
-    $("brain-dialog").close();
-    return;
-  }
-  box.value = "";                                // Let go: gone, never stored anywhere
+  sessionThoughts.unshift(text);              // newest at the top
+  renderSessionThoughts();                    // the line appearing is the confirmation — no flash
+  box.value = "";
   fitBrainBox();
-  flashBrain(brainMode === "keep" ? "Kept ✓" : "Let go ✓");
-  box.focus();                                   // stays open, keyboard up, for the next thought
+  box.focus();                                // stays open, keyboard up, for the next thought
 }
 
 $("close-brain").addEventListener("click", goHome);
-$("brain-keep").addEventListener("click", () => {
-  if (brainIsFull()) {   // Build 16.8: refuse before the box opens, never after words are typed
-    flashOn("brain-page-flash", `To keep is full. Let one go, or move one to My Diary, first.`, true);
-    return;
-  }
-  openBrainWriter("keep");
-});
-$("brain-letgo").addEventListener("click", () => openBrainWriter("letgo"));
+$("brain-dump").addEventListener("click", openBrainWriter);
 $("brain-send").addEventListener("pointerdown", (event) => event.preventDefault()); // keep the keyboard up
 $("brain-send").addEventListener("click", sendThought);
-$("brain-dialog").addEventListener("close", () => ($("brain-text").value = "")); // nothing lingers after closing
-
-// Enter sends. Keyboards report it differently, so it's caught three ways.
-$("brain-text").addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.isComposing) {
-    event.preventDefault();
-    sendThought();
-  }
-});
-$("brain-text").addEventListener("beforeinput", (event) => {
-  if (event.inputType === "insertLineBreak" || event.inputType === "insertParagraph") {
-    event.preventDefault();
-    sendThought();
-  }
+// Build 19: closing forgets everything. Enter is a new line now, so only ➤ sends.
+$("brain-dialog").addEventListener("close", () => {
+  $("brain-text").value = "";
+  sessionThoughts = [];
+  renderSessionThoughts();
 });
 $("brain-text").addEventListener("input", () => {
   $("brain-error").hidden = true;
-  if (/[\r\n]/.test($("brain-text").value)) { // a line break slipped through, so treat it as Enter
-    sendThought();
-    return;
-  }
-  fitBrainBox();
-});
-// Pasted text arrives on one line
-$("brain-text").addEventListener("paste", (event) => {
-  event.preventDefault();
-  const text = (event.clipboardData || window.clipboardData).getData("text/plain").replace(/\s*[\r\n]+\s*/g, " ");
-  const box = $("brain-text");
-  box.setRangeText(text, box.selectionStart, box.selectionEnd, "end");
-  if (box.value.length > 1000) box.value = box.value.slice(0, 1000);
   fitBrainBox();
 });
 
@@ -2218,15 +2102,15 @@ function makeBackup() {
     daily: loadDaily(),
     diary: diaryStore.load(),
     colors: loadColours(),
-    braindump: brainStore.load(),
   };
 }
 
 function backupSummary(backup) {
   const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  // Build 19: thoughts are no longer counted. Brain dump stores nothing, and an older backup's
+  // thoughts are ignored on restore — saying "1 thought" would claim something that didn't happen.
   return `${count(backup.expenses.length, "expense")} · ${count(backup.savings.length, "saving")}`
-    + ` · ${count((backup.diary || []).length, "note")}`
-    + ` · ${count((backup.braindump || []).length, "thought")}`;
+    + ` · ${count((backup.diary || []).length, "note")}`;
 }
 
 $("backup-btn").addEventListener("click", async () => {
@@ -2359,7 +2243,7 @@ $("restore-yes").addEventListener("click", () => {
       text: validColourRow(backup.colors.text, "text"),
       highlight: validColourRow(backup.colors.highlight, "highlight"),
     });
-    if (backup.braindump) brainStore.save(backup.braindump);
+    // Build 19: an older backup's "braindump" is ignored on purpose — Brain dump stores nothing now
   } catch (err) {
     console.error(err);
     // Put everything back the way it was
@@ -2373,7 +2257,6 @@ $("restore-yes").addEventListener("click", () => {
   renderSavings();
   renderSkin();
   renderDiary();
-  renderBrain();
   renderHome();
   fillRateInputs();
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);
@@ -2653,6 +2536,7 @@ $("tab-savings").addEventListener("click", () => showTab("savings"));
 fillAddForm();
 fillSavingForm();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
+moveKeptThoughtsToDiary(); // Build 19, once only: whatever was still in To keep becomes diary notes
 renderDashboard();
 renderSavings();
 applyCoverWording();

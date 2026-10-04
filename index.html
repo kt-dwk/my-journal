@@ -180,32 +180,27 @@
       <button type="button" class="btn back" id="close-brain" aria-label="Back">←</button>
       <h1>Brain dump</h1>
     </header>
-    <div class="brain-tiles">
-      <button type="button" class="tile brain-tile" id="brain-keep"><span class="tile-name">To keep</span></button>
-      <button type="button" class="tile brain-tile" id="brain-letgo"><span class="tile-name">Let go</span></button>
-    </div>
-    <p class="saved-note" id="brain-page-flash" role="status" hidden></p>
-    <section>
-      <h3 class="section-label" id="brain-count">TO KEEP</h3>
-      <ul id="brain-list"></ul>
-      <p class="small" id="brain-empty" hidden>Nothing to keep yet.</p>
-    </section>
+    <!-- Build 19: one tile, and nothing else. The thoughts you dump live inside the pop-up
+         for as long as it is open, and are never stored. -->
+    <button type="button" class="tile brain-tile" id="brain-dump"><span class="tile-name">Dump a thought</span></button>
   </div>
 
   <!-- Brain dump: writing pop-up -->
   <dialog id="brain-dialog" aria-labelledby="brain-title">
     <div class="dialog-head">
-      <h2 id="brain-title">To keep</h2>
+      <h2 id="brain-title">Dump a thought</h2>
       <button type="button" class="close" data-close aria-label="Close">✕</button>
     </div>
+    <!-- Build 19: Enter makes a new line, so only ➤ sends. It sits beside the box, on its bottom edge. -->
     <div class="brain-write">
-      <textarea id="brain-text" rows="2" maxlength="1000" enterkeyhint="send" autocomplete="off" aria-labelledby="brain-title"></textarea>
+      <textarea id="brain-text" rows="2" maxlength="500" autocomplete="off" aria-labelledby="brain-title"></textarea>
       <button type="button" class="btn primary icon-only" id="brain-send" aria-label="Send">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
-    <p class="saved-note brain-flash" id="brain-flash" role="status" hidden></p>
     <p class="error" id="brain-error" hidden></p>
+    <!-- What you have let go of since opening this box. Read-only, and cleared when it closes. -->
+    <ul id="brain-session" class="session-list" aria-label="Let go just now"></ul>
   </dialog>
 
   <!-- My Skin: one day pop-up -->
@@ -303,17 +298,6 @@
     </div>
   </dialog>
 
-  <!-- Brain dump: delete a thought (Build 10.1) -->
-  <dialog id="brain-delete-dialog" aria-labelledby="brain-delete-title">
-    <div class="dialog-head">
-      <h2 id="brain-delete-title">Delete this thought?</h2>
-      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn" id="brain-delete-no">No</button>
-      <button type="button" class="btn danger-fill" id="brain-delete-yes">Yes</button>
-    </div>
-  </dialog>
 
   <!-- Settings page (whole app) -->
   <div class="page" id="settings-page" hidden>
