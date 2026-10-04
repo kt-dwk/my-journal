@@ -187,6 +187,7 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
    above the Cancel / Save line. This only changes spacing inside the sheet — it never switches
    between the main and cover layouts, which is decided by shape and width (Build 14.3). */
 @media (max-height: 460px) {
+
   dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
   dialog.sheet .dialog-head { margin-bottom: 4px; }
   dialog.sheet .dialog-head h2 { font-size: 1.05rem; }
@@ -893,6 +894,11 @@ textarea {
   #brain-dialog .session-list { margin-top: 6px; }
   #brain-dialog .session-thought { padding: 5px 0; font-size: 0.78rem; }
   #brain-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar here, so no empty scroll */
+  /* Build 22: compact book rows on the cover screen \u2014 measured, a Reading row drops 55.3 \u2192 40.7,
+     so five books being read still leave room for Want to read and Read on one screen. */
+  #books-page .book-row { padding: 5px 0; }
+  #books-page .book-title { font-size: 0.95rem; }
+  #books-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }   /* what the floating + needs */
 
   /* Build 14.4: on the cover screen the title steps aside while you write, and the tools are smaller */
   #diary-note-page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }  /* every line counts here */
@@ -1229,3 +1235,81 @@ textarea {
 #brain-page-flash { margin: 0 0 8px; }
 .saved-note.is-problem { color: var(--error); }
 
+/* ---------- My Books (Build 22) ---------- */
+.book-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  width: 100%;
+  padding: 10px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.book-title { grid-column: 1; min-width: 0; font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.book-count { grid-column: 2; font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+.book-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  margin-top: 2px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.book-bar > span { display: block; height: 100%; background: var(--ink); }
+.book-status { margin: 0 0 10px; padding: 0; border: 0; }
+
+/* Build 22: the page row is a short number and a quiet "of 320" beside it \u2014 the number is all
+   you type, so it doesn\u2019t need the full width the currency box has in the money sheets. */
+#book-page-field .amount-row { grid-template-columns: 5.5rem max-content; justify-content: start; align-items: center; gap: 8px; }
+#book-page { width: 100%; text-align: center; }
+#book-of-total {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+#book-total { width: 7rem; }
+
+/* The book pop-up is top-pinned (your decision). Head and buttons stay put, the middle scrolls,
+   so with the keyboard up the page field can be reached without losing Save. */
+#book-dialog { margin-block: 24px auto; }
+#book-dialog .dlg-body { min-height: 0; }
+
+/* Build 22: these sit at the end of the file on purpose. They are #book-dialog rules, and so is
+   the base rule above \u2014 at equal specificity the later one wins, so the keyboard rules must come
+   last. The rule-order trap, seventh time (12.8, 13, 15, 15.1, 17.2, 21). */
+@media (max-height: 460px) {
+  /* Build 22: the book pop-up stays near the top (your decision) and becomes a fixed column \u2014
+     head and buttons fixed, the middle scrolling \u2014 so with the keyboard up Save and \ud83d\uddd1 stay in view
+     at 169.5 of 187.5 and tapping the page field scrolls it to 87.6. 100vh is wrong inside the
+     zoomed cover screen, so the cap uses the app\u2019s own idiom. overflow:hidden stops the spill. */
+  #book-dialog {
+    margin-block: 8px auto;
+    max-height: calc(100svh / var(--cover-zoom, 1) - 16px);
+    overflow: hidden;
+    padding: 10px 12px;
+  }
+  /* the dialog's only child is the form, so the fixed column lives there */
+  #book-form {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100svh / var(--cover-zoom, 1) - 36px);
+  }
+  #book-dialog .dialog-head { flex: 0 0 auto; margin-bottom: 4px; }
+  #book-dialog .dialog-head h2 { font-size: 1rem; }
+  #book-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
+  #book-dialog .dlg-body { flex: 1 1 auto; overflow-y: auto; }
+  #book-dialog .field, #book-dialog fieldset { margin-bottom: 4px; }
+  #book-dialog .actions { flex: 0 0 auto; margin-top: 4px; }
+  #book-dialog .actions .btn { min-height: 34px; padding: 4px 12px; }
+}

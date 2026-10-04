@@ -30,10 +30,11 @@ const SEED_GOALS = [
 ];
 const SAVINGS_KEY = "myjournal.savings";
 const GOALS_KEY = "myjournal.goals";
+const BOOKS_KEY = "myjournal.books";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "21", date: "2026-10-04" };
+const BUILD = { number: "22", date: "2026-10-05" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -128,6 +129,24 @@ function makeStore(key) {
 const expenseStore = makeStore(STORAGE_KEY);
 const savingsStore = makeStore(SAVINGS_KEY);
 const goalStore = makeStore(GOALS_KEY);
+const bookStore = makeStore(BOOKS_KEY);
+
+// Build 22: a book is { id, title, status, page, total, finishedAt, addedAt }.
+// status is "want" | "reading" | "read". page and total are 0 when unknown — a book with no
+// total still reads fine, it just shows no numbers and no bar.
+const BOOK_STATUSES = [
+  { value: "want", label: "Want" },
+  { value: "reading", label: "Reading" },
+  { value: "read", label: "Read" },
+];
+function loadBooks() {
+  try {
+    return bookStore.load();
+  } catch (err) {
+    console.error(err);
+    return null;   // null means "couldn't be read", which the page says out loud
+  }
+}
 
 // Build 21: a goal is { id, name, target, monthly, hidden }. Savings point at the id, never the
 // name, so renaming a goal can't orphan the money saved under it.
@@ -880,7 +899,7 @@ function dailyLineFor(dateISO) {
 
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
-const VIEWS = ["home", "money", "skin", "diary", "brain", "habit"];
+const VIEWS = ["home", "money", "skin", "diary", "brain", "books", "habit"];
 const SESSION_VIEW_KEY = "myjournal.session-view";
 let currentView = "home";
 
@@ -911,6 +930,7 @@ function showView(view, { push = false } = {}) {
   if (view === "home") renderHome();
   if (view === "skin") { resetSkinView(); renderSkin(); }   // Build 16.6: opening starts at today
   if (view === "diary") renderDiary();
+  if (view === "books") renderBooks();
   if (view !== "brain" && $("brain-dialog").open) $("brain-dialog").close(); // Back left the page with the pop-up open
   applyPages();
   if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
@@ -933,8 +953,9 @@ $("tile-money").addEventListener("click", () => {
 $("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
 $("tile-diary").addEventListener("click", () => showView("diary", { push: true }));
 $("tile-brain").addEventListener("click", () => showView("brain", { push: true }));
-// Build 16.10: #tile-book and #tile-heart have no handler on purpose. The reading list and the
-// ❤️ page aren't planned yet, so the icons are drawn but inert until each has somewhere to go.
+$("tile-book").addEventListener("click", () => showView("books", { push: true }));   // Build 22
+// Build 16.10: #tile-heart has no handler on purpose — the ❤️ page isn't planned yet, so the icon
+// is drawn but inert until it has somewhere to go. 📖 became My Books in Build 22.
 $("tile-habit").addEventListener("click", () => showView("habit", { push: true }));
 for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
 
@@ -2176,12 +2197,13 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 7, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals
+    version: 8, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
     savings: savingsStore.load(),
     goals: goalStore.load(),
+    books: bookStore.load(),
     rates: loadRates(),
     skin: loadSkin(),
     daily: loadDaily(),
@@ -2271,6 +2293,11 @@ function checkBackup(backup) {
   if (backup.colors !== undefined && (typeof backup.colors !== "object" || backup.colors === null || Array.isArray(backup.colors))) {
     throw new Error("Backup has damaged colours");
   }
+  // Backups made before Build 22 (version 7 and older) have no "books", and those leave My Books untouched
+  if (backup.books !== undefined && (!Array.isArray(backup.books)
+    || !backup.books.every((b) => b && typeof b.id === "string" && typeof b.title === "string"))) {
+    throw new Error("Backup has damaged books");
+  }
   // Backups made before Build 21 (version 6 and older) have no "goals", and those leave your goals untouched
   if (backup.goals !== undefined && (!Array.isArray(backup.goals)
     || !backup.goals.every((g) => g && typeof g.id === "string" && typeof g.name === "string"))) {
@@ -2320,13 +2347,14 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
     // Build 21: version 7 carries your goals. An older backup has none, so your goals are left
     // alone (the usual rule) and its savings — which still name their goal — are linked by name.
     if (backup.goals) goalStore.save(backup.goals);
+    if (backup.books) bookStore.save(backup.books);   // an older backup has none, so My Books is left alone
     savingsStore.save(backup.goals ? backup.savings : linkSavingsByName(backup.savings));
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
     if (backup.skin) saveSkin(backup.skin);
@@ -2350,6 +2378,7 @@ $("restore-yes").addEventListener("click", () => {
   renderSavings();
   renderSkin();
   renderDiary();
+  renderBooks();
   renderHome();
   fillRateInputs();
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);
@@ -2541,6 +2570,248 @@ function openSavingEdit(id) {
   savingNoteEl.value = saving.note || "";
   savingDialog.showModal();
 }
+
+// ---------- My Books (Build 22) ----------
+
+const BOOKS_LOG_PAGE = 10;
+let readBooksSorted = [];
+let booksLogPage = 0;
+
+function bookRow(b) {
+  const row = el("button", "book-row");
+  row.type = "button";
+  row.append(el("span", "book-title", b.title));
+
+  if (b.status === "reading") {
+    const total = Number(b.total) || 0;
+    const page = Math.min(Number(b.page) || 0, total || Infinity);
+    if (total > 0) {
+      row.append(el("span", "book-count", `${page} / ${total}`));
+      const bar = el("span", "book-bar");
+      const fill = el("span", "");
+      fill.style.width = `${Math.min(100, Math.round((page / total) * 100))}%`;
+      bar.append(fill);
+      row.append(bar);
+    } else {
+      row.append(el("span", "book-count", "Reading"));   // no total: never blocked, just no numbers
+    }
+  } else if (b.status === "read" && b.finishedAt) {
+    row.append(el("span", "book-count", monthLabel(b.finishedAt)));
+  }
+
+  row.addEventListener("click", () => openBookEdit(b.id));
+  const li = el("li");
+  li.append(row);
+  return li;
+}
+
+function monthLabel(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+function renderBooks() {
+  const all = loadBooks();
+  const failed = all === null;
+  const books = all || [];
+
+  const reading = books.filter((b) => b.status === "reading")
+    .sort((a, b) => (b.updatedAt || b.addedAt || "").localeCompare(a.updatedAt || a.addedAt || ""));
+  const want = books.filter((b) => b.status === "want")
+    .sort((a, b) => (b.addedAt || "").localeCompare(a.addedAt || ""));
+  readBooksSorted = books.filter((b) => b.status === "read")
+    .sort((a, b) => (b.finishedAt || "").localeCompare(a.finishedAt || ""));
+
+  $("books-reading").replaceChildren(...reading.map(bookRow));
+  $("books-want").replaceChildren(...want.map(bookRow));
+  // only the most recently finished book is shown; the rest live behind View more
+  $("books-read").replaceChildren(...readBooksSorted.slice(0, 1).map(bookRow));
+
+  $("books-reading-group").hidden = reading.length === 0;
+  $("books-want-group").hidden = want.length === 0;
+  $("books-read-group").hidden = readBooksSorted.length === 0;
+  $("books-read-head").textContent = `READ \u00b7 ${readBooksSorted.length}`;
+  $("open-books-log").hidden = readBooksSorted.length <= 1;
+
+  $("books-empty").textContent = failed ? "Your saved books couldn\u2019t be read." : "No books yet.";
+  $("books-empty").hidden = books.length > 0 && !failed;
+}
+
+// ----- the one pop-up, for both adding and editing -----
+
+const bookDialog = $("book-dialog");
+let editingBookId = null;
+
+function fillBookStatuses() {
+  $("book-status-choices").replaceChildren(
+    ...BOOK_STATUSES.map((s) => choiceButton("book-status", s.value, s.label))
+  );
+}
+
+function chosenStatus() {
+  const checked = $("book-form").querySelector('input[name="book-status"]:checked');
+  return checked ? checked.value : "want";
+}
+
+function setStatus(value) {
+  const radio = $("book-form").querySelector(`input[name="book-status"][value="${value}"]`);
+  if (radio) radio.checked = true;
+  applyStatusToForm();
+}
+
+// The page field only means anything while a book is being read
+function applyStatusToForm() {
+  const reading = chosenStatus() === "reading";
+  $("book-page-field").hidden = !reading;
+  const total = readWhole($("book-total").value);
+  $("book-of-total").textContent = total > 0 ? `of ${total}` : "of \u2014";
+  const page = readWhole($("book-page").value);
+  // "Finished? Mark as read" appears only once you are at the last page
+  $("book-finish-line").hidden = !(reading && total > 0 && page >= total);
+}
+
+function readWhole(text) {
+  const n = parseInt(String(text).replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function resetBookForm() {
+  for (const id of ["book-name", "book-page", "book-total"]) $(id).value = "";
+  for (const id of ["book-name-error", "book-save-error"]) $(id).hidden = true;
+  $("book-finish-line").hidden = true;
+  toggleConfirm("book-delete-confirm", "book-form-actions", false);
+}
+
+function openAddBook() {
+  editingBookId = null;
+  $("book-title").textContent = "Add a book";
+  resetBookForm();
+  setStatus("want");
+  $("delete-book").hidden = true;
+  bookDialog.showModal();
+  $("book-name").focus();
+}
+
+function openBookEdit(id) {
+  const books = loadBooks();
+  const book = books && books.find((b) => b.id === id);
+  if (!book) return;
+  editingBookId = id;
+
+  $("book-title").textContent = book.title;
+  resetBookForm();
+  $("book-name").value = book.title;
+  $("book-total").value = book.total ? String(book.total) : "";
+  $("book-page").value = book.page ? String(book.page) : "";
+  setStatus(book.status);
+  $("delete-book").hidden = false;
+  bookDialog.showModal();
+  // the page is what you came to change, so it gets the cursor. Focus alone doesn't scroll the
+  // pop-up's own scrolling middle, so it is asked explicitly — this is what makes the field
+  // reachable with the keyboard up on the cover screen.
+  if (book.status === "reading") {
+    $("book-page").focus();
+    $("book-page").scrollIntoView({ block: "nearest" });
+  }
+}
+
+$("book-new").addEventListener("click", openAddBook);
+$("book-status-choices").addEventListener("change", applyStatusToForm);
+for (const id of ["book-page", "book-total"]) {
+  $(id).addEventListener("input", (event) => {
+    event.target.value = event.target.value.replace(/[^0-9]/g, "");
+    applyStatusToForm();
+  });
+}
+
+// Marking a book read while it sits on page 148 quietly sets it to its total
+$("book-mark-read").addEventListener("click", () => {
+  const total = readWhole($("book-total").value);
+  if (total > 0) $("book-page").value = String(total);
+  setStatus("read");
+});
+
+$("book-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const title = $("book-name").value.trim();
+  $("book-name-error").hidden = Boolean(title);
+  $("book-save-error").hidden = true;
+  if (!title) return;
+
+  const status = chosenStatus();
+  const total = readWhole($("book-total").value);
+  let page = readWhole($("book-page").value);
+  if (status === "read" && total > 0) page = total;   // read means finished, whatever the field said
+  if (status === "want") page = 0;
+
+  const now = new Date().toISOString();
+  const changes = { title, status, page, total, updatedAt: now };
+
+  try {
+    if (editingBookId) {
+      const before = (loadBooks() || []).find((b) => b.id === editingBookId);
+      // the finish date is recorded the first time a book becomes read, and kept after that
+      if (status === "read") changes.finishedAt = (before && before.finishedAt) || now;
+      else changes.finishedAt = "";
+      bookStore.update(editingBookId, changes);
+    } else {
+      bookStore.add({
+        id: newId(), ...changes, addedAt: now,
+        finishedAt: status === "read" ? now : "",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    $("book-save-error").hidden = false;
+    return;
+  }
+
+  bookDialog.close();
+  renderBooks();
+});
+
+$("delete-book").addEventListener("click", () => {
+  toggleConfirm("book-delete-confirm", "book-form-actions", true);
+  $("book-delete-no").focus();
+});
+$("book-delete-no").addEventListener("click", () => {
+  toggleConfirm("book-delete-confirm", "book-form-actions", false);
+});
+$("book-delete-yes").addEventListener("click", () => {
+  if (!editingBookId) return;
+  try {
+    bookStore.remove(editingBookId);
+  } catch (err) {
+    console.error(err);
+    toggleConfirm("book-delete-confirm", "book-form-actions", false);
+    $("book-save-error").hidden = false;
+    return;
+  }
+  bookDialog.close();
+  renderBooks();
+});
+
+// ----- the Read pop-up, 10 a page, the app's usual pager -----
+
+function renderBooksLog() {
+  const pages = Math.max(1, Math.ceil(readBooksSorted.length / BOOKS_LOG_PAGE));
+  booksLogPage = Math.min(booksLogPage, pages - 1);
+  const start = booksLogPage * BOOKS_LOG_PAGE;
+  $("books-log-full").replaceChildren(
+    ...readBooksSorted.slice(start, start + BOOKS_LOG_PAGE).map(bookRow)
+  );
+  $("books-log-label").textContent = `${booksLogPage + 1} of ${pages}`;
+  $("books-log-prev").disabled = booksLogPage === 0;
+  $("books-log-next").disabled = booksLogPage >= pages - 1;
+}
+
+$("open-books-log").addEventListener("click", () => {
+  booksLogPage = 0;
+  renderBooksLog();
+  $("books-log-dialog").showModal();
+});
+$("books-log-prev").addEventListener("click", () => { booksLogPage--; renderBooksLog(); });
+$("books-log-next").addEventListener("click", () => { booksLogPage++; renderBooksLog(); });
 
 // ---------- Goals: add, edit, hide (Build 21) ----------
 
@@ -2799,6 +3070,7 @@ $("tab-savings").addEventListener("click", () => showTab("savings"));
 
 fillAddForm();
 fillSavingForm();
+fillBookStatuses();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 moveKeptThoughtsToDiary(); // Build 19, once only: whatever was still in To keep becomes diary notes
 seedAndLinkGoals(); // Build 21, once only: goals move into storage and savings point at their ids

@@ -25,7 +25,7 @@
     <!-- Build 16.10 (wireframe 28a): the row under the note. 📖 and ❤️ have no page yet, so they
          are drawn but do nothing — aria-disabled rather than disabled, which would grey them. -->
     <div class="home-icons">
-      <button type="button" class="brain-button" id="tile-book" aria-label="Reading list" aria-disabled="true">📖</button>
+      <button type="button" class="brain-button" id="tile-book" aria-label="My Books">📖</button>
       <button type="button" class="brain-button" id="tile-heart" aria-label="Not decided yet" aria-disabled="true">❤️</button>
       <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump">🧠</button>
     </div>
@@ -110,6 +110,32 @@
   </main>
 
   <!-- Habit (placeholder until the section is planned) -->
+  <!-- My Books (Build 22) -->
+  <div class="page" id="books-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Books</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+    </header>
+    <section id="books-reading-group" hidden>
+      <h3 class="year-head">READING</h3>
+      <ul id="books-reading" class="note-list"></ul>
+    </section>
+    <section id="books-want-group" hidden>
+      <h3 class="year-head">WANT TO READ</h3>
+      <ul id="books-want" class="note-list"></ul>
+    </section>
+    <section id="books-read-group" hidden>
+      <h3 class="year-head" id="books-read-head">READ</h3>
+      <ul id="books-read" class="note-list"></ul>
+      <button type="button" class="btn more" id="open-books-log" hidden>View more</button>
+    </section>
+    <p class="small" id="books-empty" hidden>No books yet.</p>
+    <button type="button" class="fab" id="book-new" aria-label="Add a book">+</button>
+  </div>
+
   <div class="page" id="habit-page" hidden>
     <header class="app-head">
       <button type="button" class="icon-btn go-home" aria-label="Home">
@@ -529,6 +555,75 @@
       <button type="button" class="close" data-close aria-label="Close">✕</button>
     </div>
     <ul id="hidden-goals-list" class="hidden-goals"></ul>
+  </dialog>
+
+  <!-- Add / Edit a book (Build 22). Top-pinned, head and buttons fixed, middle scrolls. -->
+  <dialog id="book-dialog" aria-labelledby="book-title">
+    <form id="book-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="book-title">Add a book</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <div class="dlg-body">
+        <div class="field" id="book-name-field">
+          <label class="label" for="book-name">Title</label>
+          <input id="book-name" type="text" maxlength="80" autocomplete="off">
+          <p class="error" id="book-name-error" hidden>Please give the book a title.</p>
+        </div>
+
+        <fieldset class="field book-status">
+          <legend class="sr-only">Status</legend>
+          <div class="item-buttons" id="book-status-choices"></div>
+        </fieldset>
+
+        <div class="field" id="book-page-field">
+          <label class="label" for="book-page">Page</label>
+          <div class="amount-row">
+            <input id="book-page" type="text" inputmode="numeric" autocomplete="off" placeholder="0">
+            <span class="currency-fixed" id="book-of-total">of —</span>
+          </div>
+        </div>
+
+        <div class="field" id="book-total-field">
+          <label class="label" for="book-total">Total pages <span class="small">(optional)</span></label>
+          <input id="book-total" type="text" inputmode="numeric" autocomplete="off" placeholder="0">
+        </div>
+
+        <p class="small" id="book-finish-line" hidden>Finished? <button type="button" class="link" id="book-mark-read">Mark as read</button></p>
+        <p class="error" id="book-save-error" hidden>Sorry, this couldn’t be saved. Please try again.</p>
+
+        <div class="confirm" id="book-delete-confirm" hidden>
+          <p>Delete this book?</p>
+          <div class="actions">
+            <button type="button" class="btn" id="book-delete-no">No</button>
+            <button type="button" class="btn danger-fill" id="book-delete-yes">Yes</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" id="book-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-book" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Books you have read, 10 per page (Build 22) -->
+  <dialog id="books-log-dialog" aria-labelledby="books-log-title">
+    <div class="dialog-head">
+      <h2 id="books-log-title">Read</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <ul id="books-log-full"></ul>
+    <nav class="pager" aria-label="Read books pages">
+      <button type="button" class="btn" id="books-log-prev" aria-label="Previous page">&lt;</button>
+      <span id="books-log-label" aria-live="polite"></span>
+      <button type="button" class="btn" id="books-log-next" aria-label="Next page">&gt;</button>
+    </nav>
   </dialog>
 
   <!-- Full saving log pop-up -->
