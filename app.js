@@ -21,17 +21,19 @@ const STORAGE_KEY = "myjournal.expenses";
 const RATES_KEY = "myjournal.rates";
 const DEFAULT_RATES = { USD: 22500, THB: 690 }; // LAK per 1 unit
 
-// Savings goals from MyMoney_Simple2026.xlsx (Goals sheet), in USD
-const GOALS = [
+// Build 21: your goals now live in storage and you edit them in the app. This list is only the
+// seed used the very first time, and the names it carries are matched to existing savings once.
+const SEED_GOALS = [
   { name: "Family spare fund", target: 2000, monthly: 50 },
   { name: "Retirement", target: 1200, monthly: 100 },
   { name: "Home Office", target: 10000, monthly: 400 },
 ];
 const SAVINGS_KEY = "myjournal.savings";
+const GOALS_KEY = "myjournal.goals";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "20", date: "2026-10-04" };
+const BUILD = { number: "21", date: "2026-10-04" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -125,6 +127,31 @@ function makeStore(key) {
 
 const expenseStore = makeStore(STORAGE_KEY);
 const savingsStore = makeStore(SAVINGS_KEY);
+const goalStore = makeStore(GOALS_KEY);
+
+// Build 21: a goal is { id, name, target, monthly, hidden }. Savings point at the id, never the
+// name, so renaming a goal can't orphan the money saved under it.
+function loadGoals() {
+  try {
+    return goalStore.load();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+function visibleGoals() {
+  return loadGoals().filter((g) => !g.hidden);
+}
+function goalById(id) {
+  return loadGoals().find((g) => g.id === id);
+}
+function goalName(id) {
+  const g = goalById(id);
+  return g ? g.name : "";
+}
+function savedForGoal(id, savings) {
+  return savings.filter((s) => s.goalId === id).reduce((sum, s) => sum + s.amount, 0);
+}
 
 const loadExpenses = expenseStore.load;
 const addExpense = expenseStore.add;
@@ -227,13 +254,13 @@ function el(tag, className, text) {
 }
 
 // A big tap button that works like a radio button
-function choiceButton(name, value) {
+function choiceButton(name, value, text = value) {
   const label = el("label", "item-btn");
   const input = document.createElement("input");
   input.type = "radio";
   input.name = name;
   input.value = value;
-  label.append(input, el("span", "", value));
+  label.append(input, el("span", "", text));
   return label;
 }
 
@@ -983,6 +1010,54 @@ function fitBrainBox() {
   const box = $("brain-text");
   box.style.height = "auto";
   box.style.height = `${box.scrollHeight + 2}px`; // grows with the thought, up to the max-height in style.css
+}
+
+// Build 21, runs once: put the seed goals into storage, then point every saving at a goal id
+// instead of the goal's name. A saving whose name matches nothing keeps its text, so nothing is lost.
+function seedAndLinkGoals() {
+  let goals;
+  try {
+    goals = goalStore.load();
+  } catch (err) {
+    console.error(err); // damaged goal data is left alone rather than overwritten
+    return;
+  }
+  if (goals.length) return; // already done, or you have goals of your own
+
+  goals = SEED_GOALS.map((g) => ({ id: newId(), name: g.name, target: g.target, monthly: g.monthly, hidden: false }));
+  const byName = new Map(goals.map((g) => [g.name, g.id]));
+
+  let savings;
+  try {
+    savings = savingsStore.load();
+  } catch (err) {
+    console.error(err);
+    return; // don't seed goals we then can't link
+  }
+
+  const linked = savings.map((s) => {
+    if (s.goalId) return s;                       // already linked
+    const id = byName.get(s.goal);
+    if (!id) return s;                            // name we don't recognise: leave its text alone
+    const { goal, ...rest } = s;
+    return { ...rest, goalId: id };
+  });
+
+  goalStore.save(goals);
+  savingsStore.save(linked);
+}
+
+// Build 21: savings from a version 6 or older backup still carry their goal's name. Match them to
+// the goals you have now; one that matches nothing keeps its text rather than being dropped.
+function linkSavingsByName(savings) {
+  const byName = new Map(loadGoals().map((g) => [g.name, g.id]));
+  return savings.map((s) => {
+    if (s.goalId) return s;
+    const id = byName.get(s.goal);
+    if (!id) return s;
+    const { goal, ...rest } = s;
+    return { ...rest, goalId: id };
+  });
 }
 
 function renderSessionThoughts() {
@@ -2101,11 +2176,12 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 6, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump
+    version: 7, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
     savings: savingsStore.load(),
+    goals: goalStore.load(),
     rates: loadRates(),
     skin: loadSkin(),
     daily: loadDaily(),
@@ -2195,6 +2271,11 @@ function checkBackup(backup) {
   if (backup.colors !== undefined && (typeof backup.colors !== "object" || backup.colors === null || Array.isArray(backup.colors))) {
     throw new Error("Backup has damaged colours");
   }
+  // Backups made before Build 21 (version 6 and older) have no "goals", and those leave your goals untouched
+  if (backup.goals !== undefined && (!Array.isArray(backup.goals)
+    || !backup.goals.every((g) => g && typeof g.id === "string" && typeof g.name === "string"))) {
+    throw new Error("Backup has damaged goals");
+  }
   // Backups made before Brain dump (version 5 and older) have no "braindump", and those leave To keep untouched
   if (backup.braindump !== undefined && (!Array.isArray(backup.braindump)
     || !backup.braindump.every((t) => t && typeof t.id === "string" && typeof t.text === "string"))) {
@@ -2239,11 +2320,14 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
-    savingsStore.save(backup.savings);
+    // Build 21: version 7 carries your goals. An older backup has none, so your goals are left
+    // alone (the usual rule) and its savings — which still name their goal — are linked by name.
+    if (backup.goals) goalStore.save(backup.goals);
+    savingsStore.save(backup.goals ? backup.savings : linkSavingsByName(backup.savings));
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
     if (backup.skin) saveSkin(backup.skin);
     if (backup.daily) saveDaily(backup.daily);
@@ -2287,9 +2371,13 @@ function renderSavings() {
   $("savings-total").textContent = onCoverScreen() ? formatWhole(total, "USD") : formatMoney(total, "USD");
 
   // Build 12.2: a jar per goal, filling from the bottom with its percentage inside
+  const everyGoal = loadGoals();
+  const shown = everyGoal.filter((g) => !g.hidden);
+  const hiddenCount = everyGoal.length - shown.length;
+
   $("goals").replaceChildren(
-    ...GOALS.map((g) => {
-      const saved = all.filter((s) => s.goal === g.name).reduce((sum, s) => sum + s.amount, 0);
+    ...shown.map((g) => {
+      const saved = savedForGoal(g.id, all);
       const percent = Math.min(100, g.target ? Math.floor((saved / g.target) * 100) : 0);   // Build 16.4: rounds down, so 100% only means reached
 
       const jar = el("div", "jar");
@@ -2313,11 +2401,17 @@ function renderSavings() {
         el("div", "small", goalStatus(saved, g))
       );
 
-      const row = el("div", "goal-row");
+      const row = el("button", "goal-row");       // Build 21: tap a goal to edit it
+      row.type = "button";
       row.append(jar, text);
+      row.addEventListener("click", () => openGoalEdit(g.id));
       return row;
     })
   );
+
+  // Build 21: the hidden line appears only once something is hidden, so until then nothing changes
+  $("show-hidden-goals").hidden = hiddenCount === 0;
+  $("show-hidden-goals").textContent = `Show hidden (${hiddenCount})`;
 
   sortedSavings = [...all].sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || "").localeCompare(a.createdAt || ""));
   $("saving-log").replaceChildren(...sortedSavings.slice(0, RECENT_LOG_COUNT).map(savingRow));
@@ -2344,7 +2438,7 @@ function savingRow(s) {
   const row = el("button", "log-row with-year");
   row.type = "button";
   const goal = el("span", "log-item");
-  goal.append(el("span", "", s.goal));
+  goal.append(el("span", "", s.goalId ? goalName(s.goalId) : s.goal || ""));
   if (s.note) goal.append(el("span", "small", s.note));
   row.append(el("span", "log-date", shortDate(s.date, true)), goal, el("span", "log-amount", formatMoney(s.amount, "USD")));
   row.addEventListener("click", () => openSavingEdit(s.id));
@@ -2401,8 +2495,11 @@ const savingNoteEl = $("saving-note");
 
 let editingSavingId = null; // null = adding a new saving
 
-function fillSavingForm() {
-  for (const g of GOALS) $("goal-choices").append(choiceButton("goal", g.name));
+function fillSavingForm(keepGoalId = null) {
+  // Build 21: chips come from your goals. A hidden goal is left out, unless you're editing a
+  // saving that belongs to it — then its chip stays so the saving is still editable.
+  const list = loadGoals().filter((g) => !g.hidden || g.id === keepGoalId);
+  $("goal-choices").replaceChildren(...list.map((g) => choiceButton("goal", g.id, g.name)));
 }
 
 function resetSavingForm() {
@@ -2419,6 +2516,7 @@ function setSavingMode(id) {
 }
 
 function openAddSaving() {
+  fillSavingForm();
   resetSavingForm();
   setSavingMode(null);
   savingDialog.showModal();
@@ -2433,15 +2531,172 @@ function openSavingEdit(id) {
   }
   if (!saving) return;
 
+  fillSavingForm(saving.goalId);
   resetSavingForm();
   setSavingMode(id);
-  const radio = savingForm.querySelector(`input[name="goal"][value="${CSS.escape(saving.goal)}"]`);
+  const radio = savingForm.querySelector(`input[name="goal"][value="${CSS.escape(saving.goalId || "")}"]`);
   if (radio) radio.checked = true;
   savingAmountEl.value = formatWhileTyping(String(saving.amount), 2);
   savingDateEl.value = saving.date;
   savingNoteEl.value = saving.note || "";
   savingDialog.showModal();
 }
+
+// ---------- Goals: add, edit, hide (Build 21) ----------
+
+const goalDialog = $("goal-dialog");
+let editingGoalId = null; // null = adding a new goal
+
+function goalSavedCount(id) {
+  try {
+    return savingsStore.load().filter((s) => s.goalId === id).length;
+  } catch (err) {
+    console.error(err);
+    return 0; // if we can't read the savings, treat the goal as holding money and offer Hide only
+  }
+}
+
+function openGoalEdit(id) {
+  const goal = goalById(id);
+  if (!goal) return;
+  editingGoalId = id;
+
+  $("goal-title").textContent = "Edit goal";
+  $("goal-name").value = goal.name;
+  $("goal-target").value = goal.target ? formatWhileTyping(String(goal.target), 2) : "";
+  $("goal-monthly").value = goal.monthly ? formatWhileTyping(String(goal.monthly), 2) : "";
+
+  // Nothing holding money can be deleted: a goal with savings can only be hidden
+  let saved = 0;
+  try {
+    saved = savedForGoal(id, savingsStore.load());
+  } catch (err) {
+    console.error(err);
+  }
+  const count = goalSavedCount(id);
+  $("goal-saved-line").textContent = count
+    ? `${formatMoney(saved, "USD")} saved so far · ${count} ${count === 1 ? "entry" : "entries"}`
+    : "Nothing saved to this goal yet";
+  $("delete-goal").hidden = count > 0 || goal.hidden;
+  $("hide-goal").hidden = count === 0 || goal.hidden;
+  $("unhide-goal").hidden = !goal.hidden;
+
+  resetGoalErrors();
+  toggleConfirm("goal-delete-confirm", "goal-form-actions", false);
+  goalDialog.showModal();
+}
+
+function openNewGoal() {
+  editingGoalId = null;
+  $("goal-title").textContent = "New goal";
+  for (const id of ["goal-name", "goal-target", "goal-monthly"]) $(id).value = "";
+  $("goal-saved-line").textContent = "";
+  for (const id of ["delete-goal", "hide-goal", "unhide-goal"]) $(id).hidden = true;
+  resetGoalErrors();
+  toggleConfirm("goal-delete-confirm", "goal-form-actions", false);
+  goalDialog.showModal();
+  $("goal-name").focus();
+}
+
+function resetGoalErrors() {
+  for (const id of ["goal-name-error", "goal-target-error", "goal-save-error"]) $(id).hidden = true;
+}
+
+$("new-goal").addEventListener("click", openNewGoal);
+
+$("goal-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = $("goal-name").value.trim();
+  const target = readAmount($("goal-target").value, 2);
+  const monthly = readAmount($("goal-monthly").value, 2);
+
+  $("goal-name-error").hidden = Boolean(name);
+  $("goal-target-error").hidden = target > 0;
+  $("goal-save-error").hidden = true;
+  if (!name || !(target > 0)) return;
+
+  try {
+    if (editingGoalId) {
+      goalStore.update(editingGoalId, { name, target, monthly });
+    } else {
+      goalStore.add({ id: newId(), name, target, monthly, hidden: false });
+    }
+  } catch (err) {
+    console.error(err);
+    $("goal-save-error").hidden = false;
+    return;
+  }
+
+  goalDialog.close();
+  fillSavingForm();
+  renderSavings();
+});
+
+$("hide-goal").addEventListener("click", () => setGoalHidden(editingGoalId, true));
+$("unhide-goal").addEventListener("click", () => setGoalHidden(editingGoalId, false));
+
+function setGoalHidden(id, hidden) {
+  if (!id) return;
+  try {
+    goalStore.update(id, { hidden });
+  } catch (err) {
+    console.error(err);
+    $("goal-save-error").hidden = false;
+    return;
+  }
+  goalDialog.close();
+  fillSavingForm();
+  renderSavings();
+}
+
+$("delete-goal").addEventListener("click", () => {
+  toggleConfirm("goal-delete-confirm", "goal-form-actions", true);
+  $("goal-delete-no").focus();
+});
+$("goal-delete-no").addEventListener("click", () => {
+  toggleConfirm("goal-delete-confirm", "goal-form-actions", false);
+});
+$("goal-delete-yes").addEventListener("click", () => {
+  if (!editingGoalId) return;
+  // Only reachable while the goal holds no savings, so nothing can be orphaned
+  try {
+    goalStore.remove(editingGoalId);
+  } catch (err) {
+    console.error(err);
+    toggleConfirm("goal-delete-confirm", "goal-form-actions", false);
+    $("goal-save-error").hidden = false;
+    return;
+  }
+  goalDialog.close();
+  fillSavingForm();
+  renderSavings();
+});
+
+for (const id of ["goal-target", "goal-monthly"]) {
+  $(id).addEventListener("input", (event) => {
+    event.target.value = formatWhileTyping(event.target.value, 2);
+  });
+}
+
+// The hidden list: the only way back for a goal you've put away
+$("show-hidden-goals").addEventListener("click", () => {
+  const hidden = loadGoals().filter((g) => g.hidden);
+  $("hidden-goals-list").replaceChildren(
+    ...hidden.map((g) => {
+      const row = el("button", "log-row");
+      row.type = "button";
+      row.append(el("span", "log-item", g.name), el("span", "log-amount", "Unhide"));
+      row.addEventListener("click", () => {
+        $("hidden-goals-dialog").close();
+        setGoalHidden(g.id, false);
+      });
+      const li = el("li");
+      li.append(row);
+      return li;
+    })
+  );
+  $("hidden-goals-dialog").showModal();
+});
 
 $("delete-saving").addEventListener("click", () => {
   toggleConfirm("saving-delete-confirm", "saving-form-actions", true);
@@ -2488,7 +2743,7 @@ savingForm.addEventListener("submit", (event) => {
   if (!checked || !(amount > 0)) return;
 
   const saving = {
-    goal: checked.value,
+    goalId: checked.value,
     amount,
     date: savingDateEl.value || todayISO(),
     note: savingNoteEl.value.trim(),
@@ -2546,6 +2801,7 @@ fillAddForm();
 fillSavingForm();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 moveKeptThoughtsToDiary(); // Build 19, once only: whatever was still in To keep becomes diary notes
+seedAndLinkGoals(); // Build 21, once only: goals move into storage and savings point at their ids
 renderDashboard();
 renderSavings();
 applyCoverWording();

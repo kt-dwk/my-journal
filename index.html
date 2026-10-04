@@ -94,6 +94,8 @@
 
       <section>
         <div id="goals"></div>
+        <button type="button" class="btn more" id="new-goal">+ New goal</button>
+        <button type="button" class="link" id="show-hidden-goals" hidden>Show hidden (0)</button>
       </section>
 
       <section>
@@ -463,6 +465,70 @@
         <button type="submit" class="btn primary">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Add / Edit goal pop-up (Build 21) -->
+  <dialog class="sheet" id="goal-dialog" aria-labelledby="goal-title">
+    <form id="goal-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="goal-title">Edit goal</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <div class="field">
+        <label class="label" for="goal-name">Goal</label>
+        <input id="goal-name" type="text" maxlength="40" autocomplete="off">
+        <p class="error" id="goal-name-error" hidden>Please give the goal a name.</p>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="goal-target">Target</label>
+          <div class="amount-row">
+            <span class="currency-fixed">$ USD</span>
+            <input id="goal-target" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="goal-monthly">A month <span class="small">(optional)</span></label>
+          <div class="amount-row">
+            <span class="currency-fixed">$ USD</span>
+            <input id="goal-monthly" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <p class="error" id="goal-target-error" hidden>Please enter a target above 0.</p>
+
+      <p class="small" id="goal-saved-line"></p>
+      <p class="error" id="goal-save-error" hidden>Sorry, this couldn't be saved. Please try again.</p>
+
+      <div class="confirm" id="goal-delete-confirm" hidden>
+        <p>Delete this goal?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="goal-delete-no">No</button>
+          <button type="button" class="btn danger-fill" id="goal-delete-yes">Yes</button>
+        </div>
+      </div>
+
+      <div class="actions" id="goal-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-goal" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" id="hide-goal" hidden>Hide</button>
+        <button type="button" class="btn" id="unhide-goal" hidden>Unhide</button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Hidden goals pop-up (Build 21) -->
+  <dialog id="hidden-goals-dialog" aria-labelledby="hidden-goals-title">
+    <div class="dialog-head">
+      <h2 id="hidden-goals-title">Hidden goals</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <ul id="hidden-goals-list" class="hidden-goals"></ul>
   </dialog>
 
   <!-- Full saving log pop-up -->

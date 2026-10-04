@@ -632,7 +632,20 @@ textarea {
   gap: 16px;
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
+  /* Build 21: the row is a button now (tap to edit), so it has to lose the button look */
+  width: 100%;
+  background: none;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
+/* Build 21: the hidden-goals list, one row each */
+.hidden-goals { margin: 0; padding: 0; list-style: none; }
 .goal-text { min-width: 0; }
 .goal-name { font-size: 1.15rem; font-weight: 600; }
 .goal-amount { font-size: 1rem; }
@@ -979,6 +992,11 @@ textarea {
   }
 
   .goal-row { gap: 10px; padding: 4px 0; }
+  /* Build 21, your idea: two jars per row. Six goals then end where three do today, because the
+     jar is 30 wide and the text 128.5 in a 341.8 row — over half of every row was empty.
+     Written with the id, or the main-screen rules later in this file would win. */
+  #goals { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  #goals .goal-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Build 17.1: the money and diary pages inherited `padding-bottom: 96px` from `.page`, written
      to clear the bottom tab bar that Build 12 removed. On the cover screen that is 29% of the
      height for nothing. 70 is what the floating button actually needs: 46 tall, sitting 16 up.
