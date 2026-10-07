@@ -259,6 +259,10 @@ dialog {
   color: var(--ink);
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+/* Build 22.2 safety net: a closed <dialog> is hidden by the browser's own `display: none`, and ANY
+   `display:` we set on one overrides that — the pop-up then renders as ordinary page content on
+   every page. That is exactly what Build 22.1 shipped. This rule makes it impossible to repeat. */
+dialog:not([open]) { display: none; }
 #brain-dialog { margin-block: 24px auto; }   /* Build 15: near the top, so the keyboard never covers it */
 
 .dialog-head {
@@ -897,6 +901,15 @@ textarea {
   /* Build 22: compact book rows on the cover screen \u2014 measured, a Reading row drops 55.3 \u2192 40.7,
      so five books being read still leave room for Want to read and Read on one screen. */
   #books-page .book-row { padding: 5px 0; }
+  /* Build 22.2: the book pop-up is tight on the cover screen too, not only with the keyboard up,
+     so Save sits inside the window without a scroll. */
+  #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
+  #book-dialog .dialog-head { margin-bottom: 4px; }
+  #book-dialog .dialog-head h2 { font-size: 0.95rem; }
+  #book-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
+  #book-dialog .field, #book-dialog fieldset { margin-bottom: 6px; }
+  #book-dialog .actions { margin-top: 6px; }
+  #book-dialog .actions .btn { min-height: 36px; padding: 4px 12px; }
   #books-page .book-title { font-size: 0.95rem; }
   #books-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }   /* what the floating + needs */
 
@@ -1282,24 +1295,20 @@ textarea {
 
 /* The book pop-up is top-pinned (your decision). Head and buttons stay put, the middle scrolls,
    so with the keyboard up the page field can be reached without losing Save. */
-/* Build 22.1: the pop-up is a fixed column at every size — head and buttons fixed, the middle
-   scrolling. With room to spare it simply doesn't scroll. The browser's own max-height on a
-   <dialog> does the clamping, and it is a percentage of the real viewport, so it follows the
-   keyboard; our own svh arithmetic did not, which is what collapsed the middle on the phone. */
+/* Build 22.2: nothing is pinned any more. 22 and 22.1 both tried to hold the head and buttons in
+   place while a middle section scrolled, and both collapsed that middle on the real phone with the
+   keyboard up — the preview could not reproduce either. Your call: let the whole pop-up scroll as
+   one block, with Save, Cancel and Delete at the end of it. You close the keyboard to reach them. */
 #book-dialog {
   margin-block: 24px auto;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
 }
-#book-form {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+#book-dialog .dialog-head h2 {
+  font-size: 1rem;            /* smaller, so a long book title doesn't eat the pop-up */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-#book-dialog .dlg-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-#book-dialog .dialog-head,
-#book-dialog .actions { flex: 0 0 auto; }
 
 /* Build 22: these sit at the end of the file on purpose. They are #book-dialog rules, and so is
    the base rule above — at equal specificity the later one wins, so the keyboard rules must come
@@ -1314,12 +1323,12 @@ textarea {
    given. min-height: 0 on each flex child is what lets the middle shrink and scroll instead of
    forcing its natural height. */
 @media (max-height: 460px) {
-  /* the column is set above, at every size — this block only tightens the spacing */
+  /* nothing is pinned — this block only tightens the spacing */
   #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
   #book-dialog .dialog-head { margin-bottom: 4px; }
-  #book-dialog .dialog-head h2 { font-size: 1rem; }
+  #book-dialog .dialog-head h2 { font-size: 0.95rem; }
   #book-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
   #book-dialog .field, #book-dialog fieldset { margin-bottom: 4px; }
-  #book-dialog .actions { flex: 0 0 auto; margin-top: 4px; }
+  #book-dialog .actions { margin-top: 4px; }
   #book-dialog .actions .btn { min-height: 34px; padding: 4px 12px; }
 }

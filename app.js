@@ -34,7 +34,7 @@ const BOOKS_KEY = "myjournal.books";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "22.1", date: "2026-10-07" };
+const BUILD = { number: "22.2", date: "2026-10-07" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
