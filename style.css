@@ -1282,33 +1282,43 @@ textarea {
 
 /* The book pop-up is top-pinned (your decision). Head and buttons stay put, the middle scrolls,
    so with the keyboard up the page field can be reached without losing Save. */
-#book-dialog { margin-block: 24px auto; }
-#book-dialog .dlg-body { min-height: 0; }
+/* Build 22.1: the pop-up is a fixed column at every size — head and buttons fixed, the middle
+   scrolling. With room to spare it simply doesn't scroll. The browser's own max-height on a
+   <dialog> does the clamping, and it is a percentage of the real viewport, so it follows the
+   keyboard; our own svh arithmetic did not, which is what collapsed the middle on the phone. */
+#book-dialog {
+  margin-block: 24px auto;
+  display: flex;
+  flex-direction: column;
+}
+#book-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+#book-dialog .dlg-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+#book-dialog .dialog-head,
+#book-dialog .actions { flex: 0 0 auto; }
 
 /* Build 22: these sit at the end of the file on purpose. They are #book-dialog rules, and so is
-   the base rule above \u2014 at equal specificity the later one wins, so the keyboard rules must come
-   last. The rule-order trap, seventh time (12.8, 13, 15, 15.1, 17.2, 21). */
+   the base rule above — at equal specificity the later one wins, so the keyboard rules must come
+   last. The rule-order trap, seventh time (12.8, 13, 15, 15.1, 17.2, 21).
+
+   Build 22.1: no height arithmetic any more. The first version capped the height with
+   calc(100svh / var(--cover-zoom)), which is wrong on the phone: `interactive-widget=resizes-content`
+   shrinks the LAYOUT viewport when the keyboard opens, but svh does not follow a keyboard — it is
+   defined by the browser's own toolbars. So the cap computed ~295 app units while only ~187 existed,
+   the column laid itself out against the wrong number, and the scrolling middle collapsed to a sliver.
+   The browser already clamps a <dialog> to the real viewport, so the column just fills what it is
+   given. min-height: 0 on each flex child is what lets the middle shrink and scroll instead of
+   forcing its natural height. */
 @media (max-height: 460px) {
-  /* Build 22: the book pop-up stays near the top (your decision) and becomes a fixed column \u2014
-     head and buttons fixed, the middle scrolling \u2014 so with the keyboard up Save and \ud83d\uddd1 stay in view
-     at 169.5 of 187.5 and tapping the page field scrolls it to 87.6. 100vh is wrong inside the
-     zoomed cover screen, so the cap uses the app\u2019s own idiom. overflow:hidden stops the spill. */
-  #book-dialog {
-    margin-block: 8px auto;
-    max-height: calc(100svh / var(--cover-zoom, 1) - 16px);
-    overflow: hidden;
-    padding: 10px 12px;
-  }
-  /* the dialog's only child is the form, so the fixed column lives there */
-  #book-form {
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100svh / var(--cover-zoom, 1) - 36px);
-  }
-  #book-dialog .dialog-head { flex: 0 0 auto; margin-bottom: 4px; }
+  /* the column is set above, at every size — this block only tightens the spacing */
+  #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
+  #book-dialog .dialog-head { margin-bottom: 4px; }
   #book-dialog .dialog-head h2 { font-size: 1rem; }
   #book-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
-  #book-dialog .dlg-body { flex: 1 1 auto; overflow-y: auto; }
   #book-dialog .field, #book-dialog fieldset { margin-bottom: 4px; }
   #book-dialog .actions { flex: 0 0 auto; margin-top: 4px; }
   #book-dialog .actions .btn { min-height: 34px; padding: 4px 12px; }
