@@ -34,7 +34,7 @@ const BOOKS_KEY = "myjournal.books";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "22.2", date: "2026-10-07" };
+const BUILD = { number: "22.3", date: "2026-10-08" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -493,6 +493,7 @@ $("open-add").addEventListener("click", () => {
   }
   resetAddForm();
   setMode(null);
+  applyDateControls();
   addDialog.showModal();
 });
 
@@ -515,6 +516,7 @@ function openEdit(id) {
   noteEl.value = expense.note || "";
   thousandsOn = false;              // an edit shows the amount as saved, so it can never multiply twice
   showThousandsChip();               // and this doesn't disturb what you last chose for new ones
+  applyDateControls();
   addDialog.showModal();
 }
 
@@ -702,6 +704,56 @@ let skinWeekAnchor = todayISO();   // which week the cover screen is showing
 
 function isoDate(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// ---------- Date steppers (Build 22.3) ----------
+// Android's own date picker uses its landscape layout on the cover screen (598 x 530, wider than
+// it is tall) and is then too wide for the window: Cancel is clipped and OK is off-screen, so a
+// date can be opened but never confirmed. It is an OS dialog, so no CSS of ours can reach it.
+// On the cover screen the native field is hidden and these arrows take its place; the main screen,
+// where the portrait picker works, is unchanged.
+const DATE_STEPPERS = [
+  { input: "date", step: "date-step", label: "date-step-label" },
+  { input: "saving-date", step: "saving-date-step", label: "saving-date-step-label" },
+];
+
+function shiftISO(iso, days) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d + days);
+  return isoDate(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function applyDateControls() {
+  const cover = onCoverScreen();
+  const today = todayISO();
+  for (const s of DATE_STEPPERS) {
+    $(s.step).hidden = !cover;      // arrows on the cover screen …
+    $(s.input).hidden = cover;      // … the native field everywhere else
+    $(s.input).max = today;         // so both screens stop at today, not just the arrows
+  }
+  refreshDateSteppers();
+}
+
+function refreshDateSteppers() {
+  const today = todayISO();
+  for (const s of DATE_STEPPERS) {
+    const value = $(s.input).value || today;
+    $(s.label).textContent = `${weekdayShort(value)} ${shortDate(value)}`;
+    // you can't spend money on a day that hasn't happened, so today is the end of the road
+    $(s.step).querySelector('[data-step="1"]').disabled = value >= today;
+  }
+}
+
+for (const s of DATE_STEPPERS) {
+  $(s.step).addEventListener("click", (event) => {
+    const button = event.target.closest("[data-step]");
+    if (!button || button.disabled) return;
+    const today = todayISO();
+    const next = shiftISO($(s.input).value || today, Number(button.dataset.step));
+    $(s.input).value = next > today ? today : next;
+    refreshDateSteppers();
+  });
+  $(s.input).addEventListener("change", refreshDateSteppers);
 }
 
 function weekdayShort(iso) {
@@ -2548,6 +2600,7 @@ function openAddSaving() {
   fillSavingForm();
   resetSavingForm();
   setSavingMode(null);
+  applyDateControls();
   savingDialog.showModal();
 }
 
@@ -2568,6 +2621,7 @@ function openSavingEdit(id) {
   savingAmountEl.value = formatWhileTyping(String(saving.amount), 2);
   savingDateEl.value = saving.date;
   savingNoteEl.value = saving.note || "";
+  applyDateControls();
   savingDialog.showModal();
 }
 
@@ -3057,6 +3111,7 @@ function showTab(name) {
 }
 
 COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
+  applyDateControls();
   renderDashboard();
   renderSavings();
   renderSkin();

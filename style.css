@@ -1332,3 +1332,19 @@ textarea {
   #book-dialog .actions { margin-top: 4px; }
   #book-dialog .actions .btn { min-height: 34px; padding: 4px 12px; }
 }
+
+/* ---------- Date steppers (Build 22.3) ----------
+   Shown only on the cover screen, where Android's own picker opens in its landscape layout and
+   runs off the edge of the window — OK can't be reached. Shown and hidden from JS by the same
+   COVER_SCREEN media query the rest of the app uses, never by a CSS display override. */
+.date-step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px;
+  padding: 0 4px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+.date-step-label { text-align: center; font-size: 0.95rem; }

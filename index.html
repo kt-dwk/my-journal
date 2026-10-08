@@ -412,6 +412,11 @@
         <div class="field">
           <label class="label" for="date">Date</label>
           <input id="date" type="date">
+          <div class="date-step" id="date-step" hidden>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">&lt;</button>
+            <span class="date-step-label" id="date-step-label" aria-live="polite"></span>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">&gt;</button>
+          </div>
         </div>
         <div class="field">
           <label class="label" for="note">Note <span class="small">(optional)</span></label>
@@ -466,6 +471,11 @@
         <div class="field">
           <label class="label" for="saving-date">Date</label>
           <input id="saving-date" type="date">
+          <div class="date-step" id="saving-date-step" hidden>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">&lt;</button>
+            <span class="date-step-label" id="saving-date-step-label" aria-live="polite"></span>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">&gt;</button>
+          </div>
         </div>
         <div class="field">
           <label class="label" for="saving-note">Note <span class="small">(optional)</span></label>
