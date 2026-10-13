@@ -33,8 +33,18 @@ body {
 .page {
   max-width: 520px;
   margin: 0 auto;
-  /* bottom space so the tab bar never covers the last row */
-  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) calc(96px + env(safe-area-inset-bottom));
+  /* Build 22.4: the bottom space was 96px, written for a tab bar Build 12 removed. Measured on the
+     main screen with the page scrolled right down: 120px sat below the last row where the floating
+     button occupies 80 (64 tall, 16 up) — 40 of it dead. Pages with no floating button need none
+     of it, and never scroll on the main screen anyway, so they get ordinary spacing. */
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) calc(16px + env(safe-area-inset-bottom));
+}
+/* the three pages with a floating button keep room for it. These sit BEFORE the cover-screen
+   block on purpose: the cover rules come later and must still win there. */
+#money-page,
+#diary-page,
+#books-page {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 h1 { margin: 0 0 12px; font-size: 1.6rem; }
