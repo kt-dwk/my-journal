@@ -10,6 +10,16 @@ const CATEGORIES = [
 ];
 const GROUPS = ["Need", "Want"];
 
+// Build 23: income. Both lists live here, like the expense items — changed by asking for a build.
+// An entry stores the NAMES, as an expense stores its item: safe because a code-only list can only
+// be renamed in a build, where the rename and its data are handled together. If these are ever made
+// editable in the app, entries must move to ids FIRST — that is the mistake Build 21 had to undo for
+// savings, which pointed at goals by name and needed a migration.
+// The sources are deliberately not employers: the repository is public, so real names would say
+// where you work. "Full-time / Part-time" carries the same meaning without that.
+const INCOME_CATEGORIES = ["Salary", "Side job", "Bonus", "Per diem", "Other"];
+const INCOME_SOURCES = ["Full-time", "Part-time", "Other"];
+
 const CURRENCIES = {
   LAK: { symbol: "₭", decimals: 0 },
   THB: { symbol: "฿", decimals: 2 },
@@ -31,10 +41,11 @@ const SEED_GOALS = [
 const SAVINGS_KEY = "myjournal.savings";
 const GOALS_KEY = "myjournal.goals";
 const BOOKS_KEY = "myjournal.books";
+const INCOME_KEY = "myjournal.income";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "22.4", date: "2026-10-13" };
+const BUILD = { number: "23", date: "2026-10-14" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -130,6 +141,7 @@ const expenseStore = makeStore(STORAGE_KEY);
 const savingsStore = makeStore(SAVINGS_KEY);
 const goalStore = makeStore(GOALS_KEY);
 const bookStore = makeStore(BOOKS_KEY);
+const incomeStore = makeStore(INCOME_KEY);
 
 // Build 22: a book is { id, title, status, page, total, finishedAt, addedAt }.
 // status is "want" | "reading" | "read". page and total are 0 when unknown — a book with no
@@ -373,6 +385,7 @@ function changeMonth(delta) {
   viewYear = d.getFullYear();
   viewMonth = d.getMonth();
   renderDashboard();
+  renderIncome();   // Build 23: Expenses and Income share the month, so both follow the arrows
 }
 
 $("prev-month").addEventListener("click", () => changeMonth(-1));
@@ -489,6 +502,10 @@ window.addEventListener("scroll", () => {
 $("open-add").addEventListener("click", () => {
   if (!$("panel-savings").hidden) {   // Build 12.2: the same + adds a saving on the Savings tab
     openAddSaving();
+    return;
+  }
+  if (!$("panel-income").hidden) {    // Build 23: and an income on the Income tab
+    openAddIncome();
     return;
   }
   resetAddForm();
@@ -715,6 +732,7 @@ function isoDate(year, month, day) {
 const DATE_STEPPERS = [
   { input: "date", step: "date-step", label: "date-step-label" },
   { input: "saving-date", step: "saving-date-step", label: "saving-date-step-label" },
+  { input: "income-date", step: "income-date-step", label: "income-date-step-label" },
 ];
 
 function shiftISO(iso, days) {
@@ -2249,13 +2267,14 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 8, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books
+    version: 9, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
     savings: savingsStore.load(),
     goals: goalStore.load(),
     books: bookStore.load(),
+    income: incomeStore.load(),
     rates: loadRates(),
     skin: loadSkin(),
     daily: loadDaily(),
@@ -2345,6 +2364,11 @@ function checkBackup(backup) {
   if (backup.colors !== undefined && (typeof backup.colors !== "object" || backup.colors === null || Array.isArray(backup.colors))) {
     throw new Error("Backup has damaged colours");
   }
+  // Backups made before Build 23 (version 8 and older) have no "income", and those leave Income untouched
+  if (backup.income !== undefined && (!Array.isArray(backup.income)
+    || !backup.income.every((e) => e && typeof e.id === "string" && typeof e.amount === "number" && typeof e.date === "string"))) {
+    throw new Error("Backup has damaged income");
+  }
   // Backups made before Build 22 (version 7 and older) have no "books", and those leave My Books untouched
   if (backup.books !== undefined && (!Array.isArray(backup.books)
     || !backup.books.every((b) => b && typeof b.id === "string" && typeof b.title === "string"))) {
@@ -2399,7 +2423,7 @@ $("restore-no").addEventListener("click", () => {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -2407,6 +2431,7 @@ $("restore-yes").addEventListener("click", () => {
     // alone (the usual rule) and its savings — which still name their goal — are linked by name.
     if (backup.goals) goalStore.save(backup.goals);
     if (backup.books) bookStore.save(backup.books);   // an older backup has none, so My Books is left alone
+    if (backup.income) incomeStore.save(backup.income);  // likewise Income
     savingsStore.save(backup.goals ? backup.savings : linkSavingsByName(backup.savings));
     if (backup.rates) saveRates({ ...DEFAULT_RATES, ...backup.rates });
     if (backup.skin) saveSkin(backup.skin);
@@ -2427,6 +2452,7 @@ $("restore-yes").addEventListener("click", () => {
   }
   cancelRestore();
   renderDashboard();
+  renderIncome();
   renderSavings();
   renderSkin();
   renderDiary();
@@ -2624,6 +2650,216 @@ function openSavingEdit(id) {
   applyDateControls();
   savingDialog.showModal();
 }
+
+// ---------- Income (Build 23) ----------
+// Mirrors the Expenses tab: the same month state, the same month card, a total per category and a
+// log below. An entry is shaped like an expense plus a `source`. "Just a record of what came in" —
+// deliberately NO balance against spending, because that is one step from budgets, which stay dropped.
+
+const incomeCurrencyEl = $("income-currency");
+const incomeAmountEl = $("income-amount");
+const incomeDateEl = $("income-date");
+const incomeNoteEl = $("income-note");
+const incomeDialog = $("income-dialog");
+let editingIncomeId = null;
+let incomeThousandsOn = thousandsRemembered;
+
+function fillIncomeForm() {
+  for (const [code, { symbol }] of Object.entries(CURRENCIES)) {
+    incomeCurrencyEl.add(new Option(`${symbol} ${code}`, code));
+  }
+  $("income-cat-choices").replaceChildren(...INCOME_CATEGORIES.map((c) => choiceButton("income-cat", c)));
+  $("income-src-choices").replaceChildren(...INCOME_SOURCES.map((x) => choiceButton("income-src", x)));
+}
+
+function incomeThousandsApplies() {
+  return incomeCurrencyEl.value === DEFAULT_CURRENCY;   // LAK only, as the Add transaction sheet
+}
+
+function showIncomeChip() {
+  const chip = $("income-x1000");
+  const preview = $("income-amount-preview");
+  const applies = incomeThousandsApplies();
+  chip.hidden = !applies;
+  chip.setAttribute("aria-pressed", String(incomeThousandsOn));
+  const typed = readAmount(incomeAmountEl.value, 0);
+  const show = applies && incomeThousandsOn && typed > 0;
+  preview.hidden = !show;
+  if (show) preview.textContent = `= ${formatMoney(typed * 1000, DEFAULT_CURRENCY)}`;
+}
+
+$("income-x1000").addEventListener("click", () => {
+  incomeThousandsOn = !incomeThousandsOn;
+  thousandsRemembered = incomeThousandsOn;
+  try {
+    localStorage.setItem(THOUSANDS_KEY, incomeThousandsOn ? "on" : "off");
+  } catch {}
+  showIncomeChip();
+  incomeAmountEl.focus();
+});
+
+incomeCurrencyEl.addEventListener("change", showIncomeChip);
+incomeAmountEl.addEventListener("input", () => {
+  incomeAmountEl.value = formatWhileTyping(incomeAmountEl.value, CURRENCIES[incomeCurrencyEl.value].decimals);
+  showIncomeChip();
+});
+
+function renderIncome() {
+  const rates = loadRates();
+  let all = [];
+  let loadProblem = false;
+  try {
+    all = incomeStore.load();
+  } catch (err) {
+    console.error(err);
+    loadProblem = true;
+  }
+
+  const key = monthKey(viewYear, viewMonth);   // the same month as the Expenses tab, on purpose
+  const items = all
+    .filter((e) => typeof e.date === "string" && e.date.startsWith(key))
+    .map((e) => ({ ...e, lak: lakAmountOf(e, rates) }))
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || "").localeCompare(a.createdAt || ""));
+  const total = items.reduce((sum, e) => sum + e.lak, 0);
+
+  const monthDate = new Date(viewYear, viewMonth, 1);
+  $("income-month-label").textContent = onCoverScreen()
+    ? `${monthDate.toLocaleDateString("en-US", { month: "short" })} ${viewYear}`
+    : monthDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  $("income-total").textContent = formatMoney(total, "LAK");
+
+  $("income-by-category").replaceChildren(
+    ...INCOME_CATEGORIES.map((c) =>
+      summaryRow(c, items.filter((e) => e.category === c).reduce((sum, e) => sum + e.lak, 0)))
+  );
+
+  $("income-log").replaceChildren(...items.map(incomeRow));
+  $("income-log-empty").textContent = loadProblem
+    ? "Your saved income couldn\u2019t be read."
+    : "No income this month.";
+  $("income-log-empty").hidden = items.length > 0 && !loadProblem;
+}
+
+function incomeRow(e) {
+  const row = el("button", "log-row");
+  row.type = "button";
+  const item = el("span", "log-item");
+  item.append(el("span", "", e.category));
+  // the source sits where an expense puts its note; a note of your own follows it
+  const under = [e.source, e.note].filter(Boolean).join(" \u00b7 ");
+  if (under) item.append(el("span", "small", under));
+  row.append(el("span", "log-date", shortDate(e.date)), item, el("span", "log-amount", formatMoney(e.lak, "LAK")));
+  row.addEventListener("click", () => openIncomeEdit(e.id));
+  const li = el("li");
+  li.append(row);
+  return li;
+}
+
+function resetIncomeForm() {
+  $("income-form").reset();
+  incomeCurrencyEl.value = DEFAULT_CURRENCY;
+  incomeDateEl.value = todayISO();
+  for (const id of ["income-cat-error", "income-src-error", "income-amount-error", "income-error"]) $(id).hidden = true;
+  toggleConfirm("income-delete-confirm", "income-form-actions", false);
+  incomeThousandsOn = thousandsRemembered;
+  showIncomeChip();
+}
+
+function openAddIncome() {
+  editingIncomeId = null;
+  $("income-title").textContent = "Add income";
+  resetIncomeForm();
+  $("delete-income").hidden = true;
+  applyDateControls();
+  incomeDialog.showModal();
+}
+
+function openIncomeEdit(id) {
+  let entry;
+  try {
+    entry = incomeStore.load().find((e) => e.id === id);
+  } catch (err) {
+    console.error(err);
+  }
+  if (!entry) return;
+
+  editingIncomeId = id;
+  $("income-title").textContent = "Edit income";
+  resetIncomeForm();
+  const cat = $("income-form").querySelector(`input[name="income-cat"][value="${CSS.escape(entry.category)}"]`);
+  if (cat) cat.checked = true;
+  const src = $("income-form").querySelector(`input[name="income-src"][value="${CSS.escape(entry.source || "")}"]`);
+  if (src) src.checked = true;
+  incomeCurrencyEl.value = entry.currency;
+  incomeAmountEl.value = formatWhileTyping(String(entry.amount), CURRENCIES[entry.currency].decimals);
+  incomeDateEl.value = entry.date;
+  incomeNoteEl.value = entry.note || "";
+  incomeThousandsOn = false;    // an edit shows the amount as saved, so it can never multiply twice
+  showIncomeChip();
+  $("delete-income").hidden = false;
+  applyDateControls();
+  incomeDialog.showModal();
+}
+
+$("income-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const cat = $("income-form").querySelector('input[name="income-cat"]:checked');
+  const src = $("income-form").querySelector('input[name="income-src"]:checked');
+  const decimals = CURRENCIES[incomeCurrencyEl.value].decimals;
+  let amount = readAmount(incomeAmountEl.value, decimals);
+  if (incomeThousandsApplies() && incomeThousandsOn) amount *= 1000;
+
+  $("income-cat-error").hidden = Boolean(cat);
+  $("income-src-error").hidden = Boolean(src);
+  $("income-amount-error").hidden = amount > 0;
+  $("income-error").hidden = true;
+  if (!cat || !src || !(amount > 0)) return;
+
+  const entry = {
+    category: cat.value,
+    source: src.value,
+    amount,
+    currency: incomeCurrencyEl.value,
+    date: incomeDateEl.value || todayISO(),
+    note: incomeNoteEl.value.trim(),
+  };
+
+  try {
+    if (editingIncomeId) incomeStore.update(editingIncomeId, entry);
+    else incomeStore.add({ id: newId(), ...entry, createdAt: new Date().toISOString() });
+  } catch (err) {
+    console.error(err);
+    $("income-error").hidden = false;
+    return;
+  }
+
+  incomeDialog.close();
+  renderIncome();
+});
+
+$("delete-income").addEventListener("click", () => {
+  toggleConfirm("income-delete-confirm", "income-form-actions", true);
+  $("income-delete-no").focus();
+});
+$("income-delete-no").addEventListener("click", () => {
+  toggleConfirm("income-delete-confirm", "income-form-actions", false);
+});
+$("income-delete-yes").addEventListener("click", () => {
+  if (!editingIncomeId) return;
+  try {
+    incomeStore.remove(editingIncomeId);
+  } catch (err) {
+    console.error(err);
+    toggleConfirm("income-delete-confirm", "income-form-actions", false);
+    $("income-error").hidden = false;
+    return;
+  }
+  incomeDialog.close();
+  renderIncome();
+});
+
+$("income-prev-month").addEventListener("click", () => changeMonth(-1));
+$("income-next-month").addEventListener("click", () => changeMonth(1));
 
 // ---------- My Books (Build 22) ----------
 
@@ -3095,15 +3331,17 @@ savingForm.addEventListener("submit", (event) => {
 function showTab(name) {
   // Build 12.4: redraw on opening, so the wording always suits the screen in use
   if (name === "expenses") renderDashboard();
+  else if (name === "income") renderIncome();
   else renderSavings();
   applyCoverWording();
-  for (const tab of ["expenses", "savings"]) {
+  for (const tab of ["expenses", "income", "savings"]) {
     const selected = tab === name;
     $(`tab-${tab}`).setAttribute("aria-selected", String(selected));
     $(`panel-${tab}`).hidden = !selected;
   }
   // Build 16.4: the same + opens a different sheet on each tab, so it says which
-  $("open-add").setAttribute("aria-label", name === "savings" ? "Add saving" : "Add transaction");
+  const addLabel = { savings: "Add saving", income: "Add income" }[name] || "Add transaction";
+  $("open-add").setAttribute("aria-label", addLabel);
   try {
     localStorage.setItem(TAB_KEY, name);
   } catch {}
@@ -3113,12 +3351,14 @@ function showTab(name) {
 COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
   applyDateControls();
   renderDashboard();
+  renderIncome();
   renderSavings();
   renderSkin();
   applyCoverWording();
 });
 
 $("tab-expenses").addEventListener("click", () => showTab("expenses"));
+$("tab-income").addEventListener("click", () => showTab("income"));
 $("tab-savings").addEventListener("click", () => showTab("savings"));
 
 // ---------- Start ----------
@@ -3126,10 +3366,12 @@ $("tab-savings").addEventListener("click", () => showTab("savings"));
 fillAddForm();
 fillSavingForm();
 fillBookStatuses();
+fillIncomeForm();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 moveKeptThoughtsToDiary(); // Build 19, once only: whatever was still in To keep becomes diary notes
 seedAndLinkGoals(); // Build 21, once only: goals move into storage and savings point at their ids
 renderDashboard();
+renderIncome();
 renderSavings();
 applyCoverWording();
 
@@ -3140,7 +3382,8 @@ window.addEventListener("pageshow", () => window.scrollTo(0, 0));
 
 let startTab = "expenses";
 try {
-  if (localStorage.getItem(TAB_KEY) === "savings") startTab = "savings";
+  const remembered = localStorage.getItem(TAB_KEY);
+  if (remembered === "savings" || remembered === "income") startTab = remembered;   // Build 23
 } catch {}
 showTab(startTab);
 

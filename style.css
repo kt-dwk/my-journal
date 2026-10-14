@@ -113,7 +113,7 @@ button { font: inherit; color: inherit; }
 /* ---------- My Money (Build 12 design pass) ---------- */
 .switch {                    /* Expenses | Savings, at the top instead of a bottom tab bar */
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;   /* Build 23: Expenses | Income | Savings */
   margin-bottom: 16px;
   border: 2px solid var(--ink);
   border-radius: 12px;

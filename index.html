@@ -58,6 +58,7 @@
 
     <div class="switch" role="tablist" aria-label="My Money">
       <button type="button" class="switch-btn" role="tab" id="tab-expenses" aria-controls="panel-expenses" aria-selected="true">Expenses</button>
+      <button type="button" class="switch-btn" role="tab" id="tab-income" aria-controls="panel-income" aria-selected="false">Income</button>
       <button type="button" class="switch-btn" role="tab" id="tab-savings" aria-controls="panel-savings" aria-selected="false">Savings</button>
     </div>
 
@@ -81,6 +82,29 @@
       <h3 class="section-label">Log</h3>
       <ul id="log"></ul>
       <p class="small" id="log-empty" hidden>No transactions this month.</p>
+    </section>
+    </div>
+
+    <div id="panel-income" role="tabpanel" aria-labelledby="tab-income" hidden>
+    <div class="month-card">
+      <div class="month-nav">
+        <button type="button" class="btn month-arrow" id="income-prev-month" aria-label="Previous month">&lt;</button>
+        <h2 id="income-month-label"></h2>
+        <button type="button" class="btn month-arrow" id="income-next-month" aria-label="Next month">&gt;</button>
+      </div>
+      <p class="total">
+        <strong id="income-total"></strong>
+      </p>
+    </div>
+
+    <section>
+      <ul id="income-by-category" class="cat-list"></ul>
+    </section>
+
+    <section>
+      <h3 class="section-label">Log</h3>
+      <ul id="income-log"></ul>
+      <p class="small" id="income-log-empty" hidden>No income this month.</p>
     </section>
     </div>
 
@@ -436,6 +460,79 @@
 
       <div class="actions" id="form-actions">
         <button type="button" class="btn danger icon-only" id="delete-transaction" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / Edit income pop-up (Build 23) -->
+  <dialog class="sheet" id="income-dialog" aria-labelledby="income-title">
+    <form id="income-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="income-title">Add income</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <fieldset class="field item-group">
+        <legend class="sr-only">Category</legend>
+        <span class="item-group-label" aria-hidden="true">Category</span>
+        <div class="item-buttons" id="income-cat-choices"></div>
+        <p class="error" id="income-cat-error" hidden>Please choose a category.</p>
+      </fieldset>
+
+      <fieldset class="field item-group">
+        <legend class="sr-only">Source</legend>
+        <span class="item-group-label" aria-hidden="true">Source</span>
+        <div class="item-buttons" id="income-src-choices"></div>
+        <p class="error" id="income-src-error" hidden>Please choose a source.</p>
+      </fieldset>
+
+      <div class="field">
+        <div class="field-head">
+          <label class="label" for="income-amount">Amount</label>
+          <span class="head-right">
+            <span class="small" id="income-amount-preview" hidden></span>
+            <button type="button" class="x1000" id="income-x1000" aria-pressed="false" hidden>×1000</button>
+          </span>
+        </div>
+        <div class="amount-row">
+          <select id="income-currency" aria-label="Currency"></select>
+          <input id="income-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+        </div>
+        <p class="error" id="income-amount-error" hidden>Please enter an amount above 0.</p>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="income-date">Date</label>
+          <input id="income-date" type="date">
+          <div class="date-step" id="income-date-step" hidden>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">&lt;</button>
+            <span class="date-step-label" id="income-date-step-label" aria-live="polite"></span>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">&gt;</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="income-note">Note <span class="small">(optional)</span></label>
+          <input id="income-note" type="text" maxlength="120" autocomplete="off">
+        </div>
+      </div>
+
+      <p class="error" id="income-error" hidden>Sorry, this couldn’t be saved. Please try again.</p>
+
+      <div class="confirm" id="income-delete-confirm" hidden>
+        <p>Delete this income?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="income-delete-no">No</button>
+          <button type="button" class="btn danger-fill" id="income-delete-yes">Yes</button>
+        </div>
+      </div>
+
+      <div class="actions" id="income-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-income" aria-label="Delete" hidden>
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <button type="button" class="btn" data-close>Cancel</button>
