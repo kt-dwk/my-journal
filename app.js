@@ -48,7 +48,7 @@ const INCOME_KEY = "myjournal.income";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "23.1", date: "2026-10-25" };
+const BUILD = { number: "23.2", date: "2026-10-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -145,38 +145,6 @@ const savingsStore = makeStore(SAVINGS_KEY);
 const goalStore = makeStore(GOALS_KEY);
 const bookStore = makeStore(BOOKS_KEY);
 const incomeStore = makeStore(INCOME_KEY);
-
-// Build 23.1: "Tata's rent" became "Family rent" — a personal name doesn't belong in a public
-// repository. An expense stores its item's NAME, so every expense that used the old one has to be
-// rewritten with it. Without that its money would disappear from the item rows while still
-// counting in the Need total, so the heading would stop matching the rows beneath it.
-const RENAMED_CATEGORIES = { "Tata's rent": "Family rent" };
-
-// An entry keeps its own object when nothing is renamed, so the caller can tell by identity
-function renameCategories(list) {
-  return list.map((e) => {
-    const renamed = e && RENAMED_CATEGORIES[e.category];
-    return renamed ? { ...e, category: renamed } : e;
-  });
-}
-
-// Runs once at start-up, like migrateNotes: nothing is written unless something actually changed
-function migrateCategoryNames() {
-  let list;
-  try {
-    list = expenseStore.load();
-  } catch (err) {
-    console.error(err); // damaged data is left alone rather than overwritten
-    return;
-  }
-  const renamed = renameCategories(list);
-  if (renamed.every((e, i) => e === list[i])) return;
-  try {
-    expenseStore.save(renamed);
-  } catch (err) {
-    console.error(err);
-  }
-}
 
 // Build 22: a book is { id, title, status, page, total, finishedAt, addedAt }.
 // status is "want" | "reading" | "read". page and total are 0 when unknown — a book with no
@@ -2483,9 +2451,7 @@ $("restore-yes").addEventListener("click", () => {
   const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
-    // Build 23.1: a backup made before the rename still carries the old item name, so the same
-    // rewrite runs here too — otherwise restoring one quietly brings those orphans back.
-    expenseStore.save(renameCategories(backup.expenses));
+    expenseStore.save(backup.expenses);
     // Build 21: version 7 carries your goals. An older backup has none, so your goals are left
     // alone (the usual rule) and its savings — which still name their goal — are linked by name.
     if (backup.goals) goalStore.save(backup.goals);
@@ -3436,7 +3402,6 @@ fillIncomeForm();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 moveKeptThoughtsToDiary(); // Build 19, once only: whatever was still in To keep becomes diary notes
 seedAndLinkGoals(); // Build 21, once only: goals move into storage and savings point at their ids
-migrateCategoryNames(); // Build 23.1: expenses saved under a renamed item follow the new name
 renderDashboard();
 renderIncome();
 renderSavings();
