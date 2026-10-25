@@ -4,7 +4,7 @@
 const CATEGORIES = [
   { name: "Car loan", group: "Need" },
   { name: "Family", group: "Need" },
-  { name: "Tata's rent", group: "Need" },
+  { name: "Family rent", group: "Need" },
   { name: "Personal want", group: "Want" },
   { name: "Travel & Tourism", group: "Want" },
 ];
@@ -33,10 +33,13 @@ const DEFAULT_RATES = { USD: 22500, THB: 690 }; // LAK per 1 unit
 
 // Build 21: your goals now live in storage and you edit them in the app. This list is only the
 // seed used the very first time, and the names it carries are matched to existing savings once.
+// Build 23.1: the names and amounts are deliberately generic placeholders — the repository is
+// public, so your real goals and the money behind them would be readable by anyone. You rename
+// them in the app on first run; your own goals live in storage and in your backups, never here.
 const SEED_GOALS = [
-  { name: "Family spare fund", target: 2000, monthly: 50 },
-  { name: "Retirement", target: 1200, monthly: 100 },
-  { name: "Home Office", target: 10000, monthly: 400 },
+  { name: "Goal one", target: 1000, monthly: 50 },
+  { name: "Goal two", target: 2000, monthly: 100 },
+  { name: "Goal three", target: 5000, monthly: 200 },
 ];
 const SAVINGS_KEY = "myjournal.savings";
 const GOALS_KEY = "myjournal.goals";
@@ -45,7 +48,7 @@ const INCOME_KEY = "myjournal.income";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "23", date: "2026-10-14" };
+const BUILD = { number: "23.1", date: "2026-10-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -143,6 +146,38 @@ const goalStore = makeStore(GOALS_KEY);
 const bookStore = makeStore(BOOKS_KEY);
 const incomeStore = makeStore(INCOME_KEY);
 
+// Build 23.1: "Tata's rent" became "Family rent" — a personal name doesn't belong in a public
+// repository. An expense stores its item's NAME, so every expense that used the old one has to be
+// rewritten with it. Without that its money would disappear from the item rows while still
+// counting in the Need total, so the heading would stop matching the rows beneath it.
+const RENAMED_CATEGORIES = { "Tata's rent": "Family rent" };
+
+// An entry keeps its own object when nothing is renamed, so the caller can tell by identity
+function renameCategories(list) {
+  return list.map((e) => {
+    const renamed = e && RENAMED_CATEGORIES[e.category];
+    return renamed ? { ...e, category: renamed } : e;
+  });
+}
+
+// Runs once at start-up, like migrateNotes: nothing is written unless something actually changed
+function migrateCategoryNames() {
+  let list;
+  try {
+    list = expenseStore.load();
+  } catch (err) {
+    console.error(err); // damaged data is left alone rather than overwritten
+    return;
+  }
+  const renamed = renameCategories(list);
+  if (renamed.every((e, i) => e === list[i])) return;
+  try {
+    expenseStore.save(renamed);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 // Build 22: a book is { id, title, status, page, total, finishedAt, addedAt }.
 // status is "want" | "reading" | "read". page and total are 0 when unknown — a book with no
 // total still reads fine, it just shows no numbers and no bar.
@@ -219,15 +254,21 @@ function onCoverScreen() {
   return COVER_SCREEN.matches;
 }
 
+// Build 23.1: a currency the app doesn't know (a hand-edited backup, or one it no longer carries)
+// used to stop the screen drawing. It now falls back to the normal currency instead.
+function currencyInfo(currency) {
+  return CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];
+}
+
 // Whole amounts, no decimals: "$1,200 of $2,000" as the design writes them
 function formatWhole(amount, currency) {
-  const { symbol } = CURRENCIES[currency];
+  const { symbol } = currencyInfo(currency);
   return symbol + Math.round(amount).toLocaleString("en-US");
 }
 
 // Build 16.4: cents only when there are cents, so savings read $50 but $50.75 keeps its pennies
 function formatMoney(amount, currency) {
-  const { symbol, decimals } = CURRENCIES[currency];
+  const { symbol, decimals } = currencyInfo(currency);
   const places = Number.isInteger(amount) ? 0 : decimals;
   return symbol + amount.toLocaleString("en-US", {
     minimumFractionDigits: places,
@@ -528,7 +569,7 @@ function openEdit(id) {
   const radio = addForm.querySelector(`input[name="item"][value="${CSS.escape(expense.category)}"]`);
   if (radio) radio.checked = true;
   currencyEl.value = expense.currency;
-  amountEl.value = formatWhileTyping(String(expense.amount), CURRENCIES[expense.currency].decimals);
+  amountEl.value = formatWhileTyping(String(expense.amount), currencyInfo(expense.currency).decimals);
   dateEl.value = expense.date;
   noteEl.value = expense.note || "";
   thousandsOn = false;              // an edit shows the amount as saved, so it can never multiply twice
@@ -567,13 +608,13 @@ $("item-choices").addEventListener("change", () => {
 });
 
 amountEl.addEventListener("input", () => {
-  amountEl.value = formatWhileTyping(amountEl.value, CURRENCIES[currencyEl.value].decimals);
+  amountEl.value = formatWhileTyping(amountEl.value, currencyInfo(currencyEl.value).decimals);
   $("amount-error").hidden = true;
   showThousandsChip();
 });
 
 currencyEl.addEventListener("change", () => {
-  amountEl.value = formatWhileTyping(amountEl.value, CURRENCIES[currencyEl.value].decimals);
+  amountEl.value = formatWhileTyping(amountEl.value, currencyInfo(currencyEl.value).decimals);
   $("rate-error").hidden = true;
   showThousandsChip();
 });
@@ -583,7 +624,7 @@ addForm.addEventListener("submit", (event) => {
 
   const checked = addForm.querySelector('input[name="item"]:checked');
   const currency = currencyEl.value;
-  const typed = readAmount(amountEl.value, CURRENCIES[currency].decimals);
+  const typed = readAmount(amountEl.value, currencyInfo(currency).decimals);
   const amount = thousandsOn && currency === DEFAULT_CURRENCY ? typed * 1000 : typed;   // Build 16.3
 
   let original = null;
@@ -2344,7 +2385,11 @@ function checkBackup(backup) {
   if (!backup || backup.format !== BACKUP_FORMAT || !Array.isArray(backup.expenses) || !Array.isArray(backup.savings)) {
     throw new Error("Not a My Journal backup");
   }
-  const isEntry = (e) => e && typeof e.id === "string" && typeof e.amount === "number" && typeof e.date === "string";
+  // Build 23.1: a currency must be one the app knows. Savings have never carried one — they're
+  // always shown in USD — so a missing currency stays fine; only a named unknown one is refused.
+  const knownCurrency = (c) => c === undefined || CURRENCIES[c] !== undefined;
+  const isEntry = (e) => e && typeof e.id === "string" && typeof e.amount === "number" && typeof e.date === "string"
+    && knownCurrency(e.currency);
   if (!backup.expenses.every(isEntry) || !backup.savings.every(isEntry)) {
     throw new Error("Backup has damaged entries");
   }
@@ -2366,7 +2411,7 @@ function checkBackup(backup) {
   }
   // Backups made before Build 23 (version 8 and older) have no "income", and those leave Income untouched
   if (backup.income !== undefined && (!Array.isArray(backup.income)
-    || !backup.income.every((e) => e && typeof e.id === "string" && typeof e.amount === "number" && typeof e.date === "string"))) {
+    || !backup.income.every(isEntry))) {
     throw new Error("Backup has damaged income");
   }
   // Backups made before Build 22 (version 7 and older) have no "books", and those leave My Books untouched
@@ -2420,13 +2465,27 @@ $("restore-no").addEventListener("click", () => {
   $("restore-btn").focus();
 });
 
+// Every screen drawn again from storage, after a restore puts new data there
+function redrawEverything() {
+  renderDashboard();
+  renderIncome();
+  renderSavings();
+  renderSkin();
+  renderDiary();
+  renderBooks();
+  renderHome();
+  fillRateInputs();
+}
+
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
   const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
-    expenseStore.save(backup.expenses);
+    // Build 23.1: a backup made before the rename still carries the old item name, so the same
+    // rewrite runs here too — otherwise restoring one quietly brings those orphans back.
+    expenseStore.save(renameCategories(backup.expenses));
     // Build 21: version 7 carries your goals. An older backup has none, so your goals are left
     // alone (the usual rule) and its savings — which still name their goal — are linked by name.
     if (backup.goals) goalStore.save(backup.goals);
@@ -2451,14 +2510,21 @@ $("restore-yes").addEventListener("click", () => {
     return;
   }
   cancelRestore();
-  renderDashboard();
-  renderIncome();
-  renderSavings();
-  renderSkin();
-  renderDiary();
-  renderBooks();
-  renderHome();
-  fillRateInputs();
+  // Build 23.1: drawing used to sit outside the safety net, so a backup that saved but wouldn't
+  // draw left the bad data in place and broke the app on every open. Now drawing is covered too.
+  try {
+    redrawEverything();
+  } catch (err) {
+    console.error(err);
+    keys.forEach((key, i) => (before[i] === null ? localStorage.removeItem(key) : localStorage.setItem(key, before[i])));
+    try {
+      redrawEverything();   // back to what was on screen before
+    } catch (err2) {
+      console.error(err2);
+    }
+    showSettingsStatus("backup-status", "Restore failed, so your data wasn't changed.", true);
+    return;
+  }
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);
 });
 
@@ -2700,7 +2766,7 @@ $("income-x1000").addEventListener("click", () => {
 
 incomeCurrencyEl.addEventListener("change", showIncomeChip);
 incomeAmountEl.addEventListener("input", () => {
-  incomeAmountEl.value = formatWhileTyping(incomeAmountEl.value, CURRENCIES[incomeCurrencyEl.value].decimals);
+  incomeAmountEl.value = formatWhileTyping(incomeAmountEl.value, currencyInfo(incomeCurrencyEl.value).decimals);
   showIncomeChip();
 });
 
@@ -2791,7 +2857,7 @@ function openIncomeEdit(id) {
   const src = $("income-form").querySelector(`input[name="income-src"][value="${CSS.escape(entry.source || "")}"]`);
   if (src) src.checked = true;
   incomeCurrencyEl.value = entry.currency;
-  incomeAmountEl.value = formatWhileTyping(String(entry.amount), CURRENCIES[entry.currency].decimals);
+  incomeAmountEl.value = formatWhileTyping(String(entry.amount), currencyInfo(entry.currency).decimals);
   incomeDateEl.value = entry.date;
   incomeNoteEl.value = entry.note || "";
   incomeThousandsOn = false;    // an edit shows the amount as saved, so it can never multiply twice
@@ -2805,7 +2871,7 @@ $("income-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const cat = $("income-form").querySelector('input[name="income-cat"]:checked');
   const src = $("income-form").querySelector('input[name="income-src"]:checked');
-  const decimals = CURRENCIES[incomeCurrencyEl.value].decimals;
+  const decimals = currencyInfo(incomeCurrencyEl.value).decimals;
   let amount = readAmount(incomeAmountEl.value, decimals);
   if (incomeThousandsApplies() && incomeThousandsOn) amount *= 1000;
 
@@ -3370,6 +3436,7 @@ fillIncomeForm();
 migrateNotes(); // Build 9.6: notes from before formatting get a formatted copy, words unchanged
 moveKeptThoughtsToDiary(); // Build 19, once only: whatever was still in To keep becomes diary notes
 seedAndLinkGoals(); // Build 21, once only: goals move into storage and savings point at their ids
+migrateCategoryNames(); // Build 23.1: expenses saved under a renamed item follow the new name
 renderDashboard();
 renderIncome();
 renderSavings();

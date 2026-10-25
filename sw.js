@@ -1,6 +1,6 @@
 // Offline helper: always tries the internet first (so updates show up),
 // and falls back to the saved copy when there's no connection.
-const CACHE = "my-journal-v84";
+const CACHE = "my-journal-v85";
 const APP_FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -18,10 +18,13 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  // Build 23.1: only the app's own files are saved. Before, any address the app happened to ask
+  // for was copied into the cache, including ones from elsewhere that can't even be read back.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response.ok || response.type === "opaque") {
+        if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE).then((cache) => cache.put(event.request, copy));
         }
