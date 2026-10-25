@@ -48,7 +48,7 @@ const INCOME_KEY = "myjournal.income";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "23.2", date: "2026-10-25" };
+const BUILD = { number: "23.3", date: "2026-10-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -354,6 +354,14 @@ function renderDashboard() {
   $("total").textContent = formatMoney(total, "LAK");
 
   // Build 12: Need and Want are headings with their own totals, their items underneath
+  // Build 23.3: an item the app doesn't recognise belongs to no group, so before this it dropped
+  // out of the breakdown entirely while still counting in the month total — the money was there but
+  // invisible. It can arrive from a backup made before an item was renamed. Each unknown name now
+  // gets its own row under "Other", so Need + Want + Other always equals the total on screen.
+  const unknownNames = [...new Set(
+    items.filter((e) => !CATEGORIES.some((c) => c.name === e.category)).map((e) => e.category)
+  )];
+
   $("by-category").replaceChildren(
     ...GROUPS.flatMap((g) => {
       const head = el("div", "cat-head");
@@ -363,7 +371,19 @@ function renderDashboard() {
         list.append(summaryRow(c.name, sumWhere((e) => e.category === c.name)));
       }
       return [head, list];
-    })
+    }),
+    ...(unknownNames.length ? (() => {          // only ever appears when there is such money
+      const head = el("div", "cat-head");
+      head.append(
+        el("span", "", "Other"),
+        el("span", "row-amount", formatMoney(sumWhere((e) => unknownNames.includes(e.category)), "LAK"))
+      );
+      const list = el("ul", "cat-list");
+      for (const name of unknownNames) {
+        list.append(summaryRow(name || "(no item)", sumWhere((e) => e.category === name)));
+      }
+      return [head, list];
+    })() : [])
   );
 
   $("log").replaceChildren(
@@ -2296,8 +2316,10 @@ function backupSummary(backup) {
   const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   // Build 19: thoughts are no longer counted. Brain dump stores nothing, and an older backup's
   // thoughts are ignored on restore — saying "1 thought" would claim something that didn't happen.
-  return `${count(backup.expenses.length, "expense")} · ${count(backup.savings.length, "saving")}`
-    + ` · ${count((backup.diary || []).length, "note")}`;
+  // Build 23.3: income is counted too. Build 23 added it to the backup and to restore but not to
+  // this sentence, which is the only confirmation you get that a restore worked.
+  return `${count(backup.expenses.length, "expense")} · ${count((backup.income || []).length, "income")}`
+    + ` · ${count(backup.savings.length, "saving")} · ${count((backup.diary || []).length, "note")}`;
 }
 
 $("backup-btn").addEventListener("click", async () => {
