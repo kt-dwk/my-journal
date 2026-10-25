@@ -45,10 +45,13 @@ const SAVINGS_KEY = "myjournal.savings";
 const GOALS_KEY = "myjournal.goals";
 const BOOKS_KEY = "myjournal.books";
 const INCOME_KEY = "myjournal.income";
+// Build 23.4: the edit history. Written only by update() and remove() on the three money
+// stores, plus one entry by a restore. Nothing in the app shows it — you read it in the backup.
+const CHANGES_KEY = "myjournal.changes";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "23.3", date: "2026-10-25" };
+const BUILD = { number: "23.4", date: "2026-10-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -109,8 +112,25 @@ const DAILY_KEY = "myjournal.daily";
 
 // ---------- Saving on this device ----------
 
+// Build 23.4: the fields YOU typed that actually changed, as { field: [before, after] }, or null
+// when none did. Derived values (rate, lakAmount, group) and updatedAt are never in `fields`,
+// so an amount edit records the amount alone and not the arithmetic that followed it.
+function typedChanges(before, changes, fields) {
+  const diff = {};
+  let any = false;
+  for (const field of fields) {
+    if (!(field in changes) || changes[field] === before[field]) continue;
+    diff[field] = [before[field], changes[field]];
+    any = true;
+  }
+  return any ? diff : null;
+}
+
 // One list of entries under one storage key (used for expenses and savings)
-function makeStore(key) {
+// Build 23.4: `log` is optional. With it, update() and remove() record to the edit history;
+// without it the store behaves exactly as it did before. save() never logs, so a restore and
+// the Build 21 goal migration stay silent.
+function makeStore(key, log) {
   const load = () => {
     const raw = localStorage.getItem(key);
     if (!raw) return [];
@@ -131,20 +151,73 @@ function makeStore(key) {
       const list = load();
       const index = list.findIndex((e) => e.id === id);
       if (index === -1) throw new Error("Entry not found");
-      list[index] = { ...list[index], ...changes, updatedAt: new Date().toISOString() };
+      const before = list[index];
+      list[index] = { ...before, ...changes, updatedAt: new Date().toISOString() };
       save(list);
+      // After the save, never before: a log that fails must not cost you the edit.
+      if (log) {
+        const diff = typedChanges(before, changes, log.fields);
+        if (diff) {
+          appendChange({ at: new Date().toISOString(), list: log.list, item: id,
+            what: "edit", label: log.label(before), changes: diff });
+        }
+      }
     },
     remove(id) {
-      save(load().filter((e) => e.id !== id));
+      const list = load();
+      const record = list.find((e) => e.id === id);
+      save(list.filter((e) => e.id !== id));
+      // The whole record, not a diff: a deletion has no "after" to compare against.
+      if (log && record) {
+        appendChange({ at: new Date().toISOString(), list: log.list, item: id,
+          what: "delete", label: log.label(record), was: record });
+      }
     },
   };
 }
 
-const expenseStore = makeStore(STORAGE_KEY);
-const savingsStore = makeStore(SAVINGS_KEY);
+// Build 23.4: the edit history list. Unlike a money store this NEVER throws — a damaged log is
+// not your data, so it must not take a page down with it.
+function loadChanges() {
+  try {
+    const list = JSON.parse(localStorage.getItem(CHANGES_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+// A failed log is swallowed on purpose: the save it describes has already happened, and must
+// never be undone because the history couldn't be written.
+function appendChange(entry) {
+  try {
+    const list = loadChanges();
+    list.push(entry);
+    localStorage.setItem(CHANGES_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Build 23.4: only these three log. The label is what the entry WAS at the time of the change,
+// so the history reads on its own even after the entry is edited again or deleted.
+const expenseStore = makeStore(STORAGE_KEY, {
+  list: "expenses",
+  fields: ["amount", "currency", "date", "category", "note"],
+  label: (e) => `${e.category || "(no item)"} ${formatMoney(e.lakAmount || 0, "LAK")}`,
+});
+const savingsStore = makeStore(SAVINGS_KEY, {
+  list: "savings",
+  fields: ["goalId", "amount", "date", "note"],
+  label: (e) => `${goalName(e.goalId) || "(no goal)"} ${formatMoney(e.amount || 0, "USD")}`,
+});
 const goalStore = makeStore(GOALS_KEY);
 const bookStore = makeStore(BOOKS_KEY);
-const incomeStore = makeStore(INCOME_KEY);
+const incomeStore = makeStore(INCOME_KEY, {
+  list: "income",
+  fields: ["category", "source", "amount", "currency", "date", "note"],
+  label: (e) => `${e.category || "(no kind)"} ${formatMoney(e.amount || 0, e.currency || "LAK")}`,
+});
 
 // Build 22: a book is { id, title, status, page, total, finishedAt, addedAt }.
 // status is "want" | "reading" | "read". page and total are 0 when unknown — a book with no
@@ -2296,7 +2369,7 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 9, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income
+    version: 10, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -2309,6 +2382,7 @@ function makeBackup() {
     daily: loadDaily(),
     diary: diaryStore.load(),
     colors: loadColours(),
+    changes: loadChanges(),
   };
 }
 
@@ -2419,6 +2493,11 @@ function checkBackup(backup) {
     || !backup.braindump.every((t) => t && typeof t.id === "string" && typeof t.text === "string"))) {
     throw new Error("Backup has damaged thoughts");
   }
+  // Backups made before Build 23.4 (version 9 and older) have no "changes", and those leave the edit history untouched
+  if (backup.changes !== undefined && (!Array.isArray(backup.changes)
+    || !backup.changes.every((c) => c && typeof c.at === "string" && typeof c.what === "string"))) {
+    throw new Error("Backup has a damaged edit history");
+  }
   return backup;
 }
 
@@ -2470,7 +2549,7 @@ function redrawEverything() {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -2488,6 +2567,9 @@ $("restore-yes").addEventListener("click", () => {
       text: validColourRow(backup.colors.text, "text"),
       highlight: validColourRow(backup.colors.highlight, "highlight"),
     });
+    // Build 23.4: version 10 carries the edit history. An older backup has none, so yours is left
+    // alone — the same rule every other section follows.
+    if (backup.changes) localStorage.setItem(CHANGES_KEY, JSON.stringify(backup.changes));
     // Build 19: an older backup's "braindump" is ignored on purpose — Brain dump stores nothing now
   } catch (err) {
     console.error(err);
@@ -2513,6 +2595,13 @@ $("restore-yes").addEventListener("click", () => {
     showSettingsStatus("backup-status", "Restore failed, so your data wasn't changed.", true);
     return;
   }
+  // Build 23.4: one entry for the restore itself, written LAST so the incoming history can't
+  // overwrite it. It is the boundary marking where everything changed at once.
+  appendChange({
+    at: new Date().toISOString(),
+    what: "restore",
+    label: `Backup from ${backup.exportedAt ? shortDate(backup.exportedAt.slice(0, 10), true) : "an unknown date"}`,
+  });
   showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);
 });
 
