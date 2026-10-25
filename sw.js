@@ -1,6 +1,6 @@
 // Offline helper: always tries the internet first (so updates show up),
 // and falls back to the saved copy when there's no connection.
-const CACHE = "my-journal-v88";
+const CACHE = "my-journal-v89";
 const APP_FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -21,6 +21,11 @@ self.addEventListener("fetch", (event) => {
   // Build 23.1: only the app's own files are saved. Before, any address the app happened to ask
   // for was copied into the cache, including ones from elsewhere that can't even be read back.
   if (new URL(event.request.url).origin !== self.location.origin) return;
+  // Build 23.5: version.json is the one file that must never come from the saved copies. It is what
+  // tells the app a new build is live, and a saved copy would always name the build already running
+  // — which would send the app into reloading itself over and over. Left alone here, it either
+  // reaches the internet or fails, and a failure means the app simply doesn't check this time.
+  if (new URL(event.request.url).pathname.endsWith("/version.json")) return;
   event.respondWith(
     fetch(event.request)
       .then((response) => {

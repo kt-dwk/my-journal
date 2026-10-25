@@ -51,7 +51,9 @@ const CHANGES_KEY = "myjournal.changes";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
-const BUILD = { number: "23.4", date: "2026-10-25" };
+// Build 23.5: version.json on the site must say the same number — that is how the app knows a new
+// build is live. The publish script writes both together, so never change one of them by hand.
+const BUILD = { number: "23.5", date: "2026-10-25" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -3548,6 +3550,63 @@ if (startView === "home") {
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js");
 }
+
+// ---------- Build 23.5: the app brings in a new build on its own ----------
+// Before this, a new build could sit unseen for days. Chrome keeps the app frozen in the background
+// when you switch away, so opening it again showed the same page it had last time and nothing ever
+// asked the site for the new files. Now the app asks which build is live, and if it isn't the one
+// running, it sends sw.js for the new files and reloads itself. No notice and nothing to tap.
+const UPDATE_GAP_MS = 60 * 1000;   // at most one check a minute, however often you switch apps
+let lastUpdateCheck = 0;
+
+// Reloading throws away whatever is half-typed, so it waits for a better moment. The check runs
+// again the next time the app comes back into view, so a new build is only delayed, never missed.
+function midSomething() {
+  const here = document.activeElement;
+  if (here && (here.tagName === "TEXTAREA" || here.tagName === "INPUT" || here.isContentEditable)) return true;
+  return !!document.querySelector("dialog[open]");
+}
+
+async function checkForNewBuild() {
+  if (location.protocol === "file:") return;   // opened straight off the disk: there's no site to ask
+  if (Date.now() - lastUpdateCheck < UPDATE_GAP_MS) return;
+  lastUpdateCheck = Date.now();
+
+  let live;
+  try {
+    const answer = await fetch("version.json", { cache: "no-store" });
+    if (!answer.ok) return;
+    live = (await answer.json()).build;
+  } catch {
+    return;                                    // no connection, or the file isn't on the site yet
+  }
+  if (!live || live === BUILD.number) return;  // already running the live build: nothing to do
+  if (midSomething()) return;
+
+  // GitHub can keep serving the old page for a minute or two after an upload. If the reload comes
+  // back still on the old build, stop — without this the app would reload over and over. Opening
+  // the app again starts a new session, which clears this and lets it try once more.
+  try {
+    if (sessionStorage.getItem("myjournal.updating") === live) return;
+    sessionStorage.setItem("myjournal.updating", live);
+  } catch {}
+
+  // sw.js does the throwing away, not this. Asking it to update fetches the new sw.js, whose new
+  // cache name makes it save all eight files again and delete the old ones. Clearing the saved
+  // copies here instead left a half-filled cache — only the two or three files the page happened to
+  // ask for — and the app would have opened without its icons the next time you were offline.
+  // Your notes live in storage, which none of this touches.
+  try {
+    const worker = await navigator.serviceWorker.getRegistration();
+    if (worker) await worker.update();
+  } catch {}
+  location.reload();
+}
+
+checkForNewBuild();
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) checkForNewBuild();
+});
 
 // Ask Chrome to keep this app's data permanently, so it isn't cleared when the phone is low on space
 if (navigator.storage && navigator.storage.persist) {
