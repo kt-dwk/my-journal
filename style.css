@@ -303,7 +303,7 @@ dialog.sheet {               /* the add form rises from the bottom, above the ke
   border-bottom: 0;
   border-radius: 3px;
 }
-dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
+dialog.sheet::backdrop { background: rgba(68, 61, 53, 0.3); }   /* Build 24.7: Espresso, not black */
 /* Build 16.2: with a keyboard up the window is short, so the sheet tightens to keep every field
    above the Cancel / Save line. This only changes spacing inside the sheet — it never switches
    between the main and cover layouts, which is decided by shape and width (Build 14.3). */
@@ -379,7 +379,7 @@ dialog {
   background: var(--card);
   color: var(--ink);
 }
-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+dialog::backdrop { background: rgba(68, 61, 53, 0.4); }        /* Build 24.7: Espresso, not black */
 /* Build 22.2 safety net: a closed <dialog> is hidden by the browser's own `display: none`, and ANY
    `display:` we set on one overrides that — the pop-up then renders as ordinary page content on
    every page. That is exactly what Build 22.1 shipped. This rule makes it impossible to repeat. */
@@ -660,7 +660,7 @@ textarea {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 3px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 6px 18px rgba(68, 61, 53, 0.14);   /* Build 24.7: no pure black anywhere */
 }
 .note-menu-item {
   display: flex;
@@ -1364,13 +1364,19 @@ textarea {
 /* ---------- Brain dump (Build 10) ---------- */
 /* Build 19: one full-width tile, and nothing else on the page. The To keep / Let go pair, the
    dashed Let go, the greyed "full" state and the thought rows all went with the list. */
+/* Build 24.7: the one filled tile in the app, and the only one that can be — every other page
+   has lists under it that a block of colour would fight with. NO BORDER: a filled shape has no
+   border, the fill is the edge. Ink reads 5.29:1 on it. */
 .brain-tile {
   min-height: 132px;
   margin-bottom: 0;
   align-items: center;
   justify-content: center;
   text-align: center;
+  background: var(--wisteria);
+  border: 0;
 }
+.brain-tile .tile-name { justify-content: center; }
 .brain-write {
   display: flex;
   align-items: flex-end;                /* ➤ rides the box's bottom edge as the box grows */
