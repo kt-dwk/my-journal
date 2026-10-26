@@ -474,7 +474,7 @@ textarea {
   flex: 0 0 38px;
   height: 44px;
   padding: 0;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
   color: var(--ink);
   background: none;
@@ -512,7 +512,7 @@ textarea {
 .swatch.plus { font-size: 20px; line-height: 1; }
 /* Build 24.3: an A for the pen — at roughly the size a word will be */
 .swatch { display: flex; align-items: center; justify-content: center; }
-.swatch-a { font-size: 22px; line-height: 1; color: var(--ink); }
+.swatch-a { font-size: 20px; line-height: 1; color: var(--ink); }
 /* and a swipe of marker for the highlighter — the same blobby shape the headings use,
    which is where that shape came from. "No highlight" is the outline with a slash. */
 .swatch-mark {
