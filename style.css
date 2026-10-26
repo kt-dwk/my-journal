@@ -123,7 +123,8 @@ button { font: inherit; color: inherit; }
 .confirm {
   margin-top: 8px;
   padding: 12px;
-  border: 1px solid var(--line);   /* Build 20: a question you asked for is not an error */
+  background: var(--card);
+  border: 1px solid var(--ink);    /* Build 24: a hairline separates; this box ASKS */
   border-radius: 3px;
 }
 .confirm p { margin: 0; }
@@ -215,6 +216,19 @@ button { font: inherit; color: inherit; }
 }
 .section-label:first-child,
 .year-head:first-child { margin-top: 0; }
+/* Build 24.5: a heading with a drawing beside it — the swipe stays on the word */
+.section-label.has-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 0;
+  background: none;
+}
+.section-label.has-icon span {
+  padding: 2px 12px 3px;
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+}
 /* Build 24.4: My Books. The three groups differ in KIND — what you are reading now, a maybe,
    and history — so each gets a drawing and its own colour. Sand for now, pink for the maybe
    (it is literally Want in the Money pages), green for finished (the palette's done colour).
@@ -1183,12 +1197,9 @@ textarea {
 .rate-row .label { margin: 0; }
 .rate-row input { width: 140px; text-align: right; }
 .rate-save { display: flex; justify-content: flex-end; margin-top: 12px; }
-.btn.accent {
-  color: var(--accent);
-  background: var(--card);
-  border: 1px solid var(--accent);
-}
-.btn.accent:active { background: var(--card); }
+/* Build 24.5: .btn.accent is gone — an outlined accent-blue button that existed ONLY on
+   this page, a fourth style. Primary is filled teal everywhere, and Save rates is the one
+   primary action here. */
 .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .settings-actions .btn { min-height: 56px; }
 /* Build 16.9: same size as Backup — only quieter, because Backup is the one you actually use

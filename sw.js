@@ -1,6 +1,6 @@
 // Offline helper: always tries the internet first (so updates show up),
 // and falls back to the saved copy when there's no connection.
-const CACHE = "my-journal-v95";
+const CACHE = "my-journal-v96";
 // Build 24: style.css and app.js carry ?v= so a design change is never served from a
 // stale copy — the browser treats a new address as a new file. Bump both here and in
 // index.html together.

@@ -363,7 +363,7 @@
     </header>
 
     <section>
-      <h3 class="section-label">Exchange rates</h3>
+      <h3 class="section-label has-icon"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h14l-3-3M20 15.5H6l3 3"/></svg><span>Exchange rates</span></h3>
       <form id="rates-form" novalidate>
         <div class="rate-row">
           <label class="label" id="rate-USD-label" for="rate-USD">1 USD =</label>
@@ -375,14 +375,14 @@
         </div>
         <p class="error" id="rates-error" hidden>Both rates must be above 0.</p>
         <div class="rate-save">
-          <button type="submit" class="btn accent">Save rates</button>
+          <button type="submit" class="btn primary">Save rates</button>
         </div>
         <p class="status" id="rates-status" role="status" hidden></p>
       </form>
     </section>
 
     <section>
-      <h3 class="section-label" id="backup-heading">Backup &amp; restore</h3>
+      <h3 class="section-label has-icon" id="backup-heading"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13h-15z"/><path d="M4.5 10.5h15"/><path d="M10 14.5h4"/></svg><span>Backup &amp; restore</span></h3>
       <div class="settings-actions" id="backup-actions">
         <button type="button" class="btn" id="backup-btn">Backup</button>
         <button type="button" class="btn" id="restore-btn">Restore</button>
@@ -392,8 +392,8 @@
         <p id="restore-summary"></p>
         <p class="small">This replaces all data on this device.</p>
         <div class="actions">
-          <button type="button" class="btn" id="restore-no">No, keep my data</button>
-          <button type="button" class="btn danger-fill" id="restore-yes">Yes, restore</button>
+          <button type="button" class="btn" id="restore-no">No</button>
+          <button type="button" class="btn undo" id="restore-yes">Yes</button>
         </div>
       </div>
       <p class="small" id="last-backup"></p>

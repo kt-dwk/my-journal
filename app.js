@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24.4", date: "2026-10-26" };
+const BUILD = { number: "24.5", date: "2026-10-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -2326,7 +2326,9 @@ function fillRateInputs() {
 function applyCoverWording() {
   const short = onCoverScreen();
   // Build 16.9: the rate labels read "1 USD =" on both screens now, so they stay in the HTML
-  $("backup-heading").textContent = short ? "Backup" : "Backup & Restore";
+  // Build 24.5: write the WORD, not the whole heading — textContent here wiped the drawing
+  // and the swipe the markup carries. Sentence case: one capital.
+  $("backup-heading").querySelector("span").textContent = short ? "Backup" : "Backup & restore";
   const built = `Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
   $("build-info").textContent = short ? built : `My Journal · ${built}`;
 }
