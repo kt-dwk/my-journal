@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24.3", date: "2026-10-26" };
+const BUILD = { number: "24.4", date: "2026-10-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -3140,7 +3140,7 @@ function renderBooks() {
   $("books-reading-group").hidden = reading.length === 0;
   $("books-want-group").hidden = want.length === 0;
   $("books-read-group").hidden = readBooksSorted.length === 0;
-  $("books-read-head").textContent = `Read · ${readBooksSorted.length}`;
+  $("books-read-head").textContent = String(readBooksSorted.length);   // Build 24.4: the total sits beside the heading, not inside it
   $("open-books-log").hidden = readBooksSorted.length <= 1;
 
   $("books-empty").textContent = failed ? "Your saved books couldn\u2019t be read." : "No books yet.";

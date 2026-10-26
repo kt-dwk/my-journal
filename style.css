@@ -215,6 +215,37 @@ button { font: inherit; color: inherit; }
 }
 .section-label:first-child,
 .year-head:first-child { margin-top: 0; }
+/* Build 24.4: My Books. The three groups differ in KIND — what you are reading now, a maybe,
+   and history — so each gets a drawing and its own colour. Sand for now, pink for the maybe
+   (it is literally Want in the Money pages), green for finished (the palette's done colour).
+   Measured: Wisteria and the green are the SAME colour by value, 1.00:1 and 1.02 apart under
+   both red-green blindnesses, which is why the first trio was thrown away. */
+.book-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 18px 0 2px;
+}
+.book-head:first-child { margin-top: 0; }
+.book-head .year-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding-left: 0;
+  background: none;              /* the swipe sits on the WORD, not on the icon */
+}
+.book-head .year-head span {
+  padding: 2px 12px 3px;
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+}
+.book-head .year-head.is-reading span { background: var(--sand); }
+.book-head .year-head.is-want span { background: var(--want); }
+.book-head .year-head.is-read span { background: var(--need); }
+.book-count-all { font-size: 20px; color: var(--quiet); }
+
 .cat-name {
   display: inline-block;
   padding: 2px 12px 3px;
