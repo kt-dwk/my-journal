@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24.2", date: "2026-10-26" };
+const BUILD = { number: "24.3", date: "2026-10-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1425,10 +1425,10 @@ $("open-diary-log").addEventListener("click", () => {
 $("diary-page-prev").addEventListener("click", () => changeDiaryPage(-1));
 $("diary-page-next").addEventListener("click", () => changeDiaryPage(1));
 
-const BOOK_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const BIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const PIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const UNPIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const BOOK_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const BIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const UNPIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3-1-6zM12 14v7M4 4l16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function iconButton(className, label, icon, onClick) {
   const button = el("button", className);
@@ -1440,11 +1440,21 @@ function iconButton(className, label, icon, onClick) {
 }
 
 // Pinned notes sit on top with no heading; a year heading opens each year below them (Build 14)
+// Build 24.3: pinned notes get a heading of their own. They used to sit on top with NO heading,
+// marked by a Ὄc on every row — and once the year headings became swiped labels, a group with no
+// heading above groups that have one read as a mistake. The heading says it once instead of each
+// row saying it again, and the title gets that column's width back.
 function diaryListItems(notes) {
   const items = [];
   let lastYear = null;
+  let pinnedHeadDone = false;
   for (const note of notes) {
-    if (!note.pinned) {
+    if (note.pinned) {
+      if (!pinnedHeadDone) {
+        items.push(el("li", "year-head", "Pinned"));
+        pinnedHeadDone = true;
+      }
+    } else {
       const year = (note.date || "").slice(0, 4) || String(now.getFullYear());
       if (year !== lastYear) {
         items.push(el("li", "year-head", year));
@@ -1468,7 +1478,6 @@ function noteRow(note, withYear = false) {
   const row = el("button", "log-row note-row");
   row.type = "button";
   row.append(
-    el("span", "note-pin", note.pinned ? "📌" : ""),
     el("span", "log-date", note.date ? shortDate(note.date, withYear) : ""),
     el("span", "log-item", note.title || "(untitled)")
   );
@@ -1611,12 +1620,15 @@ $("note-delete-yes").addEventListener("click", () => {
 // ---------- Formatting (Build 9.6) ----------
 
 const NOTE_MAX_CHARS = 10000;
-const DEFAULT_TEXT_HEX = "#222222";            // the normal ink colour
+const DEFAULT_TEXT_HEX = "#443D35";            // the normal ink colour (Espresso)
 const COLOURS_KEY = "myjournal.colors";
 const LAST_BACKUP_KEY = "myjournal.lastbackup";  // Build 11.5: shown in Settings, not part of the backup
+// Build 24.3: the warm rows. Every text colour clears 4.5:1 on both papers; every highlight
+// is a fill the palette already carries, with ink at 4.89 or better on it. Only Indigo and
+// Plum are new — the palette had no blue-violet or purple dark enough to write with.
 const COLOUR_DEFAULTS = {
-  text: ["#e53935", "#1e88e5", "#43a047", "#8e24aa", "#fb8c00"],       // red, blue, green, purple, orange
-  highlight: ["#fff176", "#a5d6a7", "#f8bbd0", "#90caf9", "#ffcc80"],  // yellow, green, pink, blue, orange
+  text: ["#96503C", "#4C6F77", "#626D5E", "#5761A2", "#924F7E"],       // terracotta, teal, sage, indigo, plum
+  highlight: ["#D4B684", "#C2D3BB", "#D2A4A8", "#DBCAD0", "#D4BCAA"],  // sand, green, pink, wisteria, swipe
 };
 const DROP_TAGS = new Set(["SCRIPT", "STYLE", "TEMPLATE", "IFRAME", "OBJECT", "EMBED", "SVG", "MATH",
   "VIDEO", "AUDIO", "CANVAS", "NOSCRIPT", "TEXTAREA", "SELECT", "BUTTON", "INPUT", "IMG"]);
@@ -1860,11 +1872,24 @@ function runFormat(command, value) {
   $("diary-error").hidden = true;
 }
 
-function swatchButton(label, colour, className, onPick) {
+// Build 24.3: a swatch is the thing it does — an A in that colour for the pen, a swipe of
+// the colour for the highlighter — instead of a round chip of pure hue. kind is "text" or
+// "highlight"; the old circles broke three rules at once (circles, 2px borders, 38px targets).
+function swatchButton(label, colour, className, onPick, kind) {
   const button = el("button", `swatch ${className}`.trim());
   button.type = "button";
   button.setAttribute("aria-label", label);
-  if (colour) button.style.background = colour;
+  if (kind === "text") {
+    const a = el("span", "swatch-a", "A");
+    if (colour) a.style.color = colour;
+    button.append(a);
+  } else if (kind === "highlight") {
+    const mark = el("span", "swatch-mark");
+    if (colour) mark.style.background = colour;
+    button.append(mark);
+  } else if (colour) {
+    button.style.background = colour;
+  }
   button.addEventListener("pointerdown", (event) => event.preventDefault()); // keep the text selected
   button.addEventListener("click", onPick);
   return button;
@@ -1891,8 +1916,8 @@ function openColourStrip(kind) {
   openPalette = kind;
   const row = loadColours()[kind];
   const pinned = kind === "text"
-    ? swatchButton("Normal colour", DEFAULT_TEXT_HEX, "pinned", () => applyColour(kind, null))
-    : swatchButton("No highlight", null, "pinned none", () => applyColour(kind, null));
+    ? swatchButton("Normal colour", DEFAULT_TEXT_HEX, "pinned", () => applyColour(kind, null), "text")
+    : swatchButton("No highlight", null, "pinned none", () => applyColour(kind, null), "highlight");
   const plus = swatchButton("More colours", null, "plus", () => {
     rememberSelection();
     const picker = $("colour-picker");
@@ -1903,7 +1928,7 @@ function openColourStrip(kind) {
   plus.textContent = "＋";
   $("colour-strip").replaceChildren(
     pinned,
-    ...row.map((hex) => swatchButton(hex, hex, "", () => applyColour(kind, hex))),
+    ...row.map((hex) => swatchButton(hex, hex, "", () => applyColour(kind, hex), kind)),
     plus
   );
   $("colour-strip").hidden = false;
@@ -2148,12 +2173,16 @@ function markNoteSaved() {
 
 let savedTimer;
 
-const SAVE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const SAVED_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5 10 18 19 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// Build 24.3: Save is a PAIR, not one icon. The arrow asks and the tick answers — three marks
+// become one, and the colour goes to Deep Sage. A floppy disk was the one object in this app
+// with no counterpart on paper. No animation: the swap happens on the next paint.
+const SAVE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.5v11M7.4 10.2 12 14.8l4.6-4.6M4.5 19.5h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SAVED_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4.5 12.8 9.6 18 19.5 6.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function showSaveIcon() {
   $("save-note").innerHTML = SAVE_ICON;
   $("save-note").classList.remove("is-saved");
+  $("save-note").setAttribute("aria-label", "Save");
 }
 
 // Build 14.2: saving turns the disk into a tick for a moment, then back
@@ -2163,6 +2192,7 @@ function showSaved() {
   status.hidden = false;                 // heard by a screen reader, not seen
   $("save-note").innerHTML = SAVED_ICON;
   $("save-note").classList.add("is-saved");
+  $("save-note").setAttribute("aria-label", "Saved");
   savedTimer = setTimeout(() => {
     showSaveIcon();
     status.hidden = true;

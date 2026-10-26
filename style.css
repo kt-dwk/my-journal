@@ -412,25 +412,35 @@ textarea {
 }
 .note-toolbar {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   padding: 6px 0;
   overflow-x: auto;          /* one row; slides sideways on the cover screen */
   scrollbar-width: none;
 }
 .note-toolbar::-webkit-scrollbar { display: none; }
+/* Build 24.3: bare tools, 38 wide and 44 tall. Eight boxed 44s came to 380 against the
+   main screen's 328 and had to scroll; 8 × 38 with 2px gaps is 318, so nothing scrolls on
+   either screen — the cover is 350 wide, which is MORE than main, not less. */
 .tool {
   position: relative;
-  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
   height: 44px;
-  font-size: 16px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
   color: var(--ink);
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: none;
+  border: 0;
   border-radius: 3px;
   cursor: pointer;
 }
+.tool svg { display: block; }
 .tool[aria-pressed="true"],
-.tool[aria-expanded="true"] { color: var(--card); background: var(--ink); border-color: var(--ink); }
+.tool[aria-expanded="true"] { background: var(--swipe); }   /* marked with the marker */
+
 .colour-bar {
   position: absolute;
   left: 9px;
@@ -441,7 +451,7 @@ textarea {
 }
 .colour-strip {
   display: flex;
-  gap: 6px;
+  gap: 6px;   /* Build 24.3: 7 × 44 + 6 × 6 = 344 against 328 — the ＋ is 16 short, so it slides */
   padding: 6px 0 0;
   overflow-x: auto;
 }
@@ -453,9 +463,32 @@ textarea {
   border-radius: 3px;
   cursor: pointer;
 }
-.swatch.pinned { border-color: var(--ink); }
-.swatch.none { background: linear-gradient(to top right, transparent 45%, var(--error) 45% 55%, transparent 55%), var(--card); }
+.swatch.pinned { border-color: var(--ink); }   /* "normal colour" is marked by the box, not a sixth hue */
 .swatch.plus { font-size: 20px; line-height: 1; }
+/* Build 24.3: an A for the pen — at roughly the size a word will be */
+.swatch { display: flex; align-items: center; justify-content: center; }
+.swatch-a { font-size: 22px; line-height: 1; color: var(--ink); }
+/* and a swipe of marker for the highlighter — the same blobby shape the headings use,
+   which is where that shape came from. "No highlight" is the outline with a slash. */
+.swatch-mark {
+  width: 36px;
+  height: 32px;
+  border-radius: 14px 11px 13px 10px;
+}
+.swatch.none .swatch-mark {
+  position: relative;
+  border: 1px solid var(--edge);
+}
+.swatch.none .swatch-mark::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 1px;
+  background: var(--error);
+  transform: rotate(-14deg);
+}
 .colour-picker {
   position: absolute;
   width: 1px;
@@ -470,7 +503,7 @@ textarea {
   min-width: 0;
   padding: 6px 0 0;          /* Build 14.2: unboxed, flush under the title */
   font-size: 16px;
-  line-height: 1.45;
+  line-height: 1.5;          /* Build 24.3: Patrick Hand's descenders crowd the caps below at 1.45 */
   color: var(--ink);
   background: none;
   border: 0;
@@ -478,10 +511,10 @@ textarea {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-.log-row.note-row { grid-template-columns: 1.3rem 6.2rem 1fr; }
-.note-pin { font-size: 13px; line-height: 1.4; }
-/* Build 14: on the page the year sits in a heading, so the row's date column is narrower */
-#diary-log .log-row.note-row { grid-template-columns: 1.3rem 4.4rem 1fr; }
+/* Build 24.3: no pin column — "Pinned" is a heading now, so the title gets the width back.
+   The pop-up keeps the wider date because it carries the year; the page's headings do. */
+.log-row.note-row { grid-template-columns: 6.2rem 1fr; }
+#diary-log .log-row.note-row { grid-template-columns: 4.4rem 1fr; }
 .note-list { padding-bottom: 8px; }   /* the last row can be scrolled clear of the floating ✎ */
 
 /* Swipe a note row left to reveal Pin and Delete */
@@ -493,6 +526,9 @@ textarea {
   bottom: 1px;
   display: flex;
 }
+/* Build 24.3: Pin on Cashmere with ink at 6.94:1, Delete on Terracotta with Vanilla at 5.28.
+   The old red was #b3261e with white at 6.54 — this is a real step down, spent on the warm
+   tone and still well clear of the 4.5 floor. 56px each is a thumb measurement, so unchanged. */
 .swipe-btn {
   display: flex;
   align-items: center;
@@ -504,6 +540,7 @@ textarea {
   cursor: pointer;
 }
 .swipe-btn.bin { background: var(--error); color: var(--card); }
+.swipe-btn svg { display: block; }
 .swipe .log-row {
   position: relative;
   background: var(--bg);
@@ -963,9 +1000,9 @@ textarea {
   #diary-note-page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }  /* every line counts here */
   #diary-note-page.is-writing #diary-title { display: none; }
   .note-toolbar { gap: 3px; padding: 4px 0; }
-  .tool { flex: 0 0 36px; height: 36px; font-size: 16px; }
-  .colour-strip { gap: 3px; padding: 4px 0; }
-  .swatch { width: 32px; height: 32px; }
+  /* Build 24.3: the cover keeps the SAME 38 × 44 tool. It has 350px of width against
+     main's 328, so the 36px shrink was never needed — and 36 is below the 44 minimum. */
+  .colour-strip { padding: 4px 0; }   /* Build 24.3: the cover keeps the same 44 swatch */
   /* Build 14.2: the note bar still fits at 598 × 530 */
   .note-when { font-size: 11px; }   /* Build 14.3: "Last saved: …" fits the cover bar too */
   .note-act { width: 40px; height: 40px; font-size: 20px; }
