@@ -28,9 +28,9 @@
     <!-- Build 16.10 (wireframe 28a): the row under the note. 📖 and ❤️ have no page yet, so they
          are drawn but do nothing — aria-disabled rather than disabled, which would grey them. -->
     <div class="home-icons">
-      <button type="button" class="brain-button" id="tile-book" aria-label="My Books"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--sand)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path fill="none" d="M12 7.5v13"/></svg></button>
-      <button type="button" class="brain-button" id="tile-heart" aria-label="Self-reflection, coming later" aria-disabled="true"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg></button>
-      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg></button>
+      <button type="button" class="brain-button" id="tile-book" aria-label="My Books"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--sand)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path fill="none" d="M12 7.5v13"/></svg></button>
+      <button type="button" class="brain-button" id="tile-heart" aria-label="Self-reflection, coming later" aria-disabled="true"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg></button>
+      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg></button>
     </div>
     <div class="tile-dock">
       <button type="button" class="tile" id="tile-money">
@@ -237,7 +237,7 @@
     </header>
     <!-- Build 19: one tile, and nothing else. The thoughts you dump live inside the pop-up
          for as long as it is open, and are never stored. -->
-    <button type="button" class="tile brain-tile" id="brain-dump"><span class="tile-name"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg> Dump a thought</span></button>
+    <button type="button" class="tile brain-tile" id="brain-dump"><span class="tile-name"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg> Dump a thought</span></button>
   </div>
 
   <!-- Brain dump: writing pop-up -->
@@ -267,8 +267,8 @@
     <p class="small" id="skin-day-state"></p>
     <div class="actions">
       <button type="button" class="btn" data-close>Cancel</button>
-      <button type="button" class="btn primary" id="skin-day-done">✓ Mark done</button>
-      <button type="button" class="btn primary" id="skin-day-not-done">Mark not done</button>
+      <button type="button" class="btn primary" id="skin-day-done">Mark done</button>
+      <button type="button" class="btn undo" id="skin-day-not-done">Mark not done</button>
     </div>
   </dialog>
 

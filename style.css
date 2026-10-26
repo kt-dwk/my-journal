@@ -765,7 +765,7 @@ textarea {
   border-radius: 3px;
   background: var(--card);
 }
-.item-btn input:checked + span { background: var(--ink); color: var(--card); }
+.item-btn input:checked + span { background: var(--ink); color: var(--card); border-color: var(--ink); }
 .item-btn input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 1px; }
 
 /* ---------- Savings ---------- */
@@ -833,7 +833,19 @@ textarea {
   background: var(--card);
   border-top: 1px solid var(--line);
 }
-.pager .btn { width: 44px; padding: 0; font-size: 20px; }
+/* Build 24.8: bare pager arrows. These were ‹ › inside BOXED .btn buttons — the arrow round
+   settled a bare 44 everywhere, and these three pagers were missed because they live inside
+   pop-ups. At the end of its range an arrow goes Mocha rather than browser-grey: the same
+   "present, not yet" treatment the calendar's future days get. */
+.pager .btn {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 20px;
+  background: none;
+  border: 0;
+}
+.pager .btn:disabled { color: var(--edge); opacity: 1; }
 
 /* ---------- Header + Settings ---------- */
 .app-head {
@@ -880,6 +892,8 @@ textarea {
 .brain-button {              /* Build 24: no ring — a drawn, filled glyph on the paper */
   width: 64px;
   height: 64px;
+  /* Build 24.8, from seeing it on the phone: the drawings were 30px inside a 64px target,
+     leaving half the button empty. 40 fills it without touching the tap area. */
   display: flex;
   align-items: center;
   justify-content: center;
