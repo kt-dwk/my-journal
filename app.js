@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24", date: "2026-10-26" };
+const BUILD = { number: "24.2", date: "2026-10-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -748,6 +748,35 @@ addForm.addEventListener("submit", (event) => {
 
 const SKIN_CYCLE = ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"];
 const SKIN_LETTERS = ["E", "R", "M", "M"]; // shown in the calendar: E xfoliate, R etinol, M oist
+
+// Build 24.2: a drawing per night, indexed exactly like SKIN_LETTERS — four nights, three
+// drawings, because Recovery 1 and 2 are the same jar on two nights. The tonight card now
+// shows WHAT TONIGHT IS before the word does. No decoration on any of the three: the tape
+// on the Home sticky note is the app's only ornament.
+const SKIN_BOTTLES = [
+  // Exfoliator — wide overlapping cap, a drop, and a label with its lines drawn in
+  '<rect x="10" y="2" width="16" height="9" rx="1.6"/><path d="M10 6.4h16"/>' +
+  '<path d="M14.6 11v2M21.4 11v2"/><rect x="7" y="13" width="22" height="40" rx="2.4"/>' +
+  '<path d="M18 17c1.7 1.9 2.5 3.1 2.5 4.1a2.5 2.5 0 0 1-5 0c0-1 .8-2.2 2.5-4.1z"/>' +
+  '<path d="M11 27h14M11 32h14M11 37h14"/><path d="M11 44h6"/>',
+  // Retinol — a pump bottle: head, collar, full-height label
+  '<rect x="14" y="2" width="8" height="5" rx="1.6"/><path d="M18 2.8v3.4"/>' +
+  '<rect x="16" y="7" width="4" height="3"/><rect x="12.5" y="10" width="11" height="5" rx="1.2"/>' +
+  '<rect x="8.5" y="15" width="19" height="38" rx="2.6"/><rect x="11.5" y="20" width="13" height="25" rx="1.6"/>' +
+  '<path d="M11.5 48.5h13"/>',
+  // Moisturiser — a closed jar, lid overhanging the body. Both recovery nights.
+  '<rect x="2.5" y="14" width="31" height="8" rx="2"/>' +
+  '<path d="M4.5 22h27v20a5 5 0 0 1-5 5H9.5a5 5 0 0 1-5-5z"/>' +
+  '<rect x="10" y="28" width="16" height="9" rx="2"/>',
+];
+SKIN_BOTTLES.push(SKIN_BOTTLES[2]);   // Recovery 2 shares Recovery 1's jar
+
+function skinBottleFor(dateISO) {
+  return `<svg viewBox="0 0 36 56" width="38" height="58" aria-hidden="true" fill="none"
+    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${
+    SKIN_BOTTLES[skinNightIndex(dateISO)]}</svg>`;
+}
+
 const SKIN_START = { date: "2026-09-15", night: 1 }; // 15 Sep 2026 = Retinol
 
 // Build 16.6: how far the calendar arrows may travel — back to January 2026, forward to the end
@@ -889,10 +918,11 @@ function dayCell(dateISO, map, today) {
   const canTap = dateISO <= today && dateISO >= SKIN_START.date;
   const cell = el("button", "cal-cell");
   cell.type = "button";
+  // Build 24.2: two marks a day, not three. "Done" is the number coloured in (see .is-done
+  // in style.css), so the ✓ column is gone — it was a tick in a box, and there is no box now.
   cell.append(
     el("span", "cal-day", String(Number(dateISO.slice(8)))),
-    el("span", "cal-letter", skinLetterFor(dateISO)),
-    el("span", "cal-mark", done ? "✓" : "")
+    el("span", "cal-letter", skinLetterFor(dateISO))
   );
   if (dateISO === today) cell.classList.add("is-today");
   if (done) cell.classList.add("is-done");
@@ -926,11 +956,13 @@ function renderSkinMonth(map, today) {
 function renderSkinWeek(map, today) {
   const start = mondayOf(skinWeekAnchor);
   const end = addDays(start, 6);
+  // Build 24.2: the weekday names go. Mo Tu We sits directly under this label, so "Mon" and
+  // "Sun" were saying twice what the header already says, and the extra words pushed the
+  // longest label close to the arrows. The month is written once when the week stays inside
+  // it — "5 – 11 Oct" — and twice only across a boundary — "26 Oct – 1 Nov".
   const sameMonth = start.slice(0, 7) === end.slice(0, 7);
-  const from = sameMonth
-    ? `${weekdayShort(start)} ${Number(start.slice(8))}`
-    : `${weekdayShort(start)} ${shortDate(start)}`;
-  $("skin-week-label").textContent = `${from} – ${weekdayShort(end)} ${shortDate(end)}`;
+  const from = sameMonth ? String(Number(start.slice(8))) : shortDate(start);
+  $("skin-week-label").textContent = `${from} – ${shortDate(end)}`;
   const cells = [];
   for (let i = 0; i < 7; i++) cells.push(dayCell(addDays(start, i), map, today));
   $("skin-calendar").replaceChildren(...cells);
@@ -946,9 +978,14 @@ function renderSkin() {
   // Tonight card
   $("skin-today").textContent = `Tonight · ${weekdayShort(today)} ${shortDate(today)}`;
   $("skin-tonight").textContent = skinNightFor(today);
+  document.querySelector(".tonight-icon").innerHTML = skinBottleFor(today);   // fixed drawings, never anything typed
   const doneTonight = map[today] === "done";
-  $("skin-done-btn").textContent = doneTonight ? "✓ Done" : "Done";
-  $("skin-done-btn").classList.toggle("primary", doneTonight);
+  $("skin-done-btn").textContent = "Done";
+  // Build 24.2: the button takes the colour of what TAPPING it does, which is the rule
+  // everywhere else — teal to do a thing, Terracotta to take it back. It was the other way
+  // round: filled once already done, so the loudest state was the one needing no action.
+  $("skin-done-btn").classList.toggle("primary", !doneTonight);
+  $("skin-done-btn").classList.toggle("undo", doneTonight);
 
   // The month on the main screen, this week on the cover screen
   const week = onCoverScreen();

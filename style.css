@@ -107,7 +107,9 @@ button { font: inherit; color: inherit; }
   background: var(--card);
   cursor: pointer;
 }
-.btn.primary { background: var(--ink); color: var(--card); }
+.btn.primary { color: var(--card); background: var(--accent); border-color: var(--accent); }
+/* Build 24: taking something back is Terracotta, wherever it appears */
+.btn.undo { color: var(--card); background: var(--error); border-color: var(--error); }
 .btn.danger { margin-right: auto; color: var(--error); border-color: var(--error); }
 .btn.icon-only {
   display: flex;
@@ -1163,17 +1165,18 @@ textarea {
   border-radius: 3px;
 }
 .tonight-icon {
-  flex: 0 0 44%;
+  flex: 0 0 38%;             /* Build 24.2: sized for the drawing, not for a 38px emoji */
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: 14px 0;
-  font-size: 38px;
-  line-height: 1;
+  padding: 10px 0;
+  line-height: 0;            /* Build 24.2: a drawing now, not a glyph */
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 3px;
 }
+.tonight-icon svg { display: block; }
 .tonight-body { flex: 1; min-width: 0; text-align: center; }
 .tonight-name {
   margin: 2px 0 10px;
@@ -1185,36 +1188,50 @@ textarea {
 .cal-head, .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
 }
 .cal-head {
-  margin-bottom: 4px;
-  font-size: 13px;
-  color: var(--muted);
+  gap: 4px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--quiet);
   text-align: center;
 }
+.cal-grid { row-gap: 2px; }
+/* Build 24.2: no cell boxes. 31 bordered squares were the heaviest thing on a page made of
+   hairlines, and none of those borders said anything — the grid already gives the date.
+   The dot grid does the aligning, which is what it is for. */
 .cal-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  min-height: 52px;
-  padding: 2px;
+  gap: 2px;
+  min-height: 46px;
+  padding: 0;
   font: inherit;
-  font-size: 13px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink);
+  background: none;
+  border: 0;
   cursor: pointer;
 }
 .cal-blank { background: none; border: 0; }
-.cal-letter { font-size: 11px; line-height: 1; color: var(--muted); }
-.cal-mark { min-height: 1em; font-size: 13px; line-height: 1; }
-.cal-cell.is-off .cal-letter { color: var(--line); }
-.cal-cell.is-today { border-width: 2px; border-color: var(--ink); }
-.cal-cell.is-done .cal-mark { color: var(--done); }
+/* a night you did is the number COLOURED IN — a mark you made, not a tick in a box */
+.cal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.cal-letter { font-size: 11px; line-height: 1; color: var(--quiet); }
+.cal-cell.is-done .cal-day { background: var(--swipe); }
+.cal-cell.is-today .cal-day { border: 1px solid var(--ink); }   /* today is a drawn ring */
+/* a night you cannot mark yet: quiet ink and nothing else — present, not yet */
 .cal-cell.is-off { color: var(--quiet); background: none; cursor: default; }
+.cal-cell.is-off .cal-letter { color: var(--quiet); }
 .cal-cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 
 /* Build 13: My Skin on the cover screen — the card, this week and the key, all above the fold.
@@ -1234,7 +1251,8 @@ textarea {
   .tonight-name { margin: 2px 0 6px; font-size: 20px; }
   #skin-done-actions .btn { min-height: 34px; }
   #skin-month-nav, #skin-week-nav { margin-bottom: 2px; }
-  .cal-cell { min-height: 40px; }
+  /* Build 24.2: the cover keeps the SAME 46px cell. 1px is 0.192mm on main and 0.187
+     on the cover — 2.6% apart — so shrinking it here was never justified. */
   .cal-key { margin: 6px 0 0; font-size: 11px; }
 }
 
