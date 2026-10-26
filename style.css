@@ -1171,6 +1171,30 @@ textarea {
   #settings-page .section-label { margin-top: 10px; margin-bottom: 3px; }
 }
 
+/* Build 24.6: the cover screen's Settings rows. The same Row the rest of the app uses — 44 tall,
+   a drawing, the word, a chevron — and NO swipe, because a row is not a heading. */
+.settings-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.settings-row .chev { font-size: 20px; color: var(--quiet); }
+.settings-row:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.settings-row svg { display: block; }
+.sheet-slot section { margin-bottom: 0; }
+
 .settings-head h1 { margin: 0; }
 .btn.back {                  /* Build 12.9: a bare arrow, no box */
   display: flex;

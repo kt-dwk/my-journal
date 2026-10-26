@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24.5", date: "2026-10-26" };
+const BUILD = { number: "24.6", date: "2026-10-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -2323,6 +2323,39 @@ function fillRateInputs() {
 }
 
 // Build 12.4: the cover screen uses the wireframe's shorter labels
+
+// ---------- Build 24.6: Settings folds on the cover screen ----------
+// The cover has 269px of usable height against 379 of content, and scrolling put the cut
+// 31px into the Backup / Restore button row — half a button, which reads as broken rather
+// than as "more below". So on the cover the two sections become rows that open a sheet.
+// The SECTIONS THEMSELVES move in and out, so there is exactly one copy of every field and
+// every listener keeps working; cloning would have left two #rate-USD inputs on the page.
+function applySettingsLayout() {
+  const short = onCoverScreen();
+  const page = $("settings-page");
+  $("settings-rows").hidden = !short;
+
+  for (const [section, slot] of [["rates-section", "rates-slot"], ["backup-section", "backup-slot"]]) {
+    const node = $(section);
+    const home = short ? $(slot) : page;
+    if (node.parentElement === home) continue;
+    if (short) home.append(node);
+    else page.insertBefore(node, page.querySelector(".build-foot"));   // back above the build line,
+    // in loop order — inserting both at the same anchor put the second one ABOVE the first,
+    // so Settings came back from the cover screen with Backup before Exchange rates.
+    node.hidden = false;
+  }
+  // a heading inside its own sheet repeats the sheet's title, so it steps aside there
+  $("rates-section").querySelector(".section-label").hidden = short;
+  $("backup-section").querySelector(".section-label").hidden = short;
+  if (!short) {
+    for (const id of ["rates-sheet", "backup-sheet"]) if ($(id).open) $(id).close();
+  }
+}
+
+$("open-rates-sheet").addEventListener("click", () => { cancelRestore(); $("rates-sheet").showModal(); });
+$("open-backup-sheet").addEventListener("click", () => { cancelRestore(); $("backup-sheet").showModal(); });
+
 function applyCoverWording() {
   const short = onCoverScreen();
   // Build 16.9: the rate labels read "1 USD =" on both screens now, so they stay in the HTML
@@ -2331,6 +2364,7 @@ function applyCoverWording() {
   $("backup-heading").querySelector("span").textContent = short ? "Backup" : "Backup & restore";
   const built = `Build ${BUILD.number} · ${shortDate(BUILD.date, true)}`;
   $("build-info").textContent = short ? built : `My Journal · ${built}`;
+  applySettingsLayout();
 }
 
 function openSettings() {
