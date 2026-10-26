@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "23.5", date: "2026-10-25" };
+const BUILD = { number: "24", date: "2026-10-26" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -440,7 +440,7 @@ function renderDashboard() {
   $("by-category").replaceChildren(
     ...GROUPS.flatMap((g) => {
       const head = el("div", "cat-head");
-      head.append(el("span", "", g), el("span", "row-amount", formatMoney(sumWhere((e) => groupOf(e) === g), "LAK")));
+      head.append(el("span", `cat-name is-${g.toLowerCase()}`, g), el("span", "row-amount", formatMoney(sumWhere((e) => groupOf(e) === g), "LAK")));
       const list = el("ul", "cat-list");
       for (const c of CATEGORIES.filter((c) => c.group === g)) {
         list.append(summaryRow(c.name, sumWhere((e) => e.category === c.name)));
@@ -450,7 +450,7 @@ function renderDashboard() {
     ...(unknownNames.length ? (() => {          // only ever appears when there is such money
       const head = el("div", "cat-head");
       head.append(
-        el("span", "", "Other"),
+        el("span", "cat-name is-other", "Other"),
         el("span", "row-amount", formatMoney(sumWhere((e) => unknownNames.includes(e.category)), "LAK"))
       );
       const list = el("ul", "cat-list");
@@ -2638,13 +2638,21 @@ function renderSavings() {
       jar.setAttribute("aria-valuemin", "0");
       jar.setAttribute("aria-valuemax", String(g.target));
       jar.setAttribute("aria-valuenow", String(Math.min(saved, g.target)));
-      const body = el("div", "jar-body");
-      const fill = el("div", "jar-fill");
-      fill.style.height = `${percent}%`;
-      // the number reads white once the fill covers the middle of the jar, dark while it doesn't
-      const label = el("div", `jar-percent${percent >= 50 ? " on-fill" : ""}`, `${percent}%`);
-      body.append(fill, label);
-      jar.append(el("div", "jar-lid"), body);
+      // Build 24.1: a drawn mason jar — shoulders, neck and screw band — filling with the marker
+      // colour. One clipPath per jar, so the fill rises inside the outline instead of in a box.
+      // The percentage is ink on the fill at 5.89:1 and ink on the paper at 8.87:1, so unlike
+      // Build 18's jar it never has to flip to white halfway up.
+      const clipId = `jar-clip-${g.id}`;
+      const shape = "M9 34c0-7 5-11 9-15V13h26v6c4 4 9 8 9 15v46a7 7 0 0 1-7 7H16a7 7 0 0 1-7-7Z";
+      jar.innerHTML = `<svg viewBox="0 0 62 93" width="62" height="93" aria-hidden="true">
+          <defs><clipPath id="${clipId}"><path d="${shape}"/></clipPath></defs>
+          <rect x="0" y="${93 - (93 * percent) / 100}" width="62" height="${(93 * percent) / 100}"
+                fill="var(--swipe)" clip-path="url(#${clipId})"/>
+          <path d="${shape}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+          <rect x="16" y="1" width="30" height="12" rx="2.5" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+          <path d="M16 5.5h30M16 9h30" stroke="var(--ink)" stroke-width="1" opacity=".55"/>
+          <text x="31" y="62" text-anchor="middle" fill="var(--ink)" font-size="16">${percent}%</text>
+        </svg>`;
 
       const text = el("div", "goal-text");
       text.append(
@@ -3065,7 +3073,7 @@ function renderBooks() {
   $("books-reading-group").hidden = reading.length === 0;
   $("books-want-group").hidden = want.length === 0;
   $("books-read-group").hidden = readBooksSorted.length === 0;
-  $("books-read-head").textContent = `READ \u00b7 ${readBooksSorted.length}`;
+  $("books-read-head").textContent = `Read · ${readBooksSorted.length}`;
   $("open-books-log").hidden = readBooksSorted.length <= 1;
 
   $("books-empty").textContent = failed ? "Your saved books couldn\u2019t be read." : "No books yet.";

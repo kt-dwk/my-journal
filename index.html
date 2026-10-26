@@ -7,18 +7,18 @@
   <!-- Build 23.1: the app only ever loads its own files. This says so out loud, so a mistake made
        later (a pasted-in script tag, an address slipped into a note) cannot load outside code. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
-  <meta name="theme-color" content="#fafafa">
+  <meta name="theme-color" content="#EFE9E3">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
   <!-- Home page -->
   <div class="page" id="home-page" hidden>
     <header class="app-head">
       <h1>My Journal</h1>
-      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
     <div class="note-space">
       <div class="sticky-note">
@@ -28,23 +28,23 @@
     <!-- Build 16.10 (wireframe 28a): the row under the note. 📖 and ❤️ have no page yet, so they
          are drawn but do nothing — aria-disabled rather than disabled, which would grey them. -->
     <div class="home-icons">
-      <button type="button" class="brain-button" id="tile-book" aria-label="My Books">📖</button>
-      <button type="button" class="brain-button" id="tile-heart" aria-label="Not decided yet" aria-disabled="true">❤️</button>
-      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump">🧠</button>
+      <button type="button" class="brain-button" id="tile-book" aria-label="My Books"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--sand)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path fill="none" d="M12 7.5v13"/></svg></button>
+      <button type="button" class="brain-button" id="tile-heart" aria-label="Self-reflection, coming later" aria-disabled="true"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg></button>
+      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg></button>
     </div>
     <div class="tile-dock">
       <button type="button" class="tile" id="tile-money">
-        <span class="tile-name">💰 Money</span>
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M21 10h-3.6a2.5 2.5 0 0 0 0 5H21"/></svg> Money</span>
       </button>
       <button type="button" class="tile" id="tile-skin">
-        <span class="tile-name">🧴 Skin</span>
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="10.2" y="2" width="3.6" height="3.2" rx="0.8"/><path d="M8.8 11.5c0-2.8 1.3-4.6 3.2-6.3 1.9 1.7 3.2 3.5 3.2 6.3v8H8.8z"/><rect x="8.2" y="19.5" width="7.6" height="2.4" rx="0.6"/></svg> Skin</span>
         <span class="tile-sub" id="skin-tile-tonight"></span>
       </button>
       <button type="button" class="tile" id="tile-diary">
-        <span class="tile-name">📓 Diary</span>
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="11" height="15" rx="1"/><path d="M6.2 4.5v15"/><path d="M13.8 20.2l.9-3 5.3-5.3 2.1 2.1-5.3 5.3z"/><path d="M19.1 11.3l2.1 2.1"/></svg> Diary</span>
       </button>
       <button type="button" class="tile" id="tile-habit">
-        <span class="tile-name">🌱 Habit</span>
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5v-7"/><path d="M12 13.5c0-3-2-5-5-5 0 3 2 5 5 5z"/><path d="M12 13.5c0-3 2-5 5-5 0 3-2 5-5 5z"/></svg> Habit</span>
       </button>
     </div>
   </div>
@@ -56,7 +56,7 @@
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h1>My Money</h1>
-      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
 
     <div class="switch" role="tablist" aria-label="My Money">
@@ -68,9 +68,9 @@
     <div id="panel-expenses" role="tabpanel" aria-labelledby="tab-expenses">
     <div class="month-card">
       <div class="month-nav">
-        <button type="button" class="btn month-arrow" id="prev-month" aria-label="Previous month">&lt;</button>
+        <button type="button" class="btn month-arrow" id="prev-month" aria-label="Previous month">‹</button>
         <h2 id="month-label"></h2>
-        <button type="button" class="btn month-arrow" id="next-month" aria-label="Next month">&gt;</button>
+        <button type="button" class="btn month-arrow" id="next-month" aria-label="Next month">›</button>
       </div>
       <p class="total">
         <strong id="total"></strong>
@@ -91,9 +91,9 @@
     <div id="panel-income" role="tabpanel" aria-labelledby="tab-income" hidden>
     <div class="month-card">
       <div class="month-nav">
-        <button type="button" class="btn month-arrow" id="income-prev-month" aria-label="Previous month">&lt;</button>
+        <button type="button" class="btn month-arrow" id="income-prev-month" aria-label="Previous month">‹</button>
         <h2 id="income-month-label"></h2>
-        <button type="button" class="btn month-arrow" id="income-next-month" aria-label="Next month">&gt;</button>
+        <button type="button" class="btn month-arrow" id="income-next-month" aria-label="Next month">›</button>
       </div>
       <p class="total">
         <strong id="income-total"></strong>
@@ -133,7 +133,7 @@
       </section>
     </div>
 
-    <button type="button" class="fab" id="open-add" aria-label="Add transaction">+</button>
+    <button type="button" class="fab" id="open-add" aria-label="Add transaction"><svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M33.5 5.2C48 4.6 60.2 16.8 58.8 31 57.6 44.5 46.8 57.4 33 58.8 19.5 60.2 6.4 48.5 5.2 34.8 4 21 15 6.8 28.8 5.4c3.7-.4 7.6 0 11.4 1.2"/><path d="M32.4 20c-.4 6.6-.3 16.8.2 23.4"/><path d="M20 32.4c6.6.4 16.8.3 23.4-.2"/></svg></button>
   </main>
 
   <!-- Habit (placeholder until the section is planned) -->
@@ -144,23 +144,23 @@
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h1>My Books</h1>
-      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
     <section id="books-reading-group" hidden>
-      <h3 class="year-head">READING</h3>
+      <h3 class="year-head">Reading</h3>
       <ul id="books-reading" class="note-list"></ul>
     </section>
     <section id="books-want-group" hidden>
-      <h3 class="year-head">WANT TO READ</h3>
+      <h3 class="year-head">Want to read</h3>
       <ul id="books-want" class="note-list"></ul>
     </section>
     <section id="books-read-group" hidden>
-      <h3 class="year-head" id="books-read-head">READ</h3>
+      <h3 class="year-head" id="books-read-head">Read</h3>
       <ul id="books-read" class="note-list"></ul>
       <button type="button" class="btn more" id="open-books-log" hidden>View more</button>
     </section>
     <p class="small" id="books-empty" hidden>No books yet.</p>
-    <button type="button" class="fab" id="book-new" aria-label="Add a book">+</button>
+    <button type="button" class="fab" id="book-new" aria-label="Add a book"><svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M33.5 5.2C48 4.6 60.2 16.8 58.8 31 57.6 44.5 46.8 57.4 33 58.8 19.5 60.2 6.4 48.5 5.2 34.8 4 21 15 6.8 28.8 5.4c3.7-.4 7.6 0 11.4 1.2"/><path d="M32.4 20c-.4 6.6-.3 16.8.2 23.4"/><path d="M20 32.4c6.6.4 16.8.3 23.4-.2"/></svg></button>
   </div>
 
   <div class="page" id="habit-page" hidden>
@@ -169,7 +169,7 @@
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h1>Habit</h1>
-      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
     <p>Coming in a later build.</p>
     <p class="small">We'll plan this section together first: what counts as a habit, and how the week is shown.</p>
@@ -182,7 +182,7 @@
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h1>My Skin</h1>
-      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
     <section class="tonight">
       <p class="tonight-icon" aria-hidden="true">🧴</p>
@@ -197,14 +197,14 @@
 
     <section>
       <div class="month-nav" id="skin-month-nav">
-        <button type="button" class="btn month-arrow" id="skin-prev-month" aria-label="Previous month">&lt;</button>
+        <button type="button" class="btn month-arrow" id="skin-prev-month" aria-label="Previous month">‹</button>
         <h2 id="skin-month-label"></h2>
-        <button type="button" class="btn month-arrow" id="skin-next-month" aria-label="Next month">&gt;</button>
+        <button type="button" class="btn month-arrow" id="skin-next-month" aria-label="Next month">›</button>
       </div>
       <div class="month-nav" id="skin-week-nav" hidden>
-        <button type="button" class="btn month-arrow" id="skin-prev-week" aria-label="Previous week">&lt;</button>
+        <button type="button" class="btn month-arrow" id="skin-prev-week" aria-label="Previous week">‹</button>
         <h2 id="skin-week-label"></h2>
-        <button type="button" class="btn month-arrow" id="skin-next-week" aria-label="Next week">&gt;</button>
+        <button type="button" class="btn month-arrow" id="skin-next-week" aria-label="Next week">›</button>
       </div>
       <div class="cal-head" aria-hidden="true"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
       <div class="cal-grid" id="skin-calendar"></div>
@@ -219,14 +219,14 @@
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h1>My Diary</h1>
-      <button type="button" class="icon-btn open-settings" aria-label="Settings">⚙︎</button>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
     <section>
       <ul id="diary-log" class="note-list"></ul>
       <p class="small" id="diary-empty" hidden>No notes yet.</p>
       <button type="button" class="btn more" id="open-diary-log" hidden>View more</button>
     </section>
-    <button type="button" class="fab" id="diary-new" aria-label="New note">✎</button>
+    <button type="button" class="fab" id="diary-new" aria-label="New note"><svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M33.5 5.2C48 4.6 60.2 16.8 58.8 31 57.6 44.5 46.8 57.4 33 58.8 19.5 60.2 6.4 48.5 5.2 34.8 4 21 15 6.8 28.8 5.4c3.7-.4 7.6 0 11.4 1.2"/><path d="M23.6 41.8 21.8 48l6.2-1.8 14.6-14.6-4.4-4.4z"/><path d="m37.4 28.4 4.4 4.4"/><path d="M23.6 41.8 28 46.2"/></svg></button>
   </div>
 
   <!-- Brain dump (Build 10) -->
@@ -335,9 +335,9 @@
     <p class="small" id="diary-log-range"></p>
     <ul id="diary-log-full"></ul>
     <nav class="pager" aria-label="Note pages">
-      <button type="button" class="btn" id="diary-page-prev" aria-label="Previous page">&lt;</button>
+      <button type="button" class="btn" id="diary-page-prev" aria-label="Previous page">‹</button>
       <span id="diary-page-label" aria-live="polite"></span>
-      <button type="button" class="btn" id="diary-page-next" aria-label="Next page">&gt;</button>
+      <button type="button" class="btn" id="diary-page-next" aria-label="Next page">›</button>
     </nav>
   </dialog>
 
@@ -382,7 +382,7 @@
     </section>
 
     <section>
-      <h3 class="section-label" id="backup-heading">Backup &amp; Restore</h3>
+      <h3 class="section-label" id="backup-heading">Backup &amp; restore</h3>
       <div class="settings-actions" id="backup-actions">
         <button type="button" class="btn" id="backup-btn">Backup</button>
         <button type="button" class="btn" id="restore-btn">Restore</button>
@@ -440,9 +440,9 @@
           <label class="label" for="date">Date</label>
           <input id="date" type="date">
           <div class="date-step" id="date-step" hidden>
-            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">&lt;</button>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">‹</button>
             <span class="date-step-label" id="date-step-label" aria-live="polite"></span>
-            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">&gt;</button>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">›</button>
           </div>
         </div>
         <div class="field">
@@ -513,9 +513,9 @@
           <label class="label" for="income-date">Date</label>
           <input id="income-date" type="date">
           <div class="date-step" id="income-date-step" hidden>
-            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">&lt;</button>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">‹</button>
             <span class="date-step-label" id="income-date-step-label" aria-live="polite"></span>
-            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">&gt;</button>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">›</button>
           </div>
         </div>
         <div class="field">
@@ -572,9 +572,9 @@
           <label class="label" for="saving-date">Date</label>
           <input id="saving-date" type="date">
           <div class="date-step" id="saving-date-step" hidden>
-            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">&lt;</button>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">‹</button>
             <span class="date-step-label" id="saving-date-step-label" aria-live="polite"></span>
-            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">&gt;</button>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">›</button>
           </div>
         </div>
         <div class="field">
@@ -730,9 +730,9 @@
     </div>
     <ul id="books-log-full"></ul>
     <nav class="pager" aria-label="Read books pages">
-      <button type="button" class="btn" id="books-log-prev" aria-label="Previous page">&lt;</button>
+      <button type="button" class="btn" id="books-log-prev" aria-label="Previous page">‹</button>
       <span id="books-log-label" aria-live="polite"></span>
-      <button type="button" class="btn" id="books-log-next" aria-label="Next page">&gt;</button>
+      <button type="button" class="btn" id="books-log-next" aria-label="Next page">›</button>
     </nav>
   </dialog>
 
@@ -745,12 +745,12 @@
     <p class="small" id="saving-log-range"></p>
     <ul id="saving-log-full"></ul>
     <nav class="pager" aria-label="Saving log pages">
-      <button type="button" class="btn" id="log-prev" aria-label="Previous page">&lt;</button>
+      <button type="button" class="btn" id="log-prev" aria-label="Previous page">‹</button>
       <span id="log-page-label" aria-live="polite"></span>
-      <button type="button" class="btn" id="log-next" aria-label="Next page">&gt;</button>
+      <button type="button" class="btn" id="log-next" aria-label="Next page">›</button>
     </nav>
   </dialog>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

@@ -1,7 +1,10 @@
 // Offline helper: always tries the internet first (so updates show up),
 // and falls back to the saved copy when there's no connection.
-const CACHE = "my-journal-v89";
-const APP_FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png"];
+const CACHE = "my-journal-v91";
+// Build 24: style.css and app.js carry ?v= so a design change is never served from a
+// stale copy — the browser treats a new address as a new file. Bump both here and in
+// index.html together.
+const APP_FILES = ["./", "index.html", "style.css?v=25", "app.js?v=25", "patrick-hand.woff2", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_FILES)));

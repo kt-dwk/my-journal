@@ -1,13 +1,47 @@
+/* Build 24: Patrick Hand, self-hosted. The CSP says font-src 'self', so a Google Fonts
+   link would be blocked outright — and an offline app should carry its own font anyway.
+   This is Google's own latin cut, 23.9 KB. It covers U+0000–00FF plus ‹ › and €, which is
+   everything the app writes EXCEPT ₭ and ฿ — those fall back to the system font on purpose. */
+@font-face {
+  font-family: "Patrick Hand";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("patrick-hand.woff2") format("woff2");
+}
+
 /* Plain, simple styles. Design pass comes later. */
 :root {
-  --ink: #222;
-  --muted: #666;
-  --line: #e0e0e0;
-  --bg: #fafafa;
-  --card: #fff;
-  --error: #b3261e;
+  /* Build 24 design pass. Paper, pen, lines, meaning, marker, fills.
+     No pure white and no pure black anywhere. Every text colour clears 4.5:1
+     on both --card and --bg; the figures are in Decisions.md. */
+  --card: #FAEFE3;         /* Vanilla  — a card, a sheet, a chip */
+  --bg: #EFE9E3;           /* Linen    — the page */
+  --note: #E8DBD1;         /* Latte    — the sticky note */
+
+  --ink: #443D35;          /* Espresso — main text        8.87 on the page */
+  --muted: #6E5952;        /* Mocha Br — second level     5.43 */
+  --quiet: #776059;        /* quiet    — third level      4.84, 11px only */
+
+  --line: #D6CFCA;         /* Cashmere — hairlines */
+  --edge: #B7A49C;         /* Mocha    — the note edge and the dot grid */
+
+  --accent: #4C6F77;       /* Dusty Teal — "do"           4.53 */
+  --error: #96503C;        /* Terracotta — "undo"         4.97 */
+  --done: #626D5E;         /* Deep Sage  — "done"         4.51 */
+
+  --swipe: #D4BCAA;        /* the marker: headings, jar fill */
+  --wisteria: #C9AECB;     /* brain — deepened from #DBCAD0 on 26 Oct: at icon size the old
+                              one read 1.30 against the page and vanished beside Sand 1.61 and
+                              Rosewood 1.86. This is 1.68, and ink still reads 5.29 on it. */
+  --sand: #D4B684;         /* books, and "Reading" */
+  --rosewood: #CFA2A5;     /* heart */
+  --need: #C2D3BB;         /* Need, and "Read" */
+  --want: #D2A4A8;         /* Want, and "Want to read" */
+  --indigo: #5761A2;       /* note text colour */
+  --plum: #924F7E;         /* note text colour */
+
   --bar-height: 52px;      /* the pinned top bar (Build 10.4, slimmer in 11) */
-  --accent: #2a5fd6;       /* one blue, only for actions (design pass) */
   color-scheme: light;
 }
 
@@ -24,10 +58,16 @@ html, body {
 body {
   margin: 0;
   padding: 0 16px;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Patrick Hand", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   color: var(--ink);
-  background: var(--bg);
+  /* Build 24: dot grid paper. One radial-gradient — a 1.5px dot every 26px, offset so the
+     first dot sits half a cell in rather than against the edge. */
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--edge) 0.75px, transparent 0.75px);
+  background-size: 26px 26px;
+  background-position: 13px 13px;
+  background-attachment: fixed;   /* the paper stays put while the page scrolls over it */
 }
 
 .page {
@@ -47,20 +87,14 @@ body {
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
-h1 { margin: 0 0 12px; font-size: 1.6rem; }
-h2 { margin: 0; font-size: 1.25rem; }
-h3 {
-  margin: 0 0 8px;
-  font-size: 0.85rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-h4 { margin: 12px 0 2px; font-size: 0.95rem; }
+h1 { margin: 0 0 12px; font-size: 26px; }
+h2 { margin: 0; font-size: 20px; }
+h3 { margin: 0 0 8px; font-size: 20px; }
+h4 { margin: 12px 0 2px; font-size: 16px; }
 
 ul { list-style: none; margin: 0; padding: 0; }
 section { margin-bottom: 24px; }
-.small { font-size: 0.8rem; color: var(--muted); }
+.small { font-size: 13px; color: var(--muted); }
 
 /* ---------- Buttons ---------- */
 button { font: inherit; color: inherit; }
@@ -69,11 +103,11 @@ button { font: inherit; color: inherit; }
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid var(--ink);
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--card);
   cursor: pointer;
 }
-.btn.primary { background: var(--ink); color: #fff; }
+.btn.primary { background: var(--ink); color: var(--card); }
 .btn.danger { margin-right: auto; color: var(--error); border-color: var(--error); }
 .btn.icon-only {
   display: flex;
@@ -83,14 +117,14 @@ button { font: inherit; color: inherit; }
   padding: 0;
 }
 .btn.icon-only svg { display: block; }
-.btn.danger-fill { background: var(--error); border-color: var(--error); color: #fff; }
+.btn.danger-fill { background: var(--error); border-color: var(--error); color: var(--card); }
 .confirm {
   margin-top: 8px;
   padding: 12px;
   border: 1px solid var(--line);   /* Build 20: a question you asked for is not an error */
-  border-radius: 10px;
+  border-radius: 3px;
 }
-.confirm p { margin: 0; font-weight: 600; }
+.confirm p { margin: 0; }
 /* Build 20: the note being deleted, capped at two lines so a long title can't grow the pop-up */
 #note-delete-which {
   display: -webkit-box;
@@ -115,34 +149,33 @@ button { font: inherit; color: inherit; }
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;   /* Build 23: Expenses | Income | Savings */
   margin-bottom: 16px;
-  border: 2px solid var(--ink);
-  border-radius: 12px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
   overflow: hidden;
 }
 .switch-btn {
   min-height: 44px;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 16px;
   color: var(--ink);
   background: var(--card);
   border: 0;
   cursor: pointer;
 }
-.switch-btn[aria-selected="true"] { color: #fff; background: var(--ink); }
+.switch-btn[aria-selected="true"] { color: var(--card); background: var(--ink); }
 .month-card {
   margin-bottom: 20px;
   padding: 14px 16px 18px;
   background: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: 18px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
 }
 .month-nav {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.month-nav h2 { flex: 1; text-align: center; font-size: 0.95rem; font-weight: 500; color: var(--muted); }
-.month-arrow { width: 44px; padding: 0; font-size: 1.1rem; }
+.month-nav h2 { flex: 1; text-align: center; font-size: 20px; color: var(--ink); }
+.month-arrow { width: 44px; padding: 0; font-size: 16px; }
 /* Build 16: bare arrows on the money card, as the cover screen has had since 12.8 */
 /* Build 16.6: My Skin's month and week arrows too.
    Build 16.7: and the < > inside the View more pop-ups — one rule now covers every arrow
@@ -151,18 +184,47 @@ button { font: inherit; color: inherit; }
 .month-arrow:disabled, .pager .btn:disabled { opacity: 0.3; cursor: default; }
 
 .total { margin: 10px 0 0; text-align: center; }
-.total strong { display: block; font-size: 2.4rem; line-height: 1.1; }
+.total strong { display: block; font-size: 38px; line-height: 1.1; }
 .cat-head {                  /* Need / Want, each with its own total */
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-top: 18px;
-  padding-bottom: 6px;
-  font-size: 1.2rem;
-  font-weight: 600;
-  border-bottom: 2px solid var(--ink);
+  margin-bottom: 2px;
+  font-size: 20px;
 }
-.cat-list .row { color: #555; }
+/* Build 24.1: a group heading rides a swipe of marker, and the colour says which group.
+   The word sits ON the colour, so the colour is never carrying the meaning alone. */
+/* Build 24: ONE heading form. Sentence case on a swipe of marker, never uppercase with
+   letter-spacing — .section-label and .year-head both collapse into this. */
+.section-label,
+.year-head {
+  display: block;
+  width: fit-content;
+  margin: 18px 0 2px;
+  padding: 2px 12px 3px;
+  font-size: 20px;
+  color: var(--ink);
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+  line-height: 1.2;
+  list-style: none;
+}
+.section-label:first-child,
+.year-head:first-child { margin-top: 0; }
+.cat-name {
+  display: inline-block;
+  padding: 2px 12px 3px;
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+  line-height: 1.2;
+}
+.cat-name.is-need { background: var(--need); }
+.cat-name.is-want { background: var(--want); }
+/* Build 24.1: a summary row is NOT a button — nothing makes it tappable, so it is compact.
+   That is what gives the cover screen room for both Need and Want above the camera line. */
+.cat-list .row { padding: 4px 0; color: var(--muted); }
 .fab {                       /* adding is a floating round button */
   position: fixed;
   right: max(16px, calc((100vw - 520px) / 2));
@@ -170,27 +232,29 @@ button { font: inherit; color: inherit; }
   z-index: 6;
   width: 64px;
   height: 64px;
-  font-size: 2rem;
+  padding: 0;
   line-height: 1;
-  color: var(--accent);
+  color: var(--ink);
   background: transparent;   /* Build 16.1: see-through, so an amount behind it still reads */
-  border: 2px solid var(--accent);
-  border-radius: 50%;
+  border: 0;                 /* Build 24: the circle is drawn inside, by hand */
+  border-radius: 50%;        /* kept so the focus ring follows the drawing */
   cursor: pointer;
 }
-.fab:active { background: #eef3fd; }
+.fab svg { display: block; width: 100%; height: 100%; }
+
+.fab:active { background: var(--card); }
 /* Build 16: the + steps out of the way while you scroll down the log */
 .fab { transition: transform 0.2s ease, opacity 0.2s ease; }
 .fab.is-away { transform: translateY(96px); opacity: 0; pointer-events: none; }
-.fab:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 dialog.sheet {               /* the add form rises from the bottom, above the keyboard */
   width: 100%;
   max-width: 520px;
   margin: auto auto 0;
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  border: 2px solid var(--ink);
+  border: 1px solid var(--ink);
   border-bottom: 0;
-  border-radius: 20px 20px 0 0;
+  border-radius: 3px;
 }
 dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
 /* Build 16.2: with a keyboard up the window is short, so the sheet tightens to keep every field
@@ -200,15 +264,15 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
 
   dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
   dialog.sheet .dialog-head { margin-bottom: 4px; }
-  dialog.sheet .dialog-head h2 { font-size: 1.05rem; }
+  dialog.sheet .dialog-head h2 { font-size: 16px; }
   dialog.sheet .close { width: 36px; height: 36px; }
   dialog.sheet .field { margin-bottom: 6px; }
-  dialog.sheet .label { margin-bottom: 2px; font-size: 0.78rem; }
+  dialog.sheet .label { margin-bottom: 2px; font-size: 13px; }
   dialog.sheet .item-group { margin-bottom: 4px; }
   dialog.sheet .item-btn span { min-height: 38px; padding: 7px 12px; }   /* about 46 px tall, ≈ 8.8 mm */
   dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 38px; }
   dialog.sheet .actions { padding-top: 4px; }
-  dialog.sheet .actions .btn { min-height: 36px; padding: 4px 14px; font-size: 0.9rem; }
+  dialog.sheet .actions .btn { min-height: 36px; padding: 4px 14px; font-size: 13px; }
   dialog.sheet .actions .btn.icon-only { width: 40px; padding: 0; }
 }
 dialog.sheet {
@@ -224,7 +288,7 @@ dialog.sheet {
 }
 .sheet-pair { display: flex; gap: 12px; }
 .sheet-pair .field { flex: 1; }
-.sheet .actions .btn.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+.sheet .actions .btn.primary { color: var(--card); background: var(--accent); border-color: var(--accent); }
 
 /* ---------- Summary rows ---------- */
 .row {
@@ -235,7 +299,7 @@ dialog.sheet {
   border-bottom: 1px solid var(--line);
 }
 .row-amount { white-space: nowrap; }
-.row.is-zero { color: #aaa; }   /* Build 16: nothing spent on this item this month */
+.row.is-zero { color: var(--quiet); }   /* Build 16: nothing spent on this item this month */
 
 /* ---------- Transaction log ---------- */
 .log-row {
@@ -253,7 +317,7 @@ dialog.sheet {
 }
 .log-row span { display: block; }
 .log-row:active { background: var(--line); }
-.log-row:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.log-row:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 .log-date { color: var(--muted); }
 #log .log-row { grid-template-columns: 4.4rem 1fr auto; }   /* Build 16: "24 Sept" keeps to one line */
 .log-item { min-width: 0; overflow-wrap: anywhere; }
@@ -264,7 +328,7 @@ dialog {
   width: min(100% - 32px, 480px);
   padding: 18px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 3px;
   background: var(--card);
   color: var(--ink);
 }
@@ -286,7 +350,7 @@ dialog:not([open]) { display: none; }
   height: 44px;
   border: 0;
   background: none;
-  font-size: 1.2rem;
+  font-size: 20px;
   cursor: pointer;
 }
 
@@ -296,7 +360,7 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
   display: block;
   margin-bottom: 4px;
   padding: 0;
-  font-size: 0.9rem;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -308,8 +372,8 @@ input[type="text"], input[type="date"], select {
   font: inherit;
   font-size: 16px;
   color: var(--ink);
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
   background: var(--card);
 }
 
@@ -321,8 +385,8 @@ textarea {
   font-size: 16px;          /* 16px stops the phone zooming in on focus */
   color: var(--ink);
   background: var(--card);
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
   resize: vertical;
 }
 /* Build 14.4: the writing no longer has a fixed floor — it fills the page instead */
@@ -356,15 +420,15 @@ textarea {
   position: relative;
   flex: 0 0 44px;
   height: 44px;
-  font-size: 1.05rem;
+  font-size: 16px;
   color: var(--ink);
   background: var(--card);
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
   cursor: pointer;
 }
 .tool[aria-pressed="true"],
-.tool[aria-expanded="true"] { color: #fff; background: var(--ink); border-color: var(--ink); }
+.tool[aria-expanded="true"] { color: var(--card); background: var(--ink); border-color: var(--ink); }
 .colour-bar {
   position: absolute;
   left: 9px;
@@ -380,16 +444,16 @@ textarea {
   overflow-x: auto;
 }
 .swatch {
-  flex: 0 0 38px;
-  height: 38px;
+  flex: 0 0 44px;            /* Build 24: a square at the 44 minimum, not a 38 circle */
+  height: 44px;
   background: var(--card);
-  border: 2px solid #ccc;
-  border-radius: 50%;
+  border: 1px solid var(--line);
+  border-radius: 3px;
   cursor: pointer;
 }
 .swatch.pinned { border-color: var(--ink); }
 .swatch.none { background: linear-gradient(to top right, transparent 45%, var(--error) 45% 55%, transparent 55%), var(--card); }
-.swatch.plus { font-size: 1.2rem; line-height: 1; }
+.swatch.plus { font-size: 20px; line-height: 1; }
 .colour-picker {
   position: absolute;
   width: 1px;
@@ -413,20 +477,9 @@ textarea {
   white-space: pre-wrap;
 }
 .log-row.note-row { grid-template-columns: 1.3rem 6.2rem 1fr; }
-.note-pin { font-size: 0.85rem; line-height: 1.4; }
+.note-pin { font-size: 13px; line-height: 1.4; }
 /* Build 14: on the page the year sits in a heading, so the row's date column is narrower */
 #diary-log .log-row.note-row { grid-template-columns: 1.3rem 4.4rem 1fr; }
-.year-head {
-  margin: 10px 0 4px;
-  padding-bottom: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  border-bottom: 1px solid var(--line);
-  list-style: none;
-}
-.year-head:first-child { margin-top: 0; }
 .note-list { padding-bottom: 8px; }   /* the last row can be scrolled clear of the floating ✎ */
 
 /* Swipe a note row left to reveal Pin and Delete */
@@ -448,7 +501,7 @@ textarea {
   color: var(--ink);
   cursor: pointer;
 }
-.swipe-btn.bin { background: var(--error); color: #fff; }
+.swipe-btn.bin { background: var(--error); color: var(--card); }
 .swipe .log-row {
   position: relative;
   background: var(--bg);
@@ -490,7 +543,7 @@ textarea {
 .note-when {                 /* Build 14.3: sits on the right, just before 💾 */
   flex: 0 1 auto;
   min-width: 0;
-  font-size: 0.72rem;        /* "Last saved: 25 Sept 2026, 11:08" fits beside the three buttons, with room to spare */
+  font-size: 11px;        /* "Last saved: 25 Sept 2026, 11:08" fits beside the three buttons, with room to spare */
   margin: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -503,15 +556,15 @@ textarea {
   width: 44px;
   height: 44px;
   padding: 0;
-  font-size: 1.4rem;
+  font-size: 20px;
   line-height: 1;
   background: none;
   border: 0;
   cursor: pointer;
 }
 .note-act svg { display: block; }
-.note-act.is-saved { color: #2e7d32; }
-.note-act:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.note-act.is-saved { color: var(--done); }
+.note-act:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 .note-menu {                 /* the little card under ⋯ */
   position: absolute;
   top: calc(var(--bar-height) + env(safe-area-inset-top) - 4px);
@@ -522,7 +575,7 @@ textarea {
   padding: 4px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 3px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
 }
 .note-menu-item {
@@ -534,23 +587,22 @@ textarea {
   padding: 0;
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
 }
 .note-menu-item.bin { color: var(--error); }
 .note-menu-item:active { background: var(--line); }
-.note-menu-item:focus-visible { outline: 3px solid #6b9cff; outline-offset: -2px; }
+.note-menu-item:focus-visible { outline: 3px solid var(--ink); outline-offset: -2px; }
 #diary-title {               /* no box: the title is just the first line of the sheet */
   margin-bottom: 6px;
   padding: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 20px;
   background: none;
   border: 0;
   border-radius: 0;
   min-height: 40px;
 }
-#diary-title::placeholder { color: #aaa; font-weight: 400; }
+#diary-title::placeholder { color: var(--quiet); font-weight: 400; }
 #diary-title:focus { outline: none; }
 #diary-title {
   flex: 0 0 auto;
@@ -562,8 +614,8 @@ textarea {
 .saved-note {
   align-self: center;
   margin: 0;
-  font-size: 0.9rem;
-  color: #2e7d32;
+  font-size: 13px;
+  color: var(--done);
   transition: opacity 0.4s ease;
 }
 .saved-note.is-fading { opacity: 0; }
@@ -576,11 +628,11 @@ textarea {
   position: relative;
   padding: 3px 9px;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 13px;
   color: var(--ink);
   background: var(--card);
-  border: 1.5px solid var(--ink);
-  border-radius: 8px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
   cursor: pointer;
 }
 .x1000::after {            /* a 44px tap area around a small chip */
@@ -588,8 +640,8 @@ textarea {
   position: absolute;
   inset: -12px -8px;
 }
-.x1000[aria-pressed="true"] { color: #fff; background: var(--ink); }
-.x1000:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.x1000[aria-pressed="true"] { color: var(--card); background: var(--ink); }
+.x1000:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 
 .amount-row {
   display: grid;
@@ -598,7 +650,7 @@ textarea {
 }
 .amount-row select { padding-inline: 6px; }
 
-.error { margin: 6px 0 0; font-size: 0.9rem; color: var(--error); }
+.error { margin: 6px 0 0; font-size: 13px; color: var(--error); }
 .error .link { color: var(--error); }
 
 .actions {
@@ -610,7 +662,7 @@ textarea {
 
 /* ---------- Item tap buttons ---------- */
 .item-group { margin-bottom: 10px; }
-.item-group-label { display: block; margin-bottom: 4px; font-size: 0.8rem; color: var(--muted); }
+.item-group-label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--muted); }
 .item-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .item-btn { position: relative; }
@@ -625,12 +677,12 @@ textarea {
   display: block;
   min-height: 44px;
   padding: 11px 14px;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
   background: var(--card);
 }
-.item-btn input:checked + span { background: var(--ink); color: #fff; }
-.item-btn input:focus-visible + span { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.item-btn input:checked + span { background: var(--ink); color: var(--card); }
+.item-btn input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 1px; }
 
 /* ---------- Savings ---------- */
 /* ---------- Savings (Build 12.2 design pass) ---------- */
@@ -638,8 +690,8 @@ textarea {
   margin-bottom: 20px;
   padding: 16px;
   background: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: 18px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
 }
 .goal-row {
   display: flex;
@@ -662,57 +714,23 @@ textarea {
 /* Build 21: the hidden-goals list, one row each */
 .hidden-goals { margin: 0; padding: 0; list-style: none; }
 .goal-text { min-width: 0; }
-.goal-name { font-size: 1.15rem; font-weight: 600; }
-.goal-amount { font-size: 1rem; }
-.jar { flex: 0 0 auto; }            /* lid on top of the body, filling from the bottom */
-.jar-lid {
-  width: 34px;
-  height: 9px;
-  margin: 0 auto;
-  border: 2px solid var(--ink);
-  border-bottom: 0;
-  border-radius: 5px 5px 0 0;
-}
-.jar-body {
-  position: relative;
-  width: 62px;
-  height: 84px;
-  overflow: hidden;
-  border: 2px solid var(--ink);
-  border-radius: 7px 7px 18px 18px;
-}
-.jar-fill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--ink);
-}
-.jar-percent {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-.jar-percent.on-fill { color: #fff; }
-/* Build 18: the number sits inside the jar and flips to white at 50%, so around the halfway mark
-   the fill line runs straight through the digits and half of each one matches the colour behind
-   it — the top half vanishes at 50%, the bottom half below it. A halo in the opposite colour to
-   the text keeps it readable whichever side of the line it falls on. Measured bad band: ~46–54%. */
-.jar-percent { text-shadow: 0 0 2px var(--card), 0 0 2px var(--card); }
-.jar-percent.on-fill { text-shadow: 0 0 2px var(--ink), 0 0 2px var(--ink); }
+.goal-name { font-size: 20px; }
+.goal-amount { font-size: 16px; }
+/* Build 24.1: the jar is one drawn SVG — see app.js. The fill rises inside a clipPath, so it
+   follows the shoulders and the neck instead of filling a rectangle. Build 18's white-flip and
+   its halo are both gone: ink reads 5.89:1 on the marker fill and 8.87:1 on the paper, so the
+   percentage never has to change colour as the line passes through it. */
+.jar { flex: 0 0 auto; line-height: 0; }
+.jar svg { display: block; }
+.jar text { font-family: inherit; }
+
 .currency-fixed {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;              /* Build 16.5: fills its 5.3rem column instead of overflowing it */
-  font-weight: 600;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
 }
 .log-row.with-year { grid-template-columns: 6.2rem 1fr auto; }
 .log-row.with-year .log-date { white-space: nowrap; }
@@ -731,7 +749,7 @@ textarea {
   background: var(--card);
   border-top: 1px solid var(--line);
 }
-.pager .btn { width: 44px; padding: 0; font-size: 1.2rem; }
+.pager .btn { width: 44px; padding: 0; font-size: 20px; }
 
 /* ---------- Header + Settings ---------- */
 .app-head {
@@ -775,18 +793,21 @@ textarea {
    The dock stays pinned to the bottom either way. */
 .home-icons { display: flex; justify-content: space-evenly; margin-block: auto; }
 .brain-button { margin-top: 6px; }
-.brain-button {              /* round, no label, under ⚙ for the right thumb */
+.brain-button {              /* Build 24: no ring — a drawn, filled glyph on the paper */
   width: 64px;
   height: 64px;
-  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 26px;
   line-height: 1;
-  background: #eef3fd;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
+  background: none;
+  border: 0;
   cursor: pointer;
 }
-.brain-button:active { background: #dbe6fb; }
-.brain-button:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.brain-button:active { opacity: 0.6; }
+.brain-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 .note-space {                /* Build 16.10: under the bar on the main screen (28a).
                                 Build 16.11: margin-top:auto gives the gap above the note an equal
                                 share too, so bar→note, note→icons and icons→dock all match. This
@@ -803,21 +824,34 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   width: 100%;
-  height: min(230px, 24vh);
+  height: 189px;      /* Build 24: a rectangle on the main screen, a square on the cover */
   max-width: 100%;
   max-height: 100%;   /* on a tight screen the note gives way rather than being cut off */
-  padding: 18px;
+  padding: 22px 18px 18px;
   text-align: center;
-  background: #fdf3bf;
-  border: 2px solid #d9cf8a;
+  background: var(--note);
+  border: 1px solid var(--edge);
   border-radius: 2px;
-  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.15);
-  transform: rotate(-1deg);
+  box-shadow: 2px 3px 6px rgba(68, 61, 53, 0.12);
+}
+/* Build 24: the tape. The app's only ornament, and the main screen's only — a square note
+   reads as a sticky note on its own, a rectangle needs the tape or it looks like a card. */
+.sticky-note::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  width: 76px;
+  height: 22px;
+  background: rgba(212, 188, 170, 0.75);
+  border: 1px solid rgba(183, 164, 156, 0.55);
+  transform: translateX(-50%) rotate(-2.5deg);
 }
 .daily-line {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 20px;
   line-height: 1.4;
   color: var(--ink);
 }
@@ -842,29 +876,29 @@ textarea {
   padding: 16px 18px;
   text-align: left;
   background: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: 16px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
   cursor: pointer;
 }
 .tile:active { background: var(--line); }
-.tile:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
-.tile-name { font-size: 1.2rem; font-weight: 600; }
-.tile-sub { font-size: 0.85rem; color: var(--muted); }
+.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.tile-name { display: flex; align-items: center; gap: 8px; font-size: 20px; }
+.tile-name svg { flex: 0 0 auto; }
+.tile-sub { font-size: 13px; color: var(--muted); }
 .icon-btn {                  /* Build 11: circled, as in the design pass */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  font-size: 1.35rem;
+  font-size: 20px;
   line-height: 1;
   color: var(--ink);
   background: none;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
+  border: 0;                 /* Build 24: no ring — only the floating button is a circle */
   cursor: pointer;
 }
-.icon-btn:focus-visible { outline: 3px solid #6b9cff; }
+.icon-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 
 .settings-head {
   display: flex;
@@ -884,9 +918,9 @@ textarea {
   .app-head,
   .settings-head { padding-block: 2px; }
   .app-head h1,
-  .settings-head h1 { font-size: 1.25rem; }
-  .icon-btn { width: 44px; height: 44px; font-size: 1.2rem; }
-  .btn.back { width: 40px; min-height: 40px; font-size: 1.35rem; }
+  .settings-head h1 { font-size: 20px; }
+  .icon-btn { width: 44px; height: 44px; font-size: 20px; }
+  .btn.back { width: 40px; min-height: 40px; font-size: 20px; }
   /* Build 15: Brain dump stays compact here — the kept list needs the room.
      Written with the page's id so it wins over the taller main-screen rule further down the file. */
   #brain-page .brain-tile { min-height: 60px; }   /* Build 19: shorter, so the session list has room */
@@ -898,15 +932,15 @@ textarea {
     overflow-y: auto;
   }
   #brain-dialog .dialog-head { margin-bottom: 4px; }
-  #brain-dialog .dialog-head h2 { font-size: 0.95rem; }   /* a small title: the box matters more here */
-  #brain-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
+  #brain-dialog .dialog-head h2 { font-size: 16px; }   /* a small title: the box matters more here */
+  #brain-dialog .close { width: 32px; height: 32px; font-size: 16px; }
   /* two ids, so these win over the rules further down the file. The box grows as you type (fitBrainBox),
      so the cap is what keeps it to two lines here — longer thoughts scroll inside it. */
   #brain-dialog #brain-text { padding: 6px 8px; max-height: calc(2 * 1.45em + 14px); }
   #brain-dialog #brain-send { width: 44px; min-height: 44px; height: 44px; }
-  #brain-dialog .error { margin-top: 4px; font-size: 0.72rem; }
+  #brain-dialog .error { margin-top: 4px; font-size: 11px; }
   #brain-dialog .session-list { margin-top: 6px; }
-  #brain-dialog .session-thought { padding: 5px 0; font-size: 0.78rem; }
+  #brain-dialog .session-thought { padding: 5px 0; font-size: 13px; }
   #brain-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar here, so no empty scroll */
   /* Build 22: compact book rows on the cover screen \u2014 measured, a Reading row drops 55.3 \u2192 40.7,
      so five books being read still leave room for Want to read and Read on one screen. */
@@ -915,25 +949,25 @@ textarea {
      so Save sits inside the window without a scroll. */
   #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
   #book-dialog .dialog-head { margin-bottom: 4px; }
-  #book-dialog .dialog-head h2 { font-size: 0.95rem; }
-  #book-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
+  #book-dialog .dialog-head h2 { font-size: 16px; }
+  #book-dialog .close { width: 32px; height: 32px; font-size: 16px; }
   #book-dialog .field, #book-dialog fieldset { margin-bottom: 6px; }
   #book-dialog .actions { margin-top: 6px; }
   #book-dialog .actions .btn { min-height: 36px; padding: 4px 12px; }
-  #books-page .book-title { font-size: 0.95rem; }
+  #books-page .book-title { font-size: 16px; }
   #books-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }   /* what the floating + needs */
 
   /* Build 14.4: on the cover screen the title steps aside while you write, and the tools are smaller */
   #diary-note-page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }  /* every line counts here */
   #diary-note-page.is-writing #diary-title { display: none; }
   .note-toolbar { gap: 3px; padding: 4px 0; }
-  .tool { flex: 0 0 36px; height: 36px; font-size: 0.95rem; }
+  .tool { flex: 0 0 36px; height: 36px; font-size: 16px; }
   .colour-strip { gap: 3px; padding: 4px 0; }
   .swatch { width: 32px; height: 32px; }
   /* Build 14.2: the note bar still fits at 598 × 530 */
-  .note-when { font-size: 0.66rem; }   /* Build 14.3: "Last saved: …" fits the cover bar too */
-  .note-act { width: 40px; height: 40px; font-size: 1.2rem; }
-  #diary-title { font-size: 1.05rem; min-height: 34px; }
+  .note-when { font-size: 11px; }   /* Build 14.3: "Last saved: …" fits the cover bar too */
+  .note-act { width: 40px; height: 40px; font-size: 20px; }
+  #diary-title { font-size: 16px; min-height: 34px; }
   /* Build 12.9: on the cover screen the Skin tile puts tonight's step beside the name */
   .tile { flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 6px) calc(8px + env(safe-area-inset-bottom)); }
@@ -955,29 +989,30 @@ textarea {
     margin: 0;
   }
   #home-page .tile-dock { grid-column: 1 / -1; grid-row: 2; }
-  .brain-button { width: 46px; height: 46px; margin-top: 4px; font-size: 1.25rem; } /* further from ⚙, so they are not confused */
+  .brain-button { width: 46px; height: 46px; margin-top: 4px; font-size: 20px; } /* further from ⚙, so they are not confused */
   /* Build 17: still a square, but 131 rather than 94 app units — nearly twice the area, now that
      it sits beside the icons instead of under them. min() keeps it shrinking on a shorter window. */
-  .sticky-note { width: min(131px, 40vh / var(--cover-zoom)); height: min(131px, 40vh / var(--cover-zoom)); padding: 10px; }
-  .daily-line { font-size: clamp(0.78rem, 3.4vh / var(--cover-zoom), 1rem); line-height: 1.3; }   /* the longest line still fits inside the note */
+  .sticky-note { width: min(140px, 40vh / var(--cover-zoom)); height: min(140px, 40vh / var(--cover-zoom)); padding: 12px; }
+  .sticky-note::before { display: none; }   /* no tape on the cover — a square needs none */
+  .daily-line { font-size: clamp(13px, 3.4vh / var(--cover-zoom), 16px); line-height: 1.3; }   /* the longest line still fits inside the note */
   .tile-dock { height: min(210px, 30vh / var(--cover-zoom)); gap: 8px; padding-top: 8px; }
-  .tile { min-height: 0; padding: 10px 12px; border-radius: 14px; }
-  .tile-name { font-size: 0.95rem; }
+  .tile { min-height: 0; padding: 10px 12px; border-radius: 3px; }
+  .tile-name { font-size: 16px; }
   .switch { margin-bottom: 6px; }
   section { margin-bottom: 6px; }
-  .switch-btn { min-height: 38px; font-size: 0.95rem; }
+  .switch-btn { min-height: 38px; font-size: 16px; }
   .month-card { margin-bottom: 8px; }
-  .total strong { font-size: 1.9rem; }
-  .cat-head { margin-top: 5px; padding-bottom: 3px; font-size: 1rem; }
+  .total strong { font-size: 26px; }
+  .cat-head { margin-top: 5px; padding-bottom: 3px; font-size: 16px; }
   .row { padding: 3px 0; }
-  .fab { width: 46px; height: 46px; font-size: 1.5rem; }
+  .fab { width: 46px; height: 46px; font-size: 26px; }
   /* Build 12.8: the add sheets fit without scrolling — chips slide sideways instead of wrapping */
   dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
   dialog.sheet .dialog-head { margin-bottom: 6px; }
-  dialog.sheet .dialog-head h2 { font-size: 1.05rem; }
+  dialog.sheet .dialog-head h2 { font-size: 16px; }
   dialog.sheet .close { width: 36px; height: 36px; }
   dialog.sheet .field { margin-bottom: 8px; }
-  dialog.sheet .label { margin-bottom: 2px; font-size: 0.8rem; }
+  dialog.sheet .label { margin-bottom: 2px; font-size: 13px; }
   /* one sliding row of chips: the item names say enough without the Need / Want labels here */
   dialog.sheet #item-choices { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   dialog.sheet #item-choices::-webkit-scrollbar { display: none; }
@@ -989,7 +1024,7 @@ textarea {
   dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 36px; }
   /* Build 14.5: a slimmer Cancel / Save row, so the field you are typing in keeps its room */
   dialog.sheet .actions { padding-top: 4px; }
-  dialog.sheet .actions .btn { min-height: 34px; padding: 4px 12px; font-size: 0.9rem; }
+  dialog.sheet .actions .btn { min-height: 34px; padding: 4px 12px; font-size: 13px; }
   dialog.sheet .actions .btn.icon-only { width: 40px; padding: 0; }
 
   /* Build 12.3: on the cover screen both cards are a single row */
@@ -997,17 +1032,17 @@ textarea {
   .month-card .month-nav { display: contents; }
   .month-card .month-nav h2 { flex: 0 0 auto; text-align: left; }
   .month-card .total { order: 3; flex: 1; margin: 0; text-align: right; }
-  .month-card .total strong { font-size: 1.5rem; }
+  .month-card .total strong { font-size: 26px; }
   .month-card .total .small { display: none; }
   #next-month { order: 4; }
   .total-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 12px; }
   .total-card .total { display: contents; }
-  .total-card .total strong { font-size: 1.5rem; }
+  .total-card .total strong { font-size: 26px; }
   .total-card .total .small { order: -1; }
   .total-card { margin-bottom: 8px; }
   /* Build 12.8: the month bar matches the switch above it, and the arrows lose their boxes */
   .month-card { min-height: 38px; padding: 0 8px; }
-  .month-card .month-nav h2 { font-size: 0.85rem; }
+  .month-card .month-nav h2 { font-size: 13px; }
   /* Build 17.1: the month total matches Savings' "Total saved" at 1.5rem above. It was 1.1rem
      here only because this later rule quietly overrode that one — the number you open the page
      for was the smaller of the two. The card still holds its 38px, so nothing else moves. */
@@ -1015,7 +1050,7 @@ textarea {
     width: 34px;
     min-height: 34px;
     padding: 0;
-    font-size: 1.1rem;
+    font-size: 16px;
     background: none;
     border: 0;
   }
@@ -1031,11 +1066,13 @@ textarea {
      height for nothing. 70 is what the floating button actually needs: 46 tall, sitting 16 up.
      (My Skin and Settings were already 8 and 16 — measured, not assumed.) */
   #money-page, #diary-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
-  .goal-name { font-size: 0.95rem; }
-  .goal-amount { font-size: 0.85rem; }
-  .jar-lid { width: 18px; height: 5px; }
-  .jar-body { width: 30px; height: 40px; }
-  .jar-percent { font-size: 0.72rem; }
+  .goal-name { font-size: 16px; }
+  .goal-amount { font-size: 13px; }
+  /* Build 24.1: the cover jar is 44 × 66, drawn at stroke 2.2 — a 1.6 stroke scaled to 71%
+     renders at 1.1 and goes faint, which is the same correction the Skin bottle needed. */
+  .jar svg { width: 44px; height: 66px; }
+  .jar path[stroke-width="1.6"], .jar rect[stroke-width="1.6"] { stroke-width: 2.2; }
+  .jar text { font-size: 20px; }
   /* Settings on a 354 px tall screen: trim the rows so Backup and Restore stay above the fold.
      Build 17.2: these were written in 12.9 and NEVER APPLIED — this block sits earlier in the file
      than the main-screen rules for the same elements, so at equal specificity the later ones won
@@ -1047,13 +1084,9 @@ textarea {
   #settings-page .rate-row { padding: 2px 0; }
   #settings-page .rate-row input { min-height: 32px; }
   #settings-page .rate-save { margin-top: 2px; }
-  #settings-page .section-label { margin-bottom: 3px; font-size: 0.72rem; }
-  #settings-page .settings-actions .btn { min-height: 38px; }
-  #settings-page .rate-save .btn { min-height: 38px; }   /* Save rates — not the back arrow */
-  #settings-page .build-foot { margin-top: auto; padding-top: 10px; }
-  .tile-sub { font-size: 0.75rem; }
-
+  #settings-page .section-label { margin-top: 10px; margin-bottom: 3px; }
 }
+
 .settings-head h1 { margin: 0; }
 .btn.back {                  /* Build 12.9: a bare arrow, no box */
   display: flex;
@@ -1062,21 +1095,13 @@ textarea {
   width: 44px;
   min-height: 44px;
   padding: 0;
-  font-size: 1.5rem;
+  font-size: 26px;
   line-height: 1;
   background: none;
   border: 0;
 }
 .btn.full { display: block; width: 100%; }
 /* ---------- Settings (Build 11.5 design pass) ---------- */
-.section-label {
-  margin: 0 0 10px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
 .rate-row {                  /* label on the left, field on the right */
   display: flex;
   align-items: center;
@@ -1091,15 +1116,14 @@ textarea {
 .btn.accent {
   color: var(--accent);
   background: var(--card);
-  border: 2px solid var(--accent);
-  font-weight: 600;
+  border: 1px solid var(--accent);
 }
-.btn.accent:active { background: #eef3fd; }
+.btn.accent:active { background: var(--card); }
 .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .settings-actions .btn { min-height: 56px; }
 /* Build 16.9: same size as Backup — only quieter, because Backup is the one you actually use
    and Restore replaces everything. The confirm step is what really protects you. */
-#restore-btn { color: var(--muted); border-color: #bbb; }
+#restore-btn { color: var(--muted); border-color: var(--quiet); }
 #last-backup { margin: 10px 0 0; }
 .build-foot { margin-top: auto; padding-top: 24px; }
 #build-info {                /* Build 14.6: tap it to reload the app */
@@ -1107,7 +1131,7 @@ textarea {
   min-height: 44px;          /* a proper tap target, since this is now the way to refresh */
   padding: 12px 0;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--muted);
   text-align: left;
   background: none;
@@ -1115,7 +1139,7 @@ textarea {
   cursor: pointer;
 }
 #build-info:active { color: var(--ink); }
-#build-info:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+#build-info:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 #settings-page {
   display: flex;
   flex-direction: column;
@@ -1123,7 +1147,7 @@ textarea {
   /* no room needed for My Money's tab bar here, so build info can sit at the bottom edge */
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
-.status { margin: 8px 0 0; font-size: 0.9rem; color: #2e7d32; }
+.status { margin: 8px 0 0; font-size: 13px; color: var(--done); }
 .status.is-problem { color: var(--error); }
 
 /* ---------- My Skin ---------- */
@@ -1136,7 +1160,7 @@ textarea {
   padding: 14px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 3px;
 }
 .tonight-icon {
   flex: 0 0 44%;
@@ -1145,16 +1169,15 @@ textarea {
   justify-content: center;
   margin: 0;
   padding: 14px 0;
-  font-size: 3rem;
+  font-size: 38px;
   line-height: 1;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 3px;
 }
 .tonight-body { flex: 1; min-width: 0; text-align: center; }
 .tonight-name {
   margin: 2px 0 10px;
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-size: 26px;
   line-height: 1.1;
 }
 .cal-key { margin-top: 10px; }
@@ -1166,7 +1189,7 @@ textarea {
 }
 .cal-head {
   margin-bottom: 4px;
-  font-size: 0.75rem;
+  font-size: 13px;
   color: var(--muted);
   text-align: center;
 }
@@ -1179,26 +1202,26 @@ textarea {
   min-height: 52px;
   padding: 2px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 13px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
 }
 .cal-blank { background: none; border: 0; }
-.cal-letter { font-size: 0.7rem; line-height: 1; color: var(--muted); }
-.cal-mark { min-height: 1em; font-size: 0.8rem; line-height: 1; }
-.cal-cell.is-off .cal-letter { color: #ccc; }
+.cal-letter { font-size: 11px; line-height: 1; color: var(--muted); }
+.cal-mark { min-height: 1em; font-size: 13px; line-height: 1; }
+.cal-cell.is-off .cal-letter { color: var(--line); }
 .cal-cell.is-today { border-width: 2px; border-color: var(--ink); }
-.cal-cell.is-done .cal-mark { color: #2e7d32; }
-.cal-cell.is-off { color: #bbb; background: none; cursor: default; }
-.cal-cell:focus-visible { outline: 3px solid #6b9cff; outline-offset: 2px; }
+.cal-cell.is-done .cal-mark { color: var(--done); }
+.cal-cell.is-off { color: var(--quiet); background: none; cursor: default; }
+.cal-cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 
 /* Build 13: My Skin on the cover screen — the card, this week and the key, all above the fold.
    These sit after the rules above on purpose: the cover block higher up would lose to them. */
 @media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
   /* Build 14: the diary list — a tighter year heading, so one more row fits */
-  .year-head { margin: 6px 0 3px; padding-bottom: 3px; font-size: 0.72rem; }
+  .year-head { margin: 6px 0 3px; padding-bottom: 3px; font-size: 11px; }
 
   /* Build 13.1: the page starts a little lower and the card takes the space that was left over */
   #skin-page {
@@ -1206,16 +1229,16 @@ textarea {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));   /* no tab bar on this page */
   }
   .tonight { gap: 10px; min-height: 118px; margin-bottom: 10px; padding: 8px 10px; }
-  .tonight-icon { padding: 4px 0; font-size: 3rem; border-radius: 10px; }
+  .tonight-icon { padding: 4px 0; font-size: 38px; border-radius: 3px; }
   .tonight-body .small { margin: 0; }
-  .tonight-name { margin: 2px 0 6px; font-size: 1.3rem; }
+  .tonight-name { margin: 2px 0 6px; font-size: 20px; }
   #skin-done-actions .btn { min-height: 34px; }
   #skin-month-nav, #skin-week-nav { margin-bottom: 2px; }
   .cal-cell { min-height: 40px; }
-  .cal-key { margin: 6px 0 0; font-size: 0.7rem; }
+  .cal-key { margin: 6px 0 0; font-size: 11px; }
 }
 
-.tab:focus-visible { outline: 3px solid #6b9cff; outline-offset: -3px; }
+.tab:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
 
 /* ---------- Brain dump (Build 10) ---------- */
 /* Build 19: one full-width tile, and nothing else on the page. The To keep / Let go pair, the
@@ -1248,7 +1271,7 @@ textarea {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.9rem;
+  font-size: 13px;
   color: var(--muted);
   border-top: 1px solid var(--line);
 }
@@ -1274,8 +1297,8 @@ textarea {
   color: inherit;
   cursor: pointer;
 }
-.book-title { grid-column: 1; min-width: 0; font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
-.book-count { grid-column: 2; font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+.book-title { grid-column: 1; min-width: 0; font-size: 16px; overflow-wrap: anywhere; }
+.book-count { grid-column: 2; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .book-bar {
   grid-column: 1 / -1;
   height: 6px;
@@ -1296,7 +1319,7 @@ textarea {
   padding: 0;
   border: 0;
   background: none;
-  font-size: 0.9rem;
+  font-size: 13px;
   font-weight: 400;
   color: var(--muted);
   white-space: nowrap;
@@ -1314,7 +1337,7 @@ textarea {
   overflow-y: auto;
 }
 #book-dialog .dialog-head h2 {
-  font-size: 1rem;            /* smaller, so a long book title doesn't eat the pop-up */
+  font-size: 16px;            /* smaller, so a long book title doesn't eat the pop-up */
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1336,8 +1359,8 @@ textarea {
   /* nothing is pinned — this block only tightens the spacing */
   #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
   #book-dialog .dialog-head { margin-bottom: 4px; }
-  #book-dialog .dialog-head h2 { font-size: 0.95rem; }
-  #book-dialog .close { width: 32px; height: 32px; font-size: 1rem; }
+  #book-dialog .dialog-head h2 { font-size: 16px; }
+  #book-dialog .close { width: 32px; height: 32px; font-size: 16px; }
   #book-dialog .field, #book-dialog fieldset { margin-bottom: 4px; }
   #book-dialog .actions { margin-top: 4px; }
   #book-dialog .actions .btn { min-height: 34px; padding: 4px 12px; }
@@ -1354,7 +1377,7 @@ textarea {
   gap: 4px;
   min-height: 38px;
   padding: 0 4px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
 }
-.date-step-label { text-align: center; font-size: 0.95rem; }
+.date-step-label { text-align: center; font-size: 16px; }
