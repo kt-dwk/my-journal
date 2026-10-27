@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24.9", date: "2026-10-27" };
+const BUILD = { number: "24.10", date: "2026-10-27" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -746,6 +746,10 @@ addForm.addEventListener("submit", (event) => {
 
 // ---------- My Skin cycle (the My Skin page itself arrives in Build 7) ----------
 
+// Build 24.10: the jar fills. All six are palette colours the app already carries, and ink
+// reads 4.89:1 or better on every one of them, so the percentage inside stays ink throughout.
+const JAR_FILLS = ["var(--swipe)", "var(--sand)", "var(--need)", "var(--want)", "var(--wisteria)", "var(--rosewood)"];
+
 const SKIN_CYCLE = ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"];
 const SKIN_LETTERS = ["E", "R", "M", "M"]; // shown in the calendar: E xfoliate, R etinol, M oist
 
@@ -1129,7 +1133,12 @@ function renderHome() {
   const today = todayISO();
   $("daily-line").textContent = dailyLineFor(today);
   const done = loadSkin()[today] === "done";
-  $("skin-tile-tonight").textContent = `${skinNightFor(today)}${done ? " ✓" : ""}`; // the tile is narrower now, so no "Tonight:" prefix
+  // Build 24.10: on the cover the tile is one row, and "Recovery 2" wrapped onto a second
+  // line, so the four tiles stopped matching. The cover shows the cycle LETTER instead — the
+  // same E / R / M the calendar uses, so it is a letter you already read every night.
+  $("skin-tile-tonight").textContent = onCoverScreen()
+    ? SKIN_LETTERS[skinNightIndex(today)]
+    : skinNightFor(today);
 }
 
 function showView(view, { push = false } = {}) {
@@ -2746,11 +2755,17 @@ function renderSavings() {
       // The percentage is ink on the fill at 5.89:1 and ink on the paper at 8.87:1, so unlike
       // Build 18's jar it never has to flip to white halfway up.
       const clipId = `jar-clip-${g.id}`;
+      // Build 24.10, your request: a colour per goal, chosen for you. It is picked from the
+      // goal's OWN id, not at random each render — a jar that changed colour every time the
+      // page drew would be worse than one colour for all of them. Same id, same colour, always.
+      let hash = 0;
+      for (const ch of String(g.id)) hash = (hash * 131 + ch.charCodeAt(0)) >>> 0;
+      const fill = JAR_FILLS[hash % JAR_FILLS.length];
       const shape = "M9 34c0-7 5-11 9-15V13h26v6c4 4 9 8 9 15v46a7 7 0 0 1-7 7H16a7 7 0 0 1-7-7Z";
       jar.innerHTML = `<svg viewBox="0 0 62 93" width="62" height="93" aria-hidden="true">
           <defs><clipPath id="${clipId}"><path d="${shape}"/></clipPath></defs>
           <rect x="0" y="${93 - (93 * percent) / 100}" width="62" height="${(93 * percent) / 100}"
-                fill="var(--swipe)" clip-path="url(#${clipId})"/>
+                fill="${fill}" clip-path="url(#${clipId})"/>
           <path d="${shape}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
           <rect x="16" y="1" width="30" height="12" rx="2.5" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
           <path d="M16 5.5h30M16 9h30" stroke="var(--ink)" stroke-width="1" opacity=".55"/>

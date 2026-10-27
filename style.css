@@ -732,6 +732,10 @@ textarea {
   grid-template-columns: 5.3rem 1fr;   /* Build 16.2: narrower — it only ever holds ₭ LAK, $ USD or ฿ THB */
   gap: 8px;
 }
+/* Build 24.10: where the currency is FIXED it is always "$ USD" — no select, nothing to
+   choose — so it needs far less room than the money sheets' dropdown, and the amount you
+   actually type gets the width back. The goal sheet has two of these side by side. */
+#goal-form .amount-row { grid-template-columns: 3.4rem 1fr; }
 .amount-row select { padding-inline: 6px; }
 
 .error { margin: 6px 0 0; font-size: 13px; color: var(--error); }
@@ -967,12 +971,13 @@ textarea {
 .tile {
   display: flex;
   flex-direction: column;
+  align-items: center;       /* Build 24.10: centred in the tile, not pinned to its left edge */
   justify-content: center;
   gap: 4px;
   width: 100%;
   min-height: 88px;
   padding: 16px 18px;
-  text-align: left;
+  text-align: center;
   background: var(--card);
   border: 1px solid var(--ink);
   border-radius: 3px;
@@ -1021,7 +1026,9 @@ textarea {
   .btn.back { width: 40px; min-height: 40px; font-size: 20px; }
   /* Build 15: Brain dump stays compact here — the kept list needs the room.
      Written with the page's id so it wins over the taller main-screen rule further down the file. */
-  #brain-page .brain-tile { min-height: 60px; }   /* Build 19: shorter, so the session list has room */
+  /* Build 24.10: 60 was sized for the two-tile layout Build 19 replaced with one. With a single
+     tile there is height to spare, and it has to be reachable with a right thumb. */
+  #brain-page .brain-tile { min-height: 120px; }
   /* Build 15.1: the pop-up fits the window — the title gives up the room, the box keeps its two lines */
   #brain-dialog {
     margin-block: 8px auto;
@@ -1101,7 +1108,10 @@ textarea {
   .switch-btn { min-height: 38px; font-size: 16px; }
   .month-card { margin-bottom: 8px; }
   .total strong { font-size: 26px; }
-  .cat-head { margin-top: 5px; padding-bottom: 3px; font-size: 16px; }
+  .cat-head { margin-top: 10px; }
+  /* Build 24.10: one heading size on the cover too — Need, Want, Log, the Books groups and
+     Settings all sat at different sizes, and two of them were SMALLER than the rows beneath. */
+  .cat-name, .section-label, .year-head, .book-head .year-head span, .cat-head { font-size: 20px; }
   .row { padding: 3px 0; }
   .fab { width: 46px; height: 46px; font-size: 26px; }
   /* Build 12.8: the add sheets fit without scrolling — chips slide sideways instead of wrapping */
@@ -1232,7 +1242,7 @@ textarea {
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
-.rate-row .label { margin: 0; }
+.rate-row .label { margin: 0; font-size: 16px; color: var(--ink); }   /* Build 24.10: matches the number beside it */
 .rate-row input { width: 140px; text-align: right; }
 .rate-save { display: flex; justify-content: flex-end; margin-top: 12px; }
 /* Build 24.5: .btn.accent is gone — an outlined accent-blue button that existed ONLY on
@@ -1355,7 +1365,7 @@ textarea {
    These sit after the rules above on purpose: the cover block higher up would lose to them. */
 @media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
   /* Build 14: the diary list — a tighter year heading, so one more row fits */
-  .year-head { margin: 6px 0 3px; padding-bottom: 3px; font-size: 11px; }
+  .year-head { margin: 10px 0 2px; }
 
   /* Build 13.1: the page starts a little lower and the card takes the space that was left over */
   #skin-page {
