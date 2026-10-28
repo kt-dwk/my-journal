@@ -908,6 +908,23 @@ textarea {
   border: 0;
   cursor: pointer;
 }
+/* Build 24.11: a name under each icon, main screen only. Sentence case, like the dock tiles
+   right below them — Build 24 collapsed every heading into one sentence-case form, and caps here
+   would have reintroduced exactly what it removed. The button becomes a column, so the label is
+   inside the tap target rather than beside it. */
+.brain-button {
+  flex-direction: column;
+  gap: 5px;
+  width: auto;
+  min-width: 64px;
+  height: auto;
+  padding: 4px 2px;
+}
+.icon-label {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--quiet);
+}
 .brain-button:active { opacity: 0.6; }
 .brain-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 .note-space {                /* Build 16.10: under the bar on the main screen (28a).
@@ -924,8 +941,9 @@ textarea {
 }
 .sticky-note {
   display: flex;
+  flex-direction: column;     /* Build 24.11: the title sits above the quote */
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;   /* Build 24.11: the title pins to the top … */
   position: relative;
   width: 100%;
   height: 189px;      /* Build 24: a rectangle on the main screen, a square on the cover */
@@ -951,8 +969,21 @@ textarea {
   border: 1px solid rgba(183, 164, 156, 0.55);
   transform: translateX(-50%) rotate(-2.5deg);
 }
-.daily-line {
+/* Build 24.11: the note says what it is. Quiet and small, so the quote stays the thing you read.
+   Uppercase here is your call and a deliberate exception to Build 24's sentence-case rule: this
+   is a caption on a card, not one of the headings that rule was written for. The letter-spacing
+   is what stops caps looking cramped at 13px. */
+.note-title {
+  align-self: flex-start;     /* … and to the left corner, your decision */
   margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-align: left;
+  color: var(--quiet);
+}
+.daily-line {
+  margin: auto 0;             /* Build 24.11: centred in the space under the title */
   font-size: 20px;
   line-height: 1.4;
   color: var(--ink);
@@ -1094,10 +1125,12 @@ textarea {
     margin: 0;
   }
   #home-page .tile-dock { grid-column: 1 / -1; grid-row: 2; }
-  .brain-button { width: 46px; height: 46px; margin-top: 4px; font-size: 20px; } /* further from ⚙, so they are not confused */
+  .brain-button { width: 46px; height: 46px; padding: 0; margin-top: 4px; font-size: 20px; } /* further from ⚙, so they are not confused */
+  .icon-label { display: none; }   /* Build 24.11: names on the main screen only — the cover row is a column with no width to spare */
   /* Build 17: still a square, but 131 rather than 94 app units — nearly twice the area, now that
      it sits beside the icons instead of under them. min() keeps it shrinking on a shorter window. */
   .sticky-note { width: min(140px, 40vh / var(--cover-zoom)); height: min(140px, 40vh / var(--cover-zoom)); padding: 12px; }
+  .note-title { font-size: 11px; }   /* Build 24.11: the title stays, smaller — the quote still has to fit */
   .sticky-note::before { display: none; }   /* no tape on the cover — a square needs none */
   .daily-line { font-size: clamp(13px, 3.4vh / var(--cover-zoom), 16px); line-height: 1.3; }   /* the longest line still fits inside the note */
   .tile-dock { height: min(210px, 30vh / var(--cover-zoom)); gap: 8px; padding-top: 8px; }
