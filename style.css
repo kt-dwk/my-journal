@@ -1337,6 +1337,33 @@ textarea {
   border-radius: 3px;
 }
 .tonight-icon svg { display: block; }
+/* Build 25: the drawing is a button now (tap for tonight's products) and must keep EXACTLY the
+   look it had — your decision: the app stays plain and the bordered box already reads as its own
+   thing. A <button> brings its own background, font and width, so all three are reset here. */
+.tonight-icon {
+  width: auto;
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  cursor: pointer;
+}
+.tonight-icon:active { opacity: 0.6; }
+
+/* Build 25: tonight's products. Numbered only when there is an order to follow; a single product
+   is a plain line, because numbering a list of one reads oddly for "just put the cream on". */
+.product-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.product-list li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; }
+.product-list li.plain { display: block; }
+.product-step {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--swipe);
+  border-radius: 50%;
+}
 .tonight-body { flex: 1; min-width: 0; text-align: center; }
 .tonight-name {
   margin: 2px 0 10px;

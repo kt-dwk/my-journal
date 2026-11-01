@@ -53,7 +53,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "24.11", date: "2026-10-28" };
+const BUILD = { number: "25", date: "2026-11-01" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -750,15 +750,55 @@ addForm.addEventListener("submit", (event) => {
 // reads 4.89:1 or better on every one of them, so the percentage inside stays ink throughout.
 const JAR_FILLS = ["var(--swipe)", "var(--sand)", "var(--need)", "var(--want)", "var(--wisteria)", "var(--rosewood)"];
 
-const SKIN_CYCLE = ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"];
-const SKIN_LETTERS = ["E", "R", "M", "M"]; // shown in the calendar: E xfoliate, R etinol, M oist
+// Build 25: the routine changed, and the history is NOT rewritten. A done night stores only its
+// date, so the night's name is worked out from the date every time — without a start date, changing
+// the cycle would silently relabel every night you have already marked. So there are two eras, and
+// a date is read against whichever one it falls in. Same principle as a transaction keeping the
+// rate it was saved with.
+const SKIN_ERAS = [
+  {
+    // Up to 31 Oct 2026. Kept exactly as it was, so September and October still say what you did.
+    from: "0000-01-01",
+    cycle: ["Exfoliate", "Retinol", "Recovery 1", "Recovery 2"],
+    letters: ["E", "R", "M", "M"],
+    anchor: { date: "2026-09-15", night: 1 },   // 15 Sep 2026 = Retinol
+    products: [[], [], [], []],                 // the old era never had products
+  },
+  {
+    // From 1 Nov 2026. No exfoliation; Hydration takes night 2.
+    from: "2026-11-01",
+    cycle: ["Retinol", "Hydration", "Recovery 1", "Recovery 2"],
+    letters: ["R", "H", "M", "M"],
+    anchor: { date: "2026-11-01", night: 0 },   // 1 Nov 2026 = Retinol, night 1 of the cycle
+    // No cleanser anywhere, your decision: you wash your face every night, so this lists only
+    // what changes. Recovery 1 and 2 share one product and keep their numbers — the number says
+    // where you are in the cycle, not what you put on.
+    products: [
+      ["CeraVe Resurfacing Retinol", "Srichand Barrier Boost Serum"],
+      ["The Ordinary Hyaluronic Acid", "Clear Nose Gel Cream"],
+      ["Clear Nose Gel Cream"],
+      ["Clear Nose Gel Cream"],
+    ],
+  },
+];
 
-// Build 24.2: a drawing per night, indexed exactly like SKIN_LETTERS — four nights, three
-// drawings, because Recovery 1 and 2 are the same jar on two nights. The tonight card now
-// shows WHAT TONIGHT IS before the word does. No decoration on any of the three: the tape
-// on the Home sticky note is the app's only ornament.
+// The first day the routine was tracked at all — the calendar refuses taps before it.
+const SKIN_TRACKED_FROM = SKIN_ERAS[0].anchor.date;
+
+function skinEraFor(dateISO) {
+  let era = SKIN_ERAS[0];
+  for (const e of SKIN_ERAS) if (dateISO >= e.from) era = e;
+  return era;
+}
+
+// Build 24.2: a drawing per night, four nights and three drawings, because Recovery 1 and 2 are
+// the same jar on two nights. The tonight card shows WHAT TONIGHT IS before the word does. No
+// decoration on any of the three: the tape on the Home sticky note is the app's only ornament.
+// Build 25: the drawings are indexed by SLOT, and the two eras use the slots differently — the
+// old exfoliant bottle is reused for Hydration (your choice over drawing a new dropper), so the
+// same three drawings cover both routines.
 const SKIN_BOTTLES = [
-  // Exfoliator — wide overlapping cap, a drop, and a label with its lines drawn in
+  // Bottle — wide overlapping cap, a drop, a label. Exfoliate in the old era, Hydration in the new.
   '<rect x="10" y="2" width="16" height="9" rx="1.6"/><path d="M10 6.4h16"/>' +
   '<path d="M14.6 11v2M21.4 11v2"/><rect x="7" y="13" width="22" height="40" rx="2.4"/>' +
   '<path d="M18 17c1.7 1.9 2.5 3.1 2.5 4.1a2.5 2.5 0 0 1-5 0c0-1 .8-2.2 2.5-4.1z"/>' +
@@ -775,13 +815,19 @@ const SKIN_BOTTLES = [
 ];
 SKIN_BOTTLES.push(SKIN_BOTTLES[2]);   // Recovery 2 shares Recovery 1's jar
 
+// Which drawing each night of each era uses. Old: bottle, pump, jar, jar. New: pump, bottle, jar, jar.
+const SKIN_DRAWING_SLOTS = {
+  "Exfoliate": 0, "Hydration": 0,     // the bottle
+  "Retinol": 1,                       // the pump
+  "Recovery 1": 2, "Recovery 2": 3,   // the jar, twice
+};
+
 function skinBottleFor(dateISO) {
+  const slot = SKIN_DRAWING_SLOTS[skinNightFor(dateISO)] ?? 2;
   return `<svg viewBox="0 0 36 56" width="38" height="58" aria-hidden="true" fill="none"
     stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${
-    SKIN_BOTTLES[skinNightIndex(dateISO)]}</svg>`;
+    SKIN_BOTTLES[slot]}</svg>`;
 }
-
-const SKIN_START = { date: "2026-09-15", night: 1 }; // 15 Sep 2026 = Retinol
 
 // Build 16.6: how far the calendar arrows may travel — back to January 2026, forward to the end
 // of next calendar year. Worked out fresh each time, so it moves on by itself as the years pass.
@@ -813,17 +859,43 @@ function mondayOf(iso) {
 
 // The cycle follows the calendar, and "tonight" ends at midnight (local date)
 function skinNightIndex(dateISO) {
-  const n = SKIN_CYCLE.length;
-  return ((SKIN_START.night + daysBetween(SKIN_START.date, dateISO)) % n + n) % n;
+  const era = skinEraFor(dateISO);
+  const n = era.cycle.length;
+  return ((era.anchor.night + daysBetween(era.anchor.date, dateISO)) % n + n) % n;
 }
 
 function skinNightFor(dateISO) {
-  return SKIN_CYCLE[skinNightIndex(dateISO)];
+  return skinEraFor(dateISO).cycle[skinNightIndex(dateISO)];
 }
 
 function skinLetterFor(dateISO) {
-  return SKIN_LETTERS[skinNightIndex(dateISO)];
+  return skinEraFor(dateISO).letters[skinNightIndex(dateISO)];
 }
+
+// Build 25: what to put on tonight. Empty for any night before the new routine started.
+function skinProductsFor(dateISO) {
+  return skinEraFor(dateISO).products[skinNightIndex(dateISO)] || [];
+}
+
+// Build 25: tapping the drawing shows what to put on TONIGHT — never a past night. Nothing stores
+// which products were used on a given date, so a past night would be answered from today's list;
+// showing tonight only is what keeps that from ever being wrong. If products are ever wanted on a
+// past day, they have to be stored per night first.
+$("skin-products-btn").addEventListener("click", () => {
+  const today = todayISO();
+  const products = skinProductsFor(today);
+  $("skin-products-title").textContent = skinNightFor(today);
+  // Numbered only when there is an order to follow; one product reads as a plain line.
+  const many = products.length > 1;
+  $("skin-product-list").replaceChildren(...products.map((name, i) => {
+    const li = el("li", many ? "" : "plain");
+    if (many) li.append(el("span", "product-step", String(i + 1)));
+    li.append(el("span", "", name));
+    return li;
+  }));
+  $("skin-products-none").hidden = products.length > 0;
+  $("skin-products-dialog").showModal();
+});
 
 // ---------- My Skin page ----------
 // Only the nights you marked Done are stored, keyed by date: { "YYYY-MM-DD": "done" }
@@ -919,7 +991,7 @@ function weekdayShort(iso) {
 // One day of the calendar, used by both the month grid and the cover screen's week
 function dayCell(dateISO, map, today) {
   const done = map[dateISO] === "done";
-  const canTap = dateISO <= today && dateISO >= SKIN_START.date;
+  const canTap = dateISO <= today && dateISO >= SKIN_TRACKED_FROM;
   const cell = el("button", "cal-cell");
   cell.type = "button";
   // Build 24.2: two marks a day, not three. "Done" is the number coloured in (see .is-done
@@ -1135,9 +1207,9 @@ function renderHome() {
   const done = loadSkin()[today] === "done";
   // Build 24.10: on the cover the tile is one row, and "Recovery 2" wrapped onto a second
   // line, so the four tiles stopped matching. The cover shows the cycle LETTER instead — the
-  // same E / R / M the calendar uses, so it is a letter you already read every night.
+  // same letter the calendar uses, so it is one you already read every night.
   $("skin-tile-tonight").textContent = onCoverScreen()
-    ? SKIN_LETTERS[skinNightIndex(today)]
+    ? skinLetterFor(today)
     : skinNightFor(today);
 }
 
