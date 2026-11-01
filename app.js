@@ -17,7 +17,10 @@ const GROUPS = ["Need", "Want"];
 // savings, which pointed at goals by name and needed a migration.
 // The sources are deliberately not employers: the repository is public, so real names would say
 // where you work. "Full-time / Part-time" carries the same meaning without that.
-const INCOME_CATEGORIES = ["Salary", "Side job", "Bonus", "Per diem", "Other"];
+// Build 25.1: "Bonus" removed at your request — you had never used it. An entry saved under a
+// category that later leaves this list still gets its own row (see renderIncome), so removing one
+// can no longer hide money.
+const INCOME_CATEGORIES = ["Salary", "Side job", "Per diem", "Other"];
 const INCOME_SOURCES = ["Full-time", "Part-time", "Other"];
 
 const CURRENCIES = {
@@ -53,7 +56,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "25", date: "2026-11-01" };
+const BUILD = { number: "25.1", date: "2026-11-01" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -3071,9 +3074,19 @@ function renderIncome() {
     : monthDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   $("income-total").textContent = formatMoney(total, "LAK");
 
+  // Build 25.1: a category the list no longer carries still gets a row. Before this, income
+  // whose category had been removed dropped out of the breakdown while still counting in the
+  // month total — the money was there and nowhere, measured at ₭3,000,000 hidden. Build 23.3
+  // fixed exactly this for expenses and never reached here. The rows must always sum to the total.
+  const unknownCategories = [...new Set(
+    items.filter((e) => !INCOME_CATEGORIES.includes(e.category)).map((e) => e.category)
+  )];
+
   $("income-by-category").replaceChildren(
     ...INCOME_CATEGORIES.map((c) =>
-      summaryRow(c, items.filter((e) => e.category === c).reduce((sum, e) => sum + e.lak, 0)))
+      summaryRow(c, items.filter((e) => e.category === c).reduce((sum, e) => sum + e.lak, 0))),
+    ...unknownCategories.map((c) =>
+      summaryRow(c || "(no category)", items.filter((e) => e.category === c).reduce((sum, e) => sum + e.lak, 0)))
   );
 
   $("income-log").replaceChildren(...items.map(incomeRow));
