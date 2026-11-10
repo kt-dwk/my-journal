@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#f7f3ea"/>
+  <g fill="#d6ccb8">
+    <circle cx="56" cy="56" r="5"/><circle cx="128" cy="56" r="5"/><circle cx="200" cy="56" r="5"/><circle cx="272" cy="56" r="5"/><circle cx="344" cy="56" r="5"/><circle cx="416" cy="56" r="5"/><circle cx="456" cy="56" r="5"/>
+    <circle cx="56" cy="456" r="5"/><circle cx="128" cy="456" r="5"/><circle cx="200" cy="456" r="5"/><circle cx="272" cy="456" r="5"/><circle cx="344" cy="456" r="5"/><circle cx="416" cy="456" r="5"/><circle cx="456" cy="456" r="5"/>
+    <circle cx="56" cy="128" r="5"/><circle cx="56" cy="200" r="5"/><circle cx="56" cy="272" r="5"/><circle cx="56" cy="344" r="5"/><circle cx="56" cy="416" r="5"/>
+    <circle cx="456" cy="128" r="5"/><circle cx="456" cy="200" r="5"/><circle cx="456" cy="272" r="5"/><circle cx="456" cy="344" r="5"/><circle cx="456" cy="416" r="5"/>
+  </g>
+  <!-- notebook -->
+  <rect x="150" y="104" width="222" height="304" rx="18" fill="#2e3440"/>
+  <rect x="150" y="104" width="34" height="304" rx="12" fill="#c0573e"/>
+  <rect x="210" y="150" width="136" height="212" rx="8" fill="#fffdf7"/>
+  <!-- bullet entries -->
+  <circle cx="232" cy="196" r="9" fill="#c0573e"/>
+  <rect x="252" y="190" width="76" height="12" rx="6" fill="#2e3440"/>
+  <circle cx="232" cy="256" r="9" fill="#c0573e"/>
+  <rect x="252" y="250" width="60" height="12" rx="6" fill="#2e3440"/>
+  <circle cx="232" cy="316" r="9" fill="#c0573e"/>
+  <rect x="252" y="310" width="70" height="12" rx="6" fill="#2e3440"/>
+</svg>

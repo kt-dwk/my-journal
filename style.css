@@ -1,0 +1,1598 @@
+/* Build 24: Patrick Hand, self-hosted. The CSP says font-src 'self', so a Google Fonts
+   link would be blocked outright — and an offline app should carry its own font anyway.
+   This is Google's own latin cut, 23.9 KB. It covers U+0000–00FF plus ‹ › and €, which is
+   everything the app writes EXCEPT ₭ and ฿ — those fall back to the system font on purpose. */
+@font-face {
+  font-family: "Patrick Hand";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("patrick-hand.woff2") format("woff2");
+}
+
+/* Plain, simple styles. Design pass comes later. */
+:root {
+  /* Build 24 design pass. Paper, pen, lines, meaning, marker, fills.
+     No pure white and no pure black anywhere. Every text colour clears 4.5:1
+     on both --card and --bg; the figures are in Decisions.md. */
+  --card: #FAEFE3;         /* Vanilla  — a card, a sheet, a chip */
+  --bg: #EFE9E3;           /* Linen    — the page */
+  --note: #E8DBD1;         /* Latte    — the sticky note */
+
+  --ink: #443D35;          /* Espresso — main text        8.87 on the page */
+  --muted: #6E5952;        /* Mocha Br — second level     5.43 */
+  --quiet: #776059;        /* quiet    — third level      4.84, 11px only */
+
+  --line: #D6CFCA;         /* Cashmere — hairlines */
+  --edge: #B7A49C;         /* Mocha    — the note edge and the dot grid */
+
+  --accent: #4C6F77;       /* Dusty Teal — "do"           4.53 */
+  --error: #96503C;        /* Terracotta — "undo"         4.97 */
+  --done: #626D5E;         /* Deep Sage  — "done"         4.51 */
+
+  --swipe: #D4BCAA;        /* the marker: headings, jar fill */
+  --wisteria: #C9AECB;     /* brain — deepened from #DBCAD0 on 26 Oct: at icon size the old
+                              one read 1.30 against the page and vanished beside Sand 1.61 and
+                              Rosewood 1.86. This is 1.68, and ink still reads 5.29 on it. */
+  --sand: #D4B684;         /* books, and "Reading" */
+  --rosewood: #CFA2A5;     /* heart */
+  --need: #C2D3BB;         /* Need, and "Read" */
+  --want: #D2A4A8;         /* Want, and "Want to read" */
+  --indigo: #5761A2;       /* note text colour */
+  --plum: #924F7E;         /* note text colour */
+
+  --bar-height: 52px;      /* the pinned top bar (Build 10.4, slimmer in 11) */
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html, body {
+  /* Build 14.6: no stretch at the top or bottom, and no pull-to-refresh (your decision).
+     Refresh from the build line at the bottom of Settings instead. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  margin: 0;
+  padding: 0 16px;
+  font-family: "Patrick Hand", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  color: var(--ink);
+  /* Build 24: dot grid paper. One radial-gradient — a 1.5px dot every 26px, offset so the
+     first dot sits half a cell in rather than against the edge. */
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--edge) 0.75px, transparent 0.75px);
+  background-size: 26px 26px;
+  background-position: 13px 13px;
+  background-attachment: fixed;   /* the paper stays put while the page scrolls over it */
+}
+
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  /* Build 22.4: the bottom space was 96px, written for a tab bar Build 12 removed. Measured on the
+     main screen with the page scrolled right down: 120px sat below the last row where the floating
+     button occupies 80 (64 tall, 16 up) — 40 of it dead. Pages with no floating button need none
+     of it, and never scroll on the main screen anyway, so they get ordinary spacing. */
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) calc(16px + env(safe-area-inset-bottom));
+}
+/* the three pages with a floating button keep room for it. These sit BEFORE the cover-screen
+   block on purpose: the cover rules come later and must still win there. */
+#money-page,
+#diary-page,
+#books-page {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+
+h1 { margin: 0 0 12px; font-size: 26px; }
+h2 { margin: 0; font-size: 20px; }
+h3 { margin: 0 0 8px; font-size: 20px; }
+h4 { margin: 12px 0 2px; font-size: 16px; }
+
+ul { list-style: none; margin: 0; padding: 0; }
+section { margin-bottom: 24px; }
+.small { font-size: 13px; color: var(--muted); }
+
+/* ---------- Buttons ---------- */
+button { font: inherit; color: inherit; }
+
+.btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  background: var(--card);
+  cursor: pointer;
+}
+.btn.primary { color: var(--card); background: var(--accent); border-color: var(--accent); }
+/* Build 24: taking something back is Terracotta, wherever it appears */
+.btn.undo { color: var(--card); background: var(--error); border-color: var(--error); }
+.btn.danger { margin-right: auto; color: var(--error); border-color: var(--error); }
+.btn.icon-only {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  padding: 0;
+}
+.btn.icon-only svg { display: block; }
+.btn.danger-fill { background: var(--error); border-color: var(--error); color: var(--card); }
+.confirm {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--ink);    /* Build 24: a hairline separates; this box ASKS */
+  border-radius: 3px;
+}
+.confirm p { margin: 0; }
+/* Build 20: the note being deleted, capped at two lines so a long title can't grow the pop-up */
+#note-delete-which {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.btn.wide { display: block; width: 100%; margin-bottom: 24px; }
+
+.link {
+  padding: 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Month + total ---------- */
+/* ---------- My Money (Build 12 design pass) ---------- */
+.switch {                    /* Expenses | Savings, at the top instead of a bottom tab bar */
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;   /* Build 23: Expenses | Income | Savings */
+  margin-bottom: 16px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.switch-btn {
+  min-height: 44px;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--card);
+  border: 0;
+  cursor: pointer;
+}
+.switch-btn[aria-selected="true"] { color: var(--card); background: var(--ink); }
+.month-card {
+  margin-bottom: 20px;
+  padding: 14px 16px 18px;
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+}
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.month-nav h2 { flex: 1; text-align: center; font-size: 20px; color: var(--ink); }
+.month-arrow { width: 44px; padding: 0; font-size: 16px; }
+/* Build 16: bare arrows on the money card, as the cover screen has had since 12.8 */
+/* Build 16.6: My Skin's month and week arrows too.
+   Build 16.7: and the < > inside the View more pop-ups — one rule now covers every arrow
+   in the app, so a new one can't be missed the way these were twice. */
+.month-arrow, .pager .btn { background: none; border: 0; }
+.month-arrow:disabled, .pager .btn:disabled { opacity: 0.3; cursor: default; }
+
+.total { margin: 10px 0 0; text-align: center; }
+.total strong { display: block; font-size: 38px; line-height: 1.1; }
+.cat-head {                  /* Need / Want, each with its own total */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  margin-bottom: 2px;
+  font-size: 20px;
+}
+/* Build 24.1: a group heading rides a swipe of marker, and the colour says which group.
+   The word sits ON the colour, so the colour is never carrying the meaning alone. */
+/* Build 24: ONE heading form. Sentence case on a swipe of marker, never uppercase with
+   letter-spacing — .section-label and .year-head both collapse into this. */
+.section-label,
+.year-head {
+  display: block;
+  width: fit-content;
+  margin: 18px 0 2px;
+  padding: 2px 12px 3px;
+  font-size: 20px;
+  color: var(--ink);
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+  line-height: 1.2;
+  list-style: none;
+}
+.section-label:first-child,
+.year-head:first-child { margin-top: 0; }
+/* Build 24.5: a heading with a drawing beside it — the swipe stays on the word */
+.section-label.has-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 0;
+  background: none;
+}
+.section-label.has-icon span {
+  padding: 2px 12px 3px;
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+}
+/* Build 24.4: My Books. The three groups differ in KIND — what you are reading now, a maybe,
+   and history — so each gets a drawing and its own colour. Sand for now, pink for the maybe
+   (it is literally Want in the Money pages), green for finished (the palette's done colour).
+   Measured: Wisteria and the green are the SAME colour by value, 1.00:1 and 1.02 apart under
+   both red-green blindnesses, which is why the first trio was thrown away. */
+.book-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 18px 0 2px;
+}
+.book-head:first-child { margin-top: 0; }
+.book-head .year-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding-left: 0;
+  background: none;              /* the swipe sits on the WORD, not on the icon */
+}
+.book-head .year-head span {
+  padding: 2px 12px 3px;
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+}
+.book-head .year-head.is-reading span { background: var(--sand); }
+.book-head .year-head.is-want span { background: var(--want); }
+.book-head .year-head.is-read span { background: var(--need); }
+.book-count-all { font-size: 20px; color: var(--quiet); }
+
+.cat-name {
+  display: inline-block;
+  padding: 2px 12px 3px;
+  background: var(--swipe);
+  border-radius: 14px 11px 13px 10px;
+  line-height: 1.2;
+}
+.cat-name.is-need { background: var(--need); }
+.cat-name.is-want { background: var(--want); }
+/* Build 24.1: a summary row is NOT a button — nothing makes it tappable, so it is compact.
+   That is what gives the cover screen room for both Need and Want above the camera line. */
+.cat-list .row { padding: 4px 0; color: var(--muted); }
+.fab {                       /* adding is a floating round button */
+  position: fixed;
+  right: max(16px, calc((100vw - 520px) / 2));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 6;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  line-height: 1;
+  color: var(--ink);
+  background: transparent;   /* Build 16.1: see-through, so an amount behind it still reads */
+  border: 0;                 /* Build 24: the circle is drawn inside, by hand */
+  border-radius: 50%;        /* kept so the focus ring follows the drawing */
+  cursor: pointer;
+}
+.fab svg { display: block; width: 100%; height: 100%; }
+
+.fab:active { background: var(--card); }
+/* Build 16: the + steps out of the way while you scroll down the log */
+.fab { transition: transform 0.2s ease, opacity 0.2s ease; }
+.fab.is-away { transform: translateY(96px); opacity: 0; pointer-events: none; }
+.fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+dialog.sheet {               /* the add form rises from the bottom, above the keyboard */
+  width: 100%;
+  max-width: 520px;
+  margin: auto auto 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  border: 1px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 3px;
+}
+dialog.sheet::backdrop { background: rgba(68, 61, 53, 0.3); }   /* Build 24.7: Espresso, not black */
+/* Build 16.2: with a keyboard up the window is short, so the sheet tightens to keep every field
+   above the Cancel / Save line. This only changes spacing inside the sheet — it never switches
+   between the main and cover layouts, which is decided by shape and width (Build 14.3). */
+@media (max-height: 460px) {
+
+  dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  dialog.sheet .dialog-head { margin-bottom: 4px; }
+  dialog.sheet .dialog-head h2 { font-size: 16px; }
+  dialog.sheet .close { width: 36px; height: 36px; }
+  dialog.sheet .field { margin-bottom: 6px; }
+  dialog.sheet .label { margin-bottom: 2px; font-size: 13px; }
+  dialog.sheet .item-group { margin-bottom: 4px; }
+  dialog.sheet .item-btn span { min-height: 38px; padding: 7px 12px; }   /* about 46 px tall, ≈ 8.8 mm */
+  dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 38px; }
+  dialog.sheet .actions { padding-top: 4px; }
+  dialog.sheet .actions .btn { min-height: 36px; padding: 4px 14px; font-size: 13px; }
+  dialog.sheet .actions .btn.icon-only { width: 40px; padding: 0; }
+}
+dialog.sheet {
+  max-height: calc(100svh / var(--cover-zoom, 1));
+  overflow-y: auto;      /* a short screen scrolls the form … */
+  scroll-padding-bottom: 96px;   /* Build 14.5: a field scrolled into view stops above Cancel and Save */
+}
+.sheet .actions {
+  position: sticky;      /* … while Cancel and Save stay in reach */
+  bottom: 0;
+  padding: 8px 0 0;
+  background: var(--card);
+}
+.sheet-pair { display: flex; gap: 12px; }
+.sheet-pair .field { flex: 1; }
+.sheet .actions .btn.primary { color: var(--card); background: var(--accent); border-color: var(--accent); }
+
+/* ---------- Summary rows ---------- */
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.row-amount { white-space: nowrap; }
+.row.is-zero { color: var(--quiet); }   /* Build 16: nothing spent on this item this month */
+
+/* ---------- Transaction log ---------- */
+.log-row {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr auto;
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  padding: 10px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.log-row span { display: block; }
+.log-row:active { background: var(--line); }
+.log-row:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.log-date { color: var(--muted); }
+#log .log-row { grid-template-columns: 4.4rem 1fr auto; }   /* Build 16: "24 Sept" keeps to one line */
+.log-item { min-width: 0; overflow-wrap: anywhere; }
+.log-amount { text-align: right; white-space: nowrap; }
+
+/* ---------- Pop-ups ---------- */
+dialog {
+  width: min(100% - 32px, 480px);
+  padding: 18px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--card);
+  color: var(--ink);
+}
+dialog::backdrop { background: rgba(68, 61, 53, 0.4); }        /* Build 24.7: Espresso, not black */
+/* Build 22.2 safety net: a closed <dialog> is hidden by the browser's own `display: none`, and ANY
+   `display:` we set on one overrides that — the pop-up then renders as ordinary page content on
+   every page. That is exactly what Build 22.1 shipped. This rule makes it impossible to repeat. */
+dialog:not([open]) { display: none; }
+#brain-dialog { margin-block: 24px auto; }   /* Build 15: near the top, so the keyboard never covers it */
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.field { margin-bottom: 14px; }
+.label {
+  display: block;
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+input[type="text"], input[type="date"], select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--card);
+}
+
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  font: inherit;
+  font-size: 16px;          /* 16px stops the phone zooming in on focus */
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  resize: vertical;
+}
+/* Build 14.4: the writing no longer has a fixed floor — it fills the page instead */
+
+/* ---------- Formatting toolbar (Build 9.6) ---------- */
+/* Build 9.7: pinned to the bottom, riding just above the keyboard, so Android's Cut/Copy menu can't cover it */
+.note-toolbar-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 0 16px env(safe-area-inset-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.note-toolbar,
+.colour-strip {
+  max-width: 520px;
+  margin: 0 auto;
+}
+.note-toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 6px 0;
+  overflow-x: auto;          /* one row; slides sideways on the cover screen */
+  scrollbar-width: none;
+}
+.note-toolbar::-webkit-scrollbar { display: none; }
+/* Build 24.3: bare tools, 38 wide and 44 tall. Eight boxed 44s came to 380 against the
+   main screen's 328 and had to scroll; 8 × 38 with 2px gaps is 318, so nothing scrolls on
+   either screen — the cover is 350 wide, which is MORE than main, not less. */
+.tool {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  height: 44px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.tool svg { display: block; }
+.tool[aria-pressed="true"],
+.tool[aria-expanded="true"] { background: var(--swipe); }   /* marked with the marker */
+
+.colour-bar {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 5px;
+  height: 4px;
+  border-radius: 2px;
+}
+.colour-strip {
+  display: flex;
+  gap: 6px;   /* Build 24.3: 7 × 44 + 6 × 6 = 344 against 328 — the ＋ is 16 short, so it slides */
+  padding: 6px 0 0;
+  overflow-x: auto;
+}
+.swatch {
+  flex: 0 0 44px;            /* Build 24: a square at the 44 minimum, not a 38 circle */
+  height: 44px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.swatch.pinned { border-color: var(--ink); }   /* "normal colour" is marked by the box, not a sixth hue */
+.swatch.plus { font-size: 20px; line-height: 1; }
+/* Build 24.3: an A for the pen — at roughly the size a word will be */
+.swatch { display: flex; align-items: center; justify-content: center; }
+.swatch-a { font-size: 20px; line-height: 1; color: var(--ink); }
+/* and a swipe of marker for the highlighter — the same blobby shape the headings use,
+   which is where that shape came from. "No highlight" is the outline with a slash. */
+.swatch-mark {
+  width: 36px;
+  height: 32px;
+  border-radius: 14px 11px 13px 10px;
+}
+.swatch.none .swatch-mark {
+  position: relative;
+  border: 1px solid var(--edge);
+}
+.swatch.none .swatch-mark::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 1px;
+  background: var(--error);
+  transform: rotate(-14deg);
+}
+.colour-picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+#diary-text {
+  flex: 1 1 auto;            /* Build 14.4: takes the space left above the toolbar and scrolls inside itself */
+  min-height: 0;
+  overflow-y: auto;
+  min-width: 0;
+  padding: 6px 0 0;          /* Build 14.2: unboxed, flush under the title */
+  font-size: 16px;
+  line-height: 1.5;          /* Build 24.3: Patrick Hand's descenders crowd the caps below at 1.45 */
+  color: var(--ink);
+  background: none;
+  border: 0;
+  outline: none;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+/* Build 24.3: no pin column — "Pinned" is a heading now, so the title gets the width back.
+   The pop-up keeps the wider date because it carries the year; the page's headings do. */
+.log-row.note-row { grid-template-columns: 6.2rem 1fr; }
+#diary-log .log-row.note-row { grid-template-columns: 4.4rem 1fr; }
+.note-list { padding-bottom: 8px; }   /* the last row can be scrolled clear of the floating ✎ */
+
+/* Swipe a note row left to reveal Pin and Delete */
+.swipe { position: relative; overflow: hidden; }
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 1px;
+  display: flex;
+}
+/* Build 24.3: Pin on Cashmere with ink at 6.94:1, Delete on Terracotta with Vanilla at 5.28.
+   The old red was #b3261e with white at 6.54 — this is a real step down, spent on the warm
+   tone and still well clear of the 4.5 floor. 56px each is a thumb measurement, so unchanged. */
+.swipe-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  border: 0;
+  background: var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.swipe-btn.bin { background: var(--error); color: var(--card); }
+.swipe-btn svg { display: block; }
+.swipe .log-row {
+  position: relative;
+  background: var(--bg);
+  transition: transform 0.18s ease;
+}
+.swipe.is-open .log-row { transform: translateX(-112px); }
+/* Diary titles stay on one line and end in … when too long */
+.note-row .log-item {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#diary-note-page {           /* Build 14.4: a fixed column — the writing fills the space above the toolbar */
+  display: flex;
+  flex-direction: column;
+  height: calc(100svh / var(--cover-zoom, 1));
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 16px) 28px;
+}
+
+/* ---------- The note page (Build 14.2, wireframe 22c) ---------- */
+.sr-only {                   /* read aloud, never seen */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.settings-head.note-head { gap: 0; }   /* the buttons are 44px targets already, so the date gets the room */
+.note-actions {              /* Build 14.4: date, 💾 and ⋯ ride together against the right edge */
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-left: auto;
+}
+.note-when {                 /* Build 14.3: sits on the right, just before 💾 */
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 11px;        /* "Last saved: 25 Sept 2026, 11:08" fits beside the three buttons, with room to spare */
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.note-act {                  /* 💾 and ⋯, bare like the back arrow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.note-act svg { display: block; }
+.note-act.is-saved { color: var(--done); }
+.note-act:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.note-menu {                 /* the little card under ⋯ */
+  position: absolute;
+  top: calc(var(--bar-height) + env(safe-area-inset-top) - 4px);
+  right: max(16px, calc((100vw - 520px) / 2));
+  z-index: 7;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(68, 61, 53, 0.14);   /* Build 24.7: no pure black anywhere */
+}
+.note-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.note-menu-item.bin { color: var(--error); }
+.note-menu-item:active { background: var(--line); }
+.note-menu-item:focus-visible { outline: 3px solid var(--ink); outline-offset: -2px; }
+#diary-title {               /* no box: the title is just the first line of the sheet */
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 20px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  min-height: 40px;
+}
+#diary-title::placeholder { color: var(--quiet); font-weight: 400; }
+#diary-title:focus { outline: none; }
+#diary-title {
+  flex: 0 0 auto;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);   /* shows where the title ends and the writing starts */
+}
+#diary-note-page .field { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }
+.note-menu-item[aria-disabled="true"] { opacity: 0.35; }
+.saved-note {
+  align-self: center;
+  margin: 0;
+  font-size: 13px;
+  color: var(--done);
+  transition: opacity 0.4s ease;
+}
+.saved-note.is-fading { opacity: 0; }
+
+/* Build 16.3: the Amount label shares its line with the preview and the ×1000 chip */
+.field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.field-head .label { margin-bottom: 4px; }
+.head-right { display: flex; align-items: center; gap: 8px; }
+.x1000 {
+  position: relative;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.x1000::after {            /* a 44px tap area around a small chip */
+  content: "";
+  position: absolute;
+  inset: -12px -8px;
+}
+.x1000[aria-pressed="true"] { color: var(--card); background: var(--ink); }
+.x1000:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+
+.amount-row {
+  display: grid;
+  grid-template-columns: 5.3rem 1fr;   /* Build 16.2: narrower — it only ever holds ₭ LAK, $ USD or ฿ THB */
+  gap: 8px;
+}
+/* Build 24.10: where the currency is FIXED it is always "$ USD" — no select, nothing to
+   choose — so it needs far less room than the money sheets' dropdown, and the amount you
+   actually type gets the width back. The goal sheet has two of these side by side. */
+#goal-form .amount-row { grid-template-columns: 3.4rem 1fr; }
+.amount-row select { padding-inline: 6px; }
+
+.error { margin: 6px 0 0; font-size: 13px; color: var(--error); }
+.error .link { color: var(--error); }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- Item tap buttons ---------- */
+.item-group { margin-bottom: 10px; }
+.item-group-label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--muted); }
+.item-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.item-btn { position: relative; }
+.item-btn input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.item-btn span {
+  display: block;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  background: var(--card);
+}
+.item-btn input:checked + span { background: var(--ink); color: var(--card); border-color: var(--ink); }
+.item-btn input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 1px; }
+
+/* ---------- Savings ---------- */
+/* ---------- Savings (Build 12.2 design pass) ---------- */
+.total-card {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+}
+.goal-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  /* Build 21: the row is a button now (tap to edit), so it has to lose the button look */
+  width: 100%;
+  background: none;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+/* Build 21: the hidden-goals list, one row each */
+.hidden-goals { margin: 0; padding: 0; list-style: none; }
+.goal-text { min-width: 0; }
+.goal-name { font-size: 20px; }
+.goal-amount { font-size: 16px; }
+/* Build 24.1: the jar is one drawn SVG — see app.js. The fill rises inside a clipPath, so it
+   follows the shoulders and the neck instead of filling a rectangle. Build 18's white-flip and
+   its halo are both gone: ink reads 5.89:1 on the marker fill and 8.87:1 on the paper, so the
+   percentage never has to change colour as the line passes through it. */
+.jar { flex: 0 0 auto; line-height: 0; }
+.jar svg { display: block; }
+.jar text { font-family: inherit; }
+
+.currency-fixed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;              /* Build 16.5: fills its 5.3rem column instead of overflowing it */
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.log-row.with-year { grid-template-columns: 6.2rem 1fr auto; }
+.log-row.with-year .log-date { white-space: nowrap; }
+.btn.more { display: block; width: 100%; margin-top: 12px; }
+
+/* Page switcher, stays visible at the bottom of the full log pop-up */
+.pager {
+  position: sticky;
+  bottom: -18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px -18px -18px;
+  padding: 10px 18px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+/* Build 24.8: bare pager arrows. These were ‹ › inside BOXED .btn buttons — the arrow round
+   settled a bare 44 everywhere, and these three pagers were missed because they live inside
+   pop-ups. At the end of its range an arrow goes Mocha rather than browser-grey: the same
+   "present, not yet" treatment the calendar's future days get. */
+.pager .btn {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 20px;
+  background: none;
+  border: 0;
+}
+.pager .btn:disabled { color: var(--edge); opacity: 1; }
+
+/* ---------- Header + Settings ---------- */
+.app-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+/* Build 10.2/10.4: the top bar is pinned to the screen, so it can't move with the page at all */
+.app-head,
+.settings-head {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  box-sizing: border-box;
+  /* Build 11.2: the phone's status bar sits on top of the app, so the bar makes room for it */
+  height: calc(var(--bar-height) + env(safe-area-inset-top));
+  margin: 0;
+  /* the content lines up with the page, which is 520px wide at most */
+  padding: calc(8px + env(safe-area-inset-top)) max(16px, calc((100vw - 520px) / 2)) 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.app-head h1 { margin: 0; flex: 1; }
+.go-home svg { display: block; margin: auto; }
+
+/* ---------- Home (Build 11 design pass): nothing scrolls ---------- */
+#home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100svh / var(--cover-zoom, 1));   /* the height left when the phone shows its own bars, so nothing shifts after a refresh */
+  padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 12px) calc(12px + env(safe-area-inset-bottom));
+}
+/* Build 16.10 (28a): the three icons sit under the note, evenly spread — your choice of the
+   three alignments.
+   Build 16.11: auto margins on BOTH sides, so the leftover height splits evenly above and below
+   the row instead of all landing underneath it, and the note takes an equal share above it too.
+   The dock stays pinned to the bottom either way. */
+.home-icons { display: flex; justify-content: space-evenly; margin-block: auto; }
+.brain-button { margin-top: 6px; }
+.brain-button {              /* Build 24: no ring — a drawn, filled glyph on the paper */
+  width: 64px;
+  height: 64px;
+  /* Build 24.8, from seeing it on the phone: the drawings were 30px inside a 64px target,
+     leaving half the button empty. 40 fills it without touching the tap area. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 26px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+/* Build 24.11: a name under each icon, main screen only. Sentence case, like the dock tiles
+   right below them — Build 24 collapsed every heading into one sentence-case form, and caps here
+   would have reintroduced exactly what it removed. The button becomes a column, so the label is
+   inside the tap target rather than beside it. */
+.brain-button {
+  flex-direction: column;
+  gap: 5px;
+  width: auto;
+  min-width: 64px;
+  height: auto;
+  padding: 4px 2px;
+}
+.icon-label {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--quiet);
+}
+.brain-button:active { opacity: 0.6; }
+.brain-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.note-space {                /* Build 16.10: under the bar on the main screen (28a).
+                                Build 16.11: margin-top:auto gives the gap above the note an equal
+                                share too, so bar→note, note→icons and icons→dock all match. This
+                                is deliberately looser than 28a, which put the note against the bar.
+                                The cover screen still centres the note in what's left. */
+  flex: 0 0 auto;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.sticky-note {
+  display: flex;
+  flex-direction: column;     /* Build 24.11: the title sits above the quote */
+  align-items: center;
+  justify-content: flex-start;   /* Build 24.11: the title pins to the top … */
+  position: relative;
+  width: 100%;
+  height: 189px;      /* Build 24: a rectangle on the main screen, a square on the cover */
+  max-width: 100%;
+  max-height: 100%;   /* on a tight screen the note gives way rather than being cut off */
+  padding: 22px 18px 18px;
+  text-align: center;
+  background: var(--note);
+  border: 1px solid var(--edge);
+  border-radius: 2px;
+  box-shadow: 2px 3px 6px rgba(68, 61, 53, 0.12);
+}
+/* Build 24: the tape. The app's only ornament, and the main screen's only — a square note
+   reads as a sticky note on its own, a rectangle needs the tape or it looks like a card. */
+.sticky-note::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  width: 76px;
+  height: 22px;
+  background: rgba(212, 188, 170, 0.75);
+  border: 1px solid rgba(183, 164, 156, 0.55);
+  transform: translateX(-50%) rotate(-2.5deg);
+}
+/* Build 24.11: the note says what it is. Quiet and small, so the quote stays the thing you read.
+   Uppercase here is your call and a deliberate exception to Build 24's sentence-case rule: this
+   is a caption on a card, not one of the headings that rule was written for. The letter-spacing
+   is what stops caps looking cramped at 13px. */
+.note-title {
+  align-self: flex-start;     /* … and to the left corner, your decision */
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-align: left;
+  color: var(--quiet);
+}
+.daily-line {
+  margin: auto 0;             /* Build 24.11: centred in the space under the title */
+  font-size: 20px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.tile-dock {                 /* four tiles in reach of the thumb */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;  /* equal rows, so the Skin tile's second line doesn't make it taller */
+  gap: 16px;
+  height: min(380px, 42vh);
+  padding-top: 16px;
+  border-top: 2px dashed var(--line);
+}
+
+/* Home page tiles */
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;       /* Build 24.10: centred in the tile, not pinned to its left edge */
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 88px;
+  padding: 16px 18px;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.tile:active { background: var(--line); }
+.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.tile-name { display: flex; align-items: center; gap: 8px; font-size: 20px; }
+.tile-name svg { flex: 0 0 auto; }
+.tile-sub { font-size: 13px; color: var(--muted); }
+.icon-btn {                  /* Build 11: circled, as in the design pass */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink);
+  background: none;
+  border: 0;                 /* Build 24: no ring — only the floating button is a circle */
+  cursor: pointer;
+}
+.icon-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+/* Short screens (the cover screen): a slimmer bar, so more of the page shows */
+/* Build 11.1: the cover screen is nearly square (1048 × 948), the main screen is tall and narrow (1080 × 2520).
+   Shape is the reliable test: a screen that isn't tall and narrow gets the compact layout. */
+@media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
+  /* Build 12.7: the phone hands this screen a 598×530 layout and scales it onto a small panel,
+     so everything is drawn about half size. One zoom puts it back to a comfortable size. */
+  :root { --cover-zoom: 1.6; }
+  body { zoom: var(--cover-zoom); }
+  :root { --bar-height: 42px; }
+  .app-head,
+  .settings-head { padding-block: 2px; }
+  .app-head h1,
+  .settings-head h1 { font-size: 20px; }
+  .icon-btn { width: 44px; height: 44px; font-size: 20px; }
+  .btn.back { width: 40px; min-height: 40px; font-size: 20px; }
+  /* Build 15: Brain dump stays compact here — the kept list needs the room.
+     Written with the page's id so it wins over the taller main-screen rule further down the file. */
+  /* Build 24.10: 60 was sized for the two-tile layout Build 19 replaced with one. With a single
+     tile there is height to spare, and it has to be reachable with a right thumb. */
+  #brain-page .brain-tile { min-height: 120px; }
+  /* Build 15.1: the pop-up fits the window — the title gives up the room, the box keeps its two lines */
+  #brain-dialog {
+    margin-block: 8px auto;
+    max-height: calc(100% - 16px);   /* the browser's own cap was 38px, which squeezed the box out */
+    padding: 8px 12px;
+    overflow-y: auto;
+  }
+  #brain-dialog .dialog-head { margin-bottom: 4px; }
+  #brain-dialog .dialog-head h2 { font-size: 16px; }   /* a small title: the box matters more here */
+  #brain-dialog .close { width: 32px; height: 32px; font-size: 16px; }
+  /* two ids, so these win over the rules further down the file. The box grows as you type (fitBrainBox),
+     so the cap is what keeps it to two lines here — longer thoughts scroll inside it. */
+  #brain-dialog #brain-text { padding: 6px 8px; max-height: calc(2 * 1.45em + 14px); }
+  #brain-dialog #brain-send { width: 44px; min-height: 44px; height: 44px; }
+  #brain-dialog .error { margin-top: 4px; font-size: 11px; }
+  #brain-dialog .session-list { margin-top: 6px; }
+  #brain-dialog .session-thought { padding: 5px 0; font-size: 13px; }
+  #brain-page { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }   /* no tab bar here, so no empty scroll */
+  /* Build 22: compact book rows on the cover screen \u2014 measured, a Reading row drops 55.3 \u2192 40.7,
+     so five books being read still leave room for Want to read and Read on one screen. */
+  #books-page .book-row { padding: 5px 0; }
+  /* Build 22.2: the book pop-up is tight on the cover screen too, not only with the keyboard up,
+     so Save sits inside the window without a scroll. */
+  #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
+  #book-dialog .dialog-head { margin-bottom: 4px; }
+  #book-dialog .dialog-head h2 { font-size: 16px; }
+  #book-dialog .close { width: 32px; height: 32px; font-size: 16px; }
+  #book-dialog .field, #book-dialog fieldset { margin-bottom: 6px; }
+  #book-dialog .actions { margin-top: 6px; }
+  #book-dialog .actions .btn { min-height: 36px; padding: 4px 12px; }
+  #books-page .book-title { font-size: 16px; }
+  #books-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }   /* what the floating + needs */
+
+  /* Build 14.4: on the cover screen the title steps aside while you write, and the tools are smaller */
+  #diary-note-page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }  /* every line counts here */
+  #diary-note-page.is-writing #diary-title { display: none; }
+  .note-toolbar { gap: 3px; padding: 4px 0; }
+  /* Build 24.3: the cover keeps the SAME 38 × 44 tool. It has 350px of width against
+     main's 328, so the 36px shrink was never needed — and 36 is below the 44 minimum. */
+  .colour-strip { padding: 4px 0; }   /* Build 24.3: the cover keeps the same 44 swatch */
+  /* Build 14.2: the note bar still fits at 598 × 530 */
+  .note-when { font-size: 11px; }   /* Build 14.3: "Last saved: …" fits the cover bar too */
+  .note-act { width: 40px; height: 40px; font-size: 20px; }
+  #diary-title { font-size: 16px; min-height: 34px; }
+  /* Build 12.9: on the cover screen the Skin tile puts tonight's step beside the name */
+  .tile { flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  #home-page { padding-block: calc(var(--bar-height) + env(safe-area-inset-top) + 6px) calc(8px + env(safe-area-inset-bottom)); }
+  /* Build 17: the cover screen is wider than it is tall (374 × 331 in app units), so Home stops
+     stacking and goes side by side — the note on the left, the three icons in a column on the
+     right, the dock across the bottom. The bar is position:fixed and out of flow, so the grid
+     holds only these three. Written with #home-page so it wins wherever this block sits. */
+  /* No column gap: the note is centred across the whole space from the content edge to the icons,
+     as asked. A gap would sit outside that centring and push the note left of true centre. There
+     is ~80 app units of air either side of it anyway, so nothing crowds the icons. */
+  #home-page { display: grid; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto; column-gap: 0; }
+  #home-page .note-space { grid-column: 1; grid-row: 1; flex: 0 1 auto; margin: 0; }
+  #home-page .home-icons {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+  }
+  #home-page .tile-dock { grid-column: 1 / -1; grid-row: 2; }
+  .brain-button { width: 46px; height: 46px; padding: 0; margin-top: 4px; font-size: 20px; } /* further from ⚙, so they are not confused */
+  .icon-label { display: none; }   /* Build 24.11: names on the main screen only — the cover row is a column with no width to spare */
+  /* Build 17: still a square, but 131 rather than 94 app units — nearly twice the area, now that
+     it sits beside the icons instead of under them. min() keeps it shrinking on a shorter window. */
+  .sticky-note { width: min(140px, 40vh / var(--cover-zoom)); height: min(140px, 40vh / var(--cover-zoom)); padding: 12px; }
+  .note-title { font-size: 11px; }   /* Build 24.11: the title stays, smaller — the quote still has to fit */
+  .sticky-note::before { display: none; }   /* no tape on the cover — a square needs none */
+  .daily-line { font-size: clamp(13px, 3.4vh / var(--cover-zoom), 16px); line-height: 1.3; }   /* the longest line still fits inside the note */
+  .tile-dock { height: min(210px, 30vh / var(--cover-zoom)); gap: 8px; padding-top: 8px; }
+  .tile { min-height: 0; padding: 10px 12px; border-radius: 3px; }
+  .tile-name { font-size: 16px; }
+  .switch { margin-bottom: 6px; }
+  section { margin-bottom: 6px; }
+  .switch-btn { min-height: 38px; font-size: 16px; }
+  .month-card { margin-bottom: 8px; }
+  .total strong { font-size: 26px; }
+  .cat-head { margin-top: 10px; }
+  /* Build 24.10: one heading size on the cover too — Need, Want, Log, the Books groups and
+     Settings all sat at different sizes, and two of them were SMALLER than the rows beneath. */
+  .cat-name, .section-label, .year-head, .book-head .year-head span, .cat-head { font-size: 20px; }
+  .row { padding: 3px 0; }
+  .fab { width: 46px; height: 46px; font-size: 26px; }
+  /* Build 12.8: the add sheets fit without scrolling — chips slide sideways instead of wrapping */
+  dialog.sheet { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  dialog.sheet .dialog-head { margin-bottom: 6px; }
+  dialog.sheet .dialog-head h2 { font-size: 16px; }
+  dialog.sheet .close { width: 36px; height: 36px; }
+  dialog.sheet .field { margin-bottom: 8px; }
+  dialog.sheet .label { margin-bottom: 2px; font-size: 13px; }
+  /* one sliding row of chips: the item names say enough without the Need / Want labels here */
+  dialog.sheet #item-choices { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  dialog.sheet #item-choices::-webkit-scrollbar { display: none; }
+  dialog.sheet .item-group { margin: 0; }
+  dialog.sheet .item-group-label { display: none; }
+  dialog.sheet .item-buttons { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  dialog.sheet .item-buttons::-webkit-scrollbar { display: none; }
+  dialog.sheet .item-btn span { white-space: nowrap; }
+  dialog.sheet input[type="text"], dialog.sheet input[type="date"], dialog.sheet select { min-height: 36px; }
+  /* Build 14.5: a slimmer Cancel / Save row, so the field you are typing in keeps its room */
+  dialog.sheet .actions { padding-top: 4px; }
+  dialog.sheet .actions .btn { min-height: 34px; padding: 4px 12px; font-size: 13px; }
+  dialog.sheet .actions .btn.icon-only { width: 40px; padding: 0; }
+
+  /* Build 12.3: on the cover screen both cards are a single row */
+  .month-card { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
+  .month-card .month-nav { display: contents; }
+  .month-card .month-nav h2 { flex: 0 0 auto; text-align: left; }
+  .month-card .total { order: 3; flex: 1; margin: 0; text-align: right; }
+  .month-card .total strong { font-size: 26px; }
+  .month-card .total .small { display: none; }
+  #next-month { order: 4; }
+  .total-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 12px; }
+  .total-card .total { display: contents; }
+  .total-card .total strong { font-size: 26px; }
+  .total-card .total .small { order: -1; }
+  .total-card { margin-bottom: 8px; }
+  /* Build 12.8: the month bar matches the switch above it, and the arrows lose their boxes */
+  .month-card { min-height: 38px; padding: 0 8px; }
+  .month-card .month-nav h2 { font-size: 13px; }
+  /* Build 17.1: the month total matches Savings' "Total saved" at 1.5rem above. It was 1.1rem
+     here only because this later rule quietly overrode that one — the number you open the page
+     for was the smaller of the two. The card still holds its 38px, so nothing else moves. */
+  .month-arrow {
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+    font-size: 16px;
+    background: none;
+    border: 0;
+  }
+
+  .goal-row { gap: 10px; padding: 4px 0; }
+  /* Build 21, your idea: two jars per row. Six goals then end where three do today, because the
+     jar is 30 wide and the text 128.5 in a 341.8 row — over half of every row was empty.
+     Written with the id, or the main-screen rules later in this file would win. */
+  #goals { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  #goals .goal-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Build 17.1: the money and diary pages inherited `padding-bottom: 96px` from `.page`, written
+     to clear the bottom tab bar that Build 12 removed. On the cover screen that is 29% of the
+     height for nothing. 70 is what the floating button actually needs: 46 tall, sitting 16 up.
+     (My Skin and Settings were already 8 and 16 — measured, not assumed.) */
+  #money-page, #diary-page { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+  .goal-name { font-size: 16px; }
+  .goal-amount { font-size: 13px; }
+  /* Build 24.1: the cover jar is 44 × 66, drawn at stroke 2.2 — a 1.6 stroke scaled to 71%
+     renders at 1.1 and goes faint, which is the same correction the Skin bottle needed. */
+  .jar svg { width: 44px; height: 66px; }
+  .jar path[stroke-width="1.6"], .jar rect[stroke-width="1.6"] { stroke-width: 2.2; }
+  .jar text { font-size: 20px; }
+  /* Settings on a 354 px tall screen: trim the rows so Backup and Restore stay above the fold.
+     Build 17.2: these were written in 12.9 and NEVER APPLIED — this block sits earlier in the file
+     than the main-screen rules for the same elements, so at equal specificity the later ones won
+     and the cover screen has been carrying main-screen spacing ever since. The page overflowed by
+     115 app units as a result. Re-written with #settings-page so they win wherever they sit.
+     Scoped to Settings on purpose: the same override also affects .section-label and .btn on the
+     Money and Brain dump cover pages, but those were reviewed and accepted as they render today. */
+  .page { padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 6px); }   /* less air under the bar */
+  #settings-page .rate-row { padding: 2px 0; }
+  #settings-page .rate-row input { min-height: 32px; }
+  #settings-page .rate-save { margin-top: 2px; }
+  #settings-page .section-label { margin-top: 10px; margin-bottom: 3px; }
+}
+
+/* Build 24.6: the cover screen's Settings rows. The same Row the rest of the app uses — 44 tall,
+   a drawing, the word, a chevron — and NO swipe, because a row is not a heading. */
+.settings-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.settings-row .chev { font-size: 20px; color: var(--quiet); }
+.settings-row:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.settings-row svg { display: block; }
+.sheet-slot section { margin-bottom: 0; }
+
+.settings-head h1 { margin: 0; }
+.btn.back {                  /* Build 12.9: a bare arrow, no box */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 26px;
+  line-height: 1;
+  background: none;
+  border: 0;
+}
+.btn.full { display: block; width: 100%; }
+/* ---------- Settings (Build 11.5 design pass) ---------- */
+.rate-row {                  /* label on the left, field on the right */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.rate-row .label { margin: 0; font-size: 16px; color: var(--ink); }   /* Build 24.10: matches the number beside it */
+.rate-row input { width: 140px; text-align: right; }
+.rate-save { display: flex; justify-content: flex-end; margin-top: 12px; }
+/* Build 24.5: .btn.accent is gone — an outlined accent-blue button that existed ONLY on
+   this page, a fourth style. Primary is filled teal everywhere, and Save rates is the one
+   primary action here. */
+.settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.settings-actions .btn { min-height: 56px; }
+/* Build 16.9: same size as Backup — only quieter, because Backup is the one you actually use
+   and Restore replaces everything. The confirm step is what really protects you. */
+#restore-btn { color: var(--muted); border-color: var(--quiet); }
+#last-backup { margin: 10px 0 0; }
+/* Build 26: one action, so it takes the whole row rather than half of the two-column grid.
+   An id, so the cover-screen block further down cannot win on equal specificity. */
+#export-actions { grid-template-columns: 1fr; }
+#export-section .small { margin: 10px 0 0; }
+.build-foot { margin-top: auto; padding-top: 24px; }
+#build-info {                /* Build 14.6: tap it to reload the app */
+  width: 100%;
+  min-height: 44px;          /* a proper tap target, since this is now the way to refresh */
+  padding: 12px 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+#build-info:active { color: var(--ink); }
+#build-info:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+#settings-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100svh / var(--cover-zoom, 1));
+  /* no room needed for My Money's tab bar here, so build info can sit at the bottom edge */
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+.status { margin: 8px 0 0; font-size: 13px; color: var(--done); }
+.status.is-problem { color: var(--error); }
+
+/* ---------- My Skin ---------- */
+/* Build 13: the card lies sideways — the bottle on the left, tonight's night on the right */
+.tonight {
+  display: flex;
+  align-items: stretch;      /* the bottle's box is as tall as the card */
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.tonight-icon {
+  flex: 0 0 38%;             /* Build 24.2: sized for the drawing, not for a 38px emoji */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 10px 0;
+  line-height: 0;            /* Build 24.2: a drawing now, not a glyph */
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.tonight-icon svg { display: block; }
+/* Build 25: the drawing is a button now (tap for tonight's products) and must keep EXACTLY the
+   look it had — your decision: the app stays plain and the bordered box already reads as its own
+   thing. A <button> brings its own background, font and width, so all three are reset here. */
+.tonight-icon {
+  width: auto;
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  cursor: pointer;
+}
+.tonight-icon:active { opacity: 0.6; }
+
+/* Build 25: tonight's products. Numbered only when there is an order to follow; a single product
+   is a plain line, because numbering a list of one reads oddly for "just put the cream on". */
+.product-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.product-list li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; }
+.product-list li.plain { display: block; }
+.product-step {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--swipe);
+  border-radius: 50%;
+}
+.tonight-body { flex: 1; min-width: 0; text-align: center; }
+.tonight-name {
+  margin: 2px 0 10px;
+  font-size: 26px;
+  line-height: 1.1;
+}
+.cal-key { margin-top: 10px; }
+
+.cal-head, .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.cal-head {
+  gap: 4px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--quiet);
+  text-align: center;
+}
+.cal-grid { row-gap: 2px; }
+/* Build 24.2: no cell boxes. 31 bordered squares were the heaviest thing on a page made of
+   hairlines, and none of those borders said anything — the grid already gives the date.
+   The dot grid does the aligning, which is what it is for. */
+.cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 46px;
+  padding: 0;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.cal-blank { background: none; border: 0; }
+/* a night you did is the number COLOURED IN — a mark you made, not a tick in a box */
+.cal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.cal-letter { font-size: 11px; line-height: 1; color: var(--quiet); }
+.cal-cell.is-done .cal-day { background: var(--swipe); }
+.cal-cell.is-today .cal-day { border: 1px solid var(--ink); }   /* today is a drawn ring */
+/* a night you cannot mark yet: quiet ink and nothing else — present, not yet */
+.cal-cell.is-off { color: var(--quiet); background: none; cursor: default; }
+.cal-cell.is-off .cal-letter { color: var(--quiet); }
+.cal-cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+
+/* Build 13: My Skin on the cover screen — the card, this week and the key, all above the fold.
+   These sit after the rules above on purpose: the cover block higher up would lose to them. */
+@media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
+  /* Build 14: the diary list — a tighter year heading, so one more row fits */
+  .year-head { margin: 10px 0 2px; }
+
+  /* Build 13.1: the page starts a little lower and the card takes the space that was left over */
+  #skin-page {
+    padding-top: calc(var(--bar-height) + env(safe-area-inset-top) + 16px);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));   /* no tab bar on this page */
+  }
+  .tonight { gap: 10px; min-height: 118px; margin-bottom: 10px; padding: 8px 10px; }
+  .tonight-icon { padding: 4px 0; font-size: 38px; border-radius: 3px; }
+  .tonight-body .small { margin: 0; }
+  .tonight-name { margin: 2px 0 6px; font-size: 20px; }
+  #skin-done-actions .btn { min-height: 34px; }
+  #skin-month-nav, #skin-week-nav { margin-bottom: 2px; }
+  /* Build 24.2: the cover keeps the SAME 46px cell. 1px is 0.192mm on main and 0.187
+     on the cover — 2.6% apart — so shrinking it here was never justified. */
+  .cal-key { margin: 6px 0 0; font-size: 11px; }
+}
+
+.tab:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+
+/* ---------- Brain dump (Build 10) ---------- */
+/* Build 19: one full-width tile, and nothing else on the page. The To keep / Let go pair, the
+   dashed Let go, the greyed "full" state and the thought rows all went with the list. */
+/* Build 24.7: the one filled tile in the app, and the only one that can be — every other page
+   has lists under it that a block of colour would fight with. NO BORDER: a filled shape has no
+   border, the fill is the edge. Ink reads 5.29:1 on it. */
+.brain-tile {
+  min-height: 132px;
+  margin-bottom: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--wisteria);
+  border: 0;
+}
+.brain-tile .tile-name { justify-content: center; }
+.brain-write {
+  display: flex;
+  align-items: flex-end;                /* ➤ rides the box's bottom edge as the box grows */
+  gap: 8px;
+}
+#brain-text {
+  flex: 1;
+  min-width: 0;
+  max-height: calc(5 * 1.45em + 22px);  /* Build 19: grows to about five lines, then scrolls */
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+}
+/* Build 19: what you have let go of since opening the box. One line each, read-only, and gone
+   when the pop-up closes — nothing here is ever stored. */
+.session-list { margin: 10px 0 0; padding: 0; list-style: none; }
+.session-thought {
+  padding: 7px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+#brain-error { margin: 8px 0 0; }
+
+/* Build 10.1: Brain dump page message */
+#brain-page-flash { margin: 0 0 8px; }
+.saved-note.is-problem { color: var(--error); }
+
+/* ---------- My Books (Build 22) ---------- */
+.book-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  width: 100%;
+  padding: 10px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.book-title { grid-column: 1; min-width: 0; font-size: 16px; overflow-wrap: anywhere; }
+.book-count { grid-column: 2; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.book-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  margin-top: 2px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.book-bar > span { display: block; height: 100%; background: var(--ink); }
+.book-status { margin: 0 0 10px; padding: 0; border: 0; }
+
+/* Build 22: the page row is a short number and a quiet "of 320" beside it \u2014 the number is all
+   you type, so it doesn\u2019t need the full width the currency box has in the money sheets. */
+#book-page-field .amount-row { grid-template-columns: 5.5rem max-content; justify-content: start; align-items: center; gap: 8px; }
+#book-page { width: 100%; text-align: center; }
+#book-of-total {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+#book-total { width: 7rem; }
+
+/* The book pop-up is top-pinned (your decision). Head and buttons stay put, the middle scrolls,
+   so with the keyboard up the page field can be reached without losing Save. */
+/* Build 22.2: nothing is pinned any more. 22 and 22.1 both tried to hold the head and buttons in
+   place while a middle section scrolled, and both collapsed that middle on the real phone with the
+   keyboard up — the preview could not reproduce either. Your call: let the whole pop-up scroll as
+   one block, with Save, Cancel and Delete at the end of it. You close the keyboard to reach them. */
+#book-dialog {
+  margin-block: 24px auto;
+  overflow-y: auto;
+}
+#book-dialog .dialog-head h2 {
+  font-size: 16px;            /* smaller, so a long book title doesn't eat the pop-up */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Build 22: these sit at the end of the file on purpose. They are #book-dialog rules, and so is
+   the base rule above — at equal specificity the later one wins, so the keyboard rules must come
+   last. The rule-order trap, seventh time (12.8, 13, 15, 15.1, 17.2, 21).
+
+   Build 22.1: no height arithmetic any more. The first version capped the height with
+   calc(100svh / var(--cover-zoom)), which is wrong on the phone: `interactive-widget=resizes-content`
+   shrinks the LAYOUT viewport when the keyboard opens, but svh does not follow a keyboard — it is
+   defined by the browser's own toolbars. So the cap computed ~295 app units while only ~187 existed,
+   the column laid itself out against the wrong number, and the scrolling middle collapsed to a sliver.
+   The browser already clamps a <dialog> to the real viewport, so the column just fills what it is
+   given. min-height: 0 on each flex child is what lets the middle shrink and scroll instead of
+   forcing its natural height. */
+@media (max-height: 460px) {
+  /* nothing is pinned — this block only tightens the spacing */
+  #book-dialog { margin-block: 8px auto; padding: 10px 12px; }
+  #book-dialog .dialog-head { margin-bottom: 4px; }
+  #book-dialog .dialog-head h2 { font-size: 16px; }
+  #book-dialog .close { width: 32px; height: 32px; font-size: 16px; }
+  #book-dialog .field, #book-dialog fieldset { margin-bottom: 4px; }
+  #book-dialog .actions { margin-top: 4px; }
+  #book-dialog .actions .btn { min-height: 34px; padding: 4px 12px; }
+}
+
+/* ---------- Date steppers (Build 22.3) ----------
+   Shown only on the cover screen, where Android's own picker opens in its landscape layout and
+   runs off the edge of the window — OK can't be reached. Shown and hidden from JS by the same
+   COVER_SCREEN media query the rest of the app uses, never by a CSS display override. */
+.date-step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.date-step-label { text-align: center; font-size: 16px; }

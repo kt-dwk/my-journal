@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>My Journal</title>
+  <!-- Build 23.1: the app only ever loads its own files. This says so out loud, so a mistake made
+       later (a pasted-in script tag, an address slipped into a note) cannot load outside code. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="theme-color" content="#EFE9E3">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css?v=26">
+</head>
+<body>
+  <!-- Home page -->
+  <div class="page" id="home-page" hidden>
+    <header class="app-head">
+      <h1>My Journal</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
+    </header>
+    <div class="note-space">
+      <div class="sticky-note">
+        <p class="note-title">TODAY'S QUOTE</p>
+        <p class="daily-line" id="daily-line"></p>
+      </div>
+    </div>
+    <!-- Build 16.10 (wireframe 28a): the row under the note. 📖 opens My Books since Build 22;
+         ❤️ still has no page, so it is drawn but does nothing — aria-disabled rather than disabled,
+         which would grey it. Build 24.11 gives all three a name on the main screen. -->
+    <div class="home-icons">
+      <button type="button" class="brain-button" id="tile-book" aria-label="My Books"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--sand)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path fill="none" d="M12 7.5v13"/></svg><span class="icon-label">Books</span></button>
+      <button type="button" class="brain-button" id="tile-heart" aria-label="Self-reflection, coming later" aria-disabled="true"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg><span class="icon-label">Reflect</span></button>
+      <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg><span class="icon-label">Let go</span></button>
+    </div>
+    <div class="tile-dock">
+      <button type="button" class="tile" id="tile-money">
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M21 10h-3.6a2.5 2.5 0 0 0 0 5H21"/></svg> Money</span>
+      </button>
+      <button type="button" class="tile" id="tile-skin">
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5.9 3.6a1.4 1.4 0 0 1 1.4-1.4h9.4a1.4 1.4 0 0 1 1.4 1.4l-1.1 12.3a1.4 1.4 0 0 1-1.4 1.2H8.4a1.4 1.4 0 0 1-1.4-1.2z"/><path d="M6.2 5.6h11.6"/><path d="M10.4 17.1v1.5M13.6 17.1v1.5"/><rect x="8.7" y="18.6" width="6.6" height="3.2" rx="1.1"/></svg> Skin</span>
+        <span class="tile-sub" id="skin-tile-tonight"></span>
+      </button>
+      <button type="button" class="tile" id="tile-diary">
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="11" height="15" rx="1"/><path d="M6.2 4.5v15"/><path d="M13.8 20.2l.9-3 5.3-5.3 2.1 2.1-5.3 5.3z"/><path d="M19.1 11.3l2.1 2.1"/></svg> Diary</span>
+      </button>
+      <button type="button" class="tile" id="tile-habit">
+        <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5v-7"/><path d="M12 13.5c0-3-2-5-5-5 0 3 2 5 5 5z"/><path d="M12 13.5c0-3 2-5 5-5 0 3-2 5-5 5z"/></svg> Habit</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- My Money -->
+  <main class="page" id="money-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Money</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
+    </header>
+
+    <div class="switch" role="tablist" aria-label="My Money">
+      <button type="button" class="switch-btn" role="tab" id="tab-expenses" aria-controls="panel-expenses" aria-selected="true">Expenses</button>
+      <button type="button" class="switch-btn" role="tab" id="tab-income" aria-controls="panel-income" aria-selected="false">Income</button>
+      <button type="button" class="switch-btn" role="tab" id="tab-savings" aria-controls="panel-savings" aria-selected="false">Savings</button>
+    </div>
+
+    <div id="panel-expenses" role="tabpanel" aria-labelledby="tab-expenses">
+    <div class="month-card">
+      <div class="month-nav">
+        <button type="button" class="btn month-arrow" id="prev-month" aria-label="Previous month">‹</button>
+        <h2 id="month-label"></h2>
+        <button type="button" class="btn month-arrow" id="next-month" aria-label="Next month">›</button>
+      </div>
+      <p class="total">
+        <strong id="total"></strong>
+      </p>
+    </div>
+
+    <section>
+      <div id="by-category"></div>
+    </section>
+
+    <section>
+      <h3 class="section-label">Log</h3>
+      <ul id="log"></ul>
+      <p class="small" id="log-empty" hidden>No transactions this month.</p>
+    </section>
+    </div>
+
+    <div id="panel-income" role="tabpanel" aria-labelledby="tab-income" hidden>
+    <div class="month-card">
+      <div class="month-nav">
+        <button type="button" class="btn month-arrow" id="income-prev-month" aria-label="Previous month">‹</button>
+        <h2 id="income-month-label"></h2>
+        <button type="button" class="btn month-arrow" id="income-next-month" aria-label="Next month">›</button>
+      </div>
+      <p class="total">
+        <strong id="income-total"></strong>
+      </p>
+    </div>
+
+    <section>
+      <ul id="income-by-category" class="cat-list"></ul>
+    </section>
+
+    <section>
+      <h3 class="section-label">Log</h3>
+      <ul id="income-log"></ul>
+      <p class="small" id="income-log-empty" hidden>No income this month.</p>
+    </section>
+    </div>
+
+    <div id="panel-savings" role="tabpanel" aria-labelledby="tab-savings" hidden>
+      <div class="total-card">
+        <p class="total">
+          <strong id="savings-total"></strong>
+          <span class="small">Total saved</span>
+        </p>
+      </div>
+
+      <section>
+        <div id="goals"></div>
+        <button type="button" class="btn more" id="new-goal">+ New goal</button>
+        <button type="button" class="link" id="show-hidden-goals" hidden>Show hidden (0)</button>
+      </section>
+
+      <section>
+        <h3 class="section-label">Saving log</h3>
+        <ul id="saving-log"></ul>
+        <p class="small" id="saving-log-empty" hidden>No savings yet.</p>
+        <button type="button" class="btn more" id="open-saving-log" hidden>View more</button>
+      </section>
+    </div>
+
+    <button type="button" class="fab" id="open-add" aria-label="Add transaction"><svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M33.5 5.2C48 4.6 60.2 16.8 58.8 31 57.6 44.5 46.8 57.4 33 58.8 19.5 60.2 6.4 48.5 5.2 34.8 4 21 15 6.8 28.8 5.4c3.7-.4 7.6 0 11.4 1.2"/><path d="M32.4 20c-.4 6.6-.3 16.8.2 23.4"/><path d="M20 32.4c6.6.4 16.8.3 23.4-.2"/></svg></button>
+  </main>
+
+  <!-- Habit (placeholder until the section is planned) -->
+  <!-- My Books (Build 22) -->
+  <div class="page" id="books-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Books</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
+    </header>
+    <section id="books-reading-group" hidden>
+      <div class="book-head"><h3 class="year-head is-reading"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path d="M12 7.5v13"/></svg><span>Reading</span></h3></div>
+      <ul id="books-reading" class="note-list"></ul>
+    </section>
+    <section id="books-want-group" hidden>
+      <div class="book-head"><h3 class="year-head is-want"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10v17l-5-4-5 4z"/></svg><span>Want to read</span></h3></div>
+      <ul id="books-want" class="note-list"></ul>
+    </section>
+    <section id="books-read-group" hidden>
+      <div class="book-head"><h3 class="year-head is-read"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h11.5a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H6z"/><path d="M6 3.5a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 6 20.5"/><path d="M9.5 7.5h6M9.5 11h6"/></svg><span>Read</span></h3><span class="book-count-all" id="books-read-head"></span></div>
+      <ul id="books-read" class="note-list"></ul>
+      <button type="button" class="btn more" id="open-books-log" hidden>View more</button>
+    </section>
+    <p class="small" id="books-empty" hidden>No books yet.</p>
+    <button type="button" class="fab" id="book-new" aria-label="Add a book"><svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M33.5 5.2C48 4.6 60.2 16.8 58.8 31 57.6 44.5 46.8 57.4 33 58.8 19.5 60.2 6.4 48.5 5.2 34.8 4 21 15 6.8 28.8 5.4c3.7-.4 7.6 0 11.4 1.2"/><path d="M32.4 20c-.4 6.6-.3 16.8.2 23.4"/><path d="M20 32.4c6.6.4 16.8.3 23.4-.2"/></svg></button>
+  </div>
+
+  <div class="page" id="habit-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>Habit</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
+    </header>
+    <p>Coming in a later build.</p>
+    <p class="small">We'll plan this section together first: what counts as a habit, and how the week is shown.</p>
+  </div>
+
+  <!-- My Skin -->
+  <div class="page" id="skin-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Skin</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
+    </header>
+    <section class="tonight">
+      <button type="button" class="tonight-icon" id="skin-products-btn" aria-label="Tonight’s products"></button>
+      <div class="tonight-body">
+        <p class="small" id="skin-today"></p>
+        <p class="tonight-name" id="skin-tonight"></p>
+        <div id="skin-done-actions">
+          <button type="button" class="btn" id="skin-done-btn">Done</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="month-nav" id="skin-month-nav">
+        <button type="button" class="btn month-arrow" id="skin-prev-month" aria-label="Previous month">‹</button>
+        <h2 id="skin-month-label"></h2>
+        <button type="button" class="btn month-arrow" id="skin-next-month" aria-label="Next month">›</button>
+      </div>
+      <div class="month-nav" id="skin-week-nav" hidden>
+        <button type="button" class="btn month-arrow" id="skin-prev-week" aria-label="Previous week">‹</button>
+        <h2 id="skin-week-label"></h2>
+        <button type="button" class="btn month-arrow" id="skin-next-week" aria-label="Next week">›</button>
+      </div>
+      <div class="cal-head" aria-hidden="true"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+      <div class="cal-grid" id="skin-calendar"></div>
+      <p class="small cal-key">R Retinol · H Hydration · M Moist · ● Done</p>
+    </section>
+  </div>
+
+  <!-- My Diary -->
+  <div class="page" id="diary-page" hidden>
+    <header class="app-head">
+      <button type="button" class="icon-btn go-home" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>My Diary</h1>
+      <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
+    </header>
+    <section>
+      <ul id="diary-log" class="note-list"></ul>
+      <p class="small" id="diary-empty" hidden>No notes yet.</p>
+      <button type="button" class="btn more" id="open-diary-log" hidden>View more</button>
+    </section>
+    <button type="button" class="fab" id="diary-new" aria-label="New note"><svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M33.5 5.2C48 4.6 60.2 16.8 58.8 31 57.6 44.5 46.8 57.4 33 58.8 19.5 60.2 6.4 48.5 5.2 34.8 4 21 15 6.8 28.8 5.4c3.7-.4 7.6 0 11.4 1.2"/><path d="M25.4 36.6 23.6 42.8l6.2-1.8 12.8-12.8-4.4-4.4z"/><path d="m35.6 25.2 4.4 4.4"/><path d="M25.4 36.6l4.4 4.4"/></svg></button>
+  </div>
+
+  <!-- Brain dump (Build 10) -->
+  <div class="page" id="brain-page" hidden>
+    <header class="settings-head">
+      <button type="button" class="btn back" id="close-brain" aria-label="Back">←</button>
+      <h1>Brain dump</h1>
+    </header>
+    <!-- Build 19: one tile, and nothing else. The thoughts you dump live inside the pop-up
+         for as long as it is open, and are never stored. -->
+    <button type="button" class="tile brain-tile" id="brain-dump"><span class="tile-name"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg> Dump a thought</span></button>
+  </div>
+
+  <!-- Brain dump: writing pop-up -->
+  <dialog id="brain-dialog" aria-labelledby="brain-title">
+    <div class="dialog-head">
+      <h2 id="brain-title">Dump a thought</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <!-- Build 19: Enter makes a new line, so only ➤ sends. It sits beside the box, on its bottom edge. -->
+    <div class="brain-write">
+      <textarea id="brain-text" rows="2" maxlength="500" autocomplete="off" aria-labelledby="brain-title"></textarea>
+      <button type="button" class="btn primary icon-only" id="brain-send" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <p class="error" id="brain-error" hidden></p>
+    <!-- What you have let go of since opening this box. Read-only, and cleared when it closes. -->
+    <ul id="brain-session" class="session-list" aria-label="Let go just now"></ul>
+  </dialog>
+
+  <!-- Tonight's products (Build 25). Tonight only: the calendar day pop-up deliberately has none. -->
+  <dialog id="skin-products-dialog" aria-labelledby="skin-products-title">
+    <div class="dialog-head">
+      <h2 id="skin-products-title"></h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <ol class="product-list" id="skin-product-list"></ol>
+    <p class="small" id="skin-products-none" hidden>No products recorded for this night.</p>
+  </dialog>
+
+  <!-- My Skin: one day pop-up -->
+  <dialog id="skin-day-dialog" aria-labelledby="skin-day-title">
+    <div class="dialog-head">
+      <h2 id="skin-day-title"></h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <p class="small" id="skin-day-state"></p>
+    <div class="actions">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="skin-day-done">Mark done</button>
+      <button type="button" class="btn undo" id="skin-day-not-done">Mark not done</button>
+    </div>
+  </dialog>
+
+  <!-- My Skin: the undo question, as a pop-up (Build 13.1) -->
+  <dialog id="skin-undo-dialog" aria-labelledby="skin-undo-title">
+    <div class="dialog-head">
+      <h2 id="skin-undo-title">Mark tonight as not done?</h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <p class="small" id="skin-undo-state"></p>
+    <div class="actions">
+      <button type="button" class="btn" data-close>No</button>
+      <button type="button" class="btn primary" id="skin-undo-yes">Yes</button>
+    </div>
+  </dialog>
+
+  <!-- My Diary: writing page -->
+  <div class="page" id="diary-note-page" hidden>
+    <header class="settings-head note-head">
+      <button type="button" class="btn back" id="close-note" aria-label="Back">←</button>
+      <div class="note-actions">
+        <p class="small note-when" id="diary-when" hidden></p>
+        <button type="button" class="note-act" id="save-note" aria-label="Save">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.5v11M7.4 10.2 12 14.8l4.6-4.6M4.5 19.5h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="note-act" id="note-menu-btn" aria-label="More" aria-expanded="false" aria-haspopup="true">⋯</button>
+      </div>
+      <div class="note-menu" id="note-menu" hidden>
+        <button type="button" class="note-menu-item" id="note-pin-item" aria-label="Pin"></button>
+        <button type="button" class="note-menu-item bin" id="note-delete-item" aria-label="Delete"></button>
+      </div>
+    </header>
+
+    <input id="diary-title" type="text" maxlength="80" autocomplete="off" placeholder="Title" aria-label="Title">
+    <div class="field">
+      <span class="label sr-only" id="diary-text-label">Note</span>
+      <div class="note-toolbar-wrap" id="diary-toolbar-wrap">
+        <div class="colour-strip" id="colour-strip" hidden></div>
+        <div class="note-toolbar" id="diary-toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" class="tool" data-cmd="bold" aria-label="Bold" aria-pressed="false"><b>B</b></button>
+          <button type="button" class="tool" data-cmd="italic" aria-label="Italic" aria-pressed="false"><i>I</i></button>
+          <button type="button" class="tool" data-cmd="underline" aria-label="Underline" aria-pressed="false"><u>U</u></button>
+          <button type="button" class="tool" data-cmd="strikeThrough" aria-label="Strikethrough" aria-pressed="false"><s>S</s></button>
+          <button type="button" class="tool" data-palette="text" aria-label="Font colour" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 17.5 12 4l6.5 13.5M8.2 12.5h7.6"/></svg><span class="colour-bar" id="text-colour-bar"></span></button>
+          <button type="button" class="tool" data-palette="highlight" aria-label="Highlight" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 15.5 5 20l-1.5-4L13 6.5l4 4z"/><path d="M14.5 5 17 2.5l4.5 4.5L19 9.5"/></svg><span class="colour-bar" id="highlight-colour-bar"></span></button>
+          <button type="button" class="tool" data-cmd="undo" aria-label="Undo">↶</button>
+          <button type="button" class="tool" data-cmd="redo" aria-label="Redo">↷</button>
+        </div>
+      </div>
+      <div id="diary-text" class="note-text" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="diary-text-label"></div>
+      <input type="color" id="colour-picker" class="colour-picker" tabindex="-1" aria-hidden="true">
+    </div>
+    <p class="error" id="diary-error" hidden></p>
+
+    <p class="sr-only" id="diary-saved" role="status" hidden>Saved ✓</p>
+  </div>
+
+  <!-- Full diary list pop-up -->
+  <dialog id="diary-log-dialog" aria-labelledby="diary-log-title">
+    <div class="dialog-head">
+      <h2 id="diary-log-title">Notes</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <p class="small" id="diary-log-range"></p>
+    <ul id="diary-log-full"></ul>
+    <nav class="pager" aria-label="Note pages">
+      <button type="button" class="btn" id="diary-page-prev" aria-label="Previous page">‹</button>
+      <span id="diary-page-label" aria-live="polite"></span>
+      <button type="button" class="btn" id="diary-page-next" aria-label="Next page">›</button>
+    </nav>
+  </dialog>
+
+  <!-- Delete a note straight from the list -->
+  <dialog id="note-delete-dialog" aria-labelledby="note-delete-title">
+    <div class="dialog-head">
+      <h2 id="note-delete-title">Delete this note?</h2>
+      <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+    </div>
+    <p class="small" id="note-delete-which"></p>
+    <div class="actions">
+      <button type="button" class="btn" id="note-delete-no">No</button>
+      <button type="button" class="btn danger-fill" id="note-delete-yes">Yes</button>
+    </div>
+  </dialog>
+
+
+  <!-- Settings page (whole app) -->
+  <div class="page" id="settings-page" hidden>
+    <header class="settings-head">
+      <button type="button" class="btn back" id="close-settings" aria-label="Back">←</button>
+      <h1>Settings</h1>
+    </header>
+
+    <div id="settings-rows" hidden>
+      <button type="button" class="settings-row" id="open-rates-sheet">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h14l-3-3M20 15.5H6l3 3"/></svg><span>Exchange rates</span><span class="chev" aria-hidden="true">›</span>
+      </button>
+      <button type="button" class="settings-row" id="open-backup-sheet">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13h-15z"/><path d="M4.5 10.5h15"/><path d="M10 14.5h4"/></svg><span>Backup &amp; restore</span><span class="chev" aria-hidden="true">›</span>
+      </button>
+  <button type="button" class="settings-row" id="open-export-sheet">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 4.5h15v15h-15z"/><path d="M4.5 9.5h15"/><path d="M9.5 9.5v10"/></svg><span>Spreadsheet</span><span class="chev" aria-hidden="true">›</span>
+      </button>
+    </div>
+
+    <section id="rates-section">
+      <h3 class="section-label has-icon"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h14l-3-3M20 15.5H6l3 3"/></svg><span>Exchange rates</span></h3>
+      <form id="rates-form" novalidate>
+        <div class="rate-row">
+          <label class="label" id="rate-USD-label" for="rate-USD">1 USD =</label>
+          <input id="rate-USD" type="text" inputmode="decimal" autocomplete="off" placeholder="22,500">
+        </div>
+        <div class="rate-row">
+          <label class="label" id="rate-THB-label" for="rate-THB">1 THB =</label>
+          <input id="rate-THB" type="text" inputmode="decimal" autocomplete="off" placeholder="690">
+        </div>
+        <p class="error" id="rates-error" hidden>Both rates must be above 0.</p>
+        <div class="rate-save">
+          <button type="submit" class="btn primary">Save rates</button>
+        </div>
+        <p class="status" id="rates-status" role="status" hidden></p>
+      </form>
+    </section>
+
+    <section id="backup-section">
+      <h3 class="section-label has-icon" id="backup-heading"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13h-15z"/><path d="M4.5 10.5h15"/><path d="M10 14.5h4"/></svg><span>Backup &amp; restore</span></h3>
+      <div class="settings-actions" id="backup-actions">
+        <button type="button" class="btn" id="backup-btn">Backup</button>
+        <button type="button" class="btn" id="restore-btn">Restore</button>
+      </div>
+      <input type="file" id="restore-file" accept=".json,.txt,application/json,text/plain" hidden>
+      <div class="confirm" id="restore-confirm" hidden>
+        <p id="restore-summary"></p>
+        <p class="small">This replaces all data on this device.</p>
+        <div class="actions">
+          <button type="button" class="btn" id="restore-no">No</button>
+          <button type="button" class="btn undo" id="restore-yes">Yes</button>
+        </div>
+      </div>
+      <p class="small" id="last-backup"></p>
+      <p class="status" id="backup-status" role="status" hidden></p>
+    </section>
+
+    <section id="export-section">
+      <h3 class="section-label has-icon" id="export-heading"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 4.5h15v15h-15z"/><path d="M4.5 9.5h15"/><path d="M9.5 9.5v10"/></svg><span>Spreadsheet</span></h3>
+      <div class="settings-actions" id="export-actions">
+        <button type="button" class="btn" id="export-btn">Export My Money</button>
+      </div>
+      <p class="small">Every expense, income and saving, all time, as three tabs you can open in Excel.</p>
+      <p class="status" id="export-status" role="status" hidden></p>
+    </section>
+
+    <div class="build-foot">
+      <button type="button" class="small" id="build-info" aria-label="Reload the app"></button>
+    </div>
+  </div>
+
+  <!-- Add transaction pop-up -->
+  <dialog class="sheet" id="add-dialog" aria-labelledby="add-title">
+    <form id="add-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="add-title">Add transaction</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <fieldset class="field">
+        <legend class="sr-only">Item</legend>
+        <div id="item-choices"></div>
+        <p class="error" id="item-error" hidden>Please choose an item.</p>
+      </fieldset>
+
+      <div class="field">
+        <div class="field-head">
+          <label class="label" for="amount">Amount</label>
+          <span class="head-right">
+            <span class="small" id="amount-preview" hidden></span>
+            <button type="button" class="x1000" id="amount-x1000" aria-pressed="false" hidden>×1000</button>
+          </span>
+        </div>
+        <div class="amount-row">
+          <select id="currency" aria-label="Currency"></select>
+          <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+        </div>
+        <p class="error" id="amount-error" hidden>Please enter an amount above 0.</p>
+        <p class="error" id="rate-error" hidden><span id="rate-error-text"></span></p>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="date">Date</label>
+          <input id="date" type="date">
+          <div class="date-step" id="date-step" hidden>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">‹</button>
+            <span class="date-step-label" id="date-step-label" aria-live="polite"></span>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">›</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="note">Note <span class="small">(optional)</span></label>
+          <input id="note" type="text" maxlength="120" autocomplete="off" placeholder="e.g. for mom">
+        </div>
+      </div>
+
+      <p class="error" id="add-error" hidden>Sorry, this couldn't be saved. Please try again.</p>
+
+      <div class="confirm" id="delete-confirm" hidden>
+        <p>Delete this transaction?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="delete-no">No</button>
+          <button type="button" class="btn danger-fill" id="delete-yes">Yes</button>
+        </div>
+      </div>
+
+      <div class="actions" id="form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-transaction" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / Edit income pop-up (Build 23) -->
+  <dialog class="sheet" id="income-dialog" aria-labelledby="income-title">
+    <form id="income-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="income-title">Add income</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <fieldset class="field item-group">
+        <legend class="sr-only">Category</legend>
+        <span class="item-group-label" aria-hidden="true">Category</span>
+        <div class="item-buttons" id="income-cat-choices"></div>
+        <p class="error" id="income-cat-error" hidden>Please choose a category.</p>
+      </fieldset>
+
+      <fieldset class="field item-group">
+        <legend class="sr-only">Source</legend>
+        <span class="item-group-label" aria-hidden="true">Source</span>
+        <div class="item-buttons" id="income-src-choices"></div>
+        <p class="error" id="income-src-error" hidden>Please choose a source.</p>
+      </fieldset>
+
+      <div class="field">
+        <div class="field-head">
+          <label class="label" for="income-amount">Amount</label>
+          <span class="head-right">
+            <span class="small" id="income-amount-preview" hidden></span>
+            <button type="button" class="x1000" id="income-x1000" aria-pressed="false" hidden>×1000</button>
+          </span>
+        </div>
+        <div class="amount-row">
+          <select id="income-currency" aria-label="Currency"></select>
+          <input id="income-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+        </div>
+        <p class="error" id="income-amount-error" hidden>Please enter an amount above 0.</p>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="income-date">Date</label>
+          <input id="income-date" type="date">
+          <div class="date-step" id="income-date-step" hidden>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">‹</button>
+            <span class="date-step-label" id="income-date-step-label" aria-live="polite"></span>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">›</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="income-note">Note <span class="small">(optional)</span></label>
+          <input id="income-note" type="text" maxlength="120" autocomplete="off">
+        </div>
+      </div>
+
+      <p class="error" id="income-error" hidden>Sorry, this couldn’t be saved. Please try again.</p>
+
+      <div class="confirm" id="income-delete-confirm" hidden>
+        <p>Delete this income?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="income-delete-no">No</button>
+          <button type="button" class="btn danger-fill" id="income-delete-yes">Yes</button>
+        </div>
+      </div>
+
+      <div class="actions" id="income-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-income" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / Edit saving pop-up -->
+  <dialog class="sheet" id="saving-dialog" aria-labelledby="saving-title">
+    <form id="saving-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="saving-title">Add saving</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <fieldset class="field">
+        <legend class="sr-only">Goal</legend>
+        <div class="item-buttons" id="goal-choices"></div>
+        <p class="error" id="goal-error" hidden>Please choose a goal.</p>
+      </fieldset>
+
+      <div class="field">
+        <label class="label" for="saving-amount">Amount</label>
+        <div class="amount-row">
+          <span class="currency-fixed">$ USD</span>
+          <input id="saving-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+        </div>
+        <p class="error" id="saving-amount-error" hidden>Please enter an amount above 0.</p>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="saving-date">Date</label>
+          <input id="saving-date" type="date">
+          <div class="date-step" id="saving-date-step" hidden>
+            <button type="button" class="btn month-arrow" data-step="-1" aria-label="Day before">‹</button>
+            <span class="date-step-label" id="saving-date-step-label" aria-live="polite"></span>
+            <button type="button" class="btn month-arrow" data-step="1" aria-label="Day after">›</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="saving-note">Note <span class="small">(optional)</span></label>
+          <input id="saving-note" type="text" maxlength="120" autocomplete="off">
+        </div>
+      </div>
+
+      <p class="error" id="saving-error" hidden>Sorry, this couldn't be saved. Please try again.</p>
+
+      <div class="confirm" id="saving-delete-confirm" hidden>
+        <p>Delete this saving?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="saving-delete-no">No</button>
+          <button type="button" class="btn danger-fill" id="saving-delete-yes">Yes</button>
+        </div>
+      </div>
+
+      <div class="actions" id="saving-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-saving" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / Edit goal pop-up (Build 21) -->
+  <dialog class="sheet" id="goal-dialog" aria-labelledby="goal-title">
+    <form id="goal-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="goal-title">Edit goal</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <div class="field">
+        <label class="label" for="goal-name">Goal</label>
+        <input id="goal-name" type="text" maxlength="40" autocomplete="off">
+        <p class="error" id="goal-name-error" hidden>Please give the goal a name.</p>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="goal-target">Target</label>
+          <div class="amount-row">
+            <span class="currency-fixed">$ USD</span>
+            <input id="goal-target" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="goal-monthly">A month <span class="small">(optional)</span></label>
+          <div class="amount-row">
+            <span class="currency-fixed">$ USD</span>
+            <input id="goal-monthly" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <p class="error" id="goal-target-error" hidden>Please enter a target above 0.</p>
+
+      <p class="small" id="goal-saved-line"></p>
+      <p class="error" id="goal-save-error" hidden>Sorry, this couldn't be saved. Please try again.</p>
+
+      <div class="confirm" id="goal-delete-confirm" hidden>
+        <p>Delete this goal?</p>
+        <div class="actions">
+          <button type="button" class="btn" id="goal-delete-no">No</button>
+          <button type="button" class="btn danger-fill" id="goal-delete-yes">Yes</button>
+        </div>
+      </div>
+
+      <div class="actions" id="goal-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-goal" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" id="hide-goal" hidden>Hide</button>
+        <button type="button" class="btn" id="unhide-goal" hidden>Unhide</button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Hidden goals pop-up (Build 21) -->
+  <dialog id="hidden-goals-dialog" aria-labelledby="hidden-goals-title">
+    <div class="dialog-head">
+      <h2 id="hidden-goals-title">Hidden goals</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <ul id="hidden-goals-list" class="hidden-goals"></ul>
+  </dialog>
+
+  <!-- Add / Edit a book (Build 22). Top-pinned, head and buttons fixed, middle scrolls. -->
+  <dialog id="book-dialog" aria-labelledby="book-title">
+    <form id="book-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="book-title">Add a book</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <div class="dlg-body">
+        <div class="field" id="book-name-field">
+          <label class="label" for="book-name">Title</label>
+          <input id="book-name" type="text" maxlength="80" autocomplete="off">
+          <p class="error" id="book-name-error" hidden>Please give the book a title.</p>
+        </div>
+
+        <fieldset class="field book-status">
+          <legend class="sr-only">Status</legend>
+          <div class="item-buttons" id="book-status-choices"></div>
+        </fieldset>
+
+        <div class="field" id="book-page-field">
+          <label class="label" for="book-page">Page</label>
+          <div class="amount-row">
+            <input id="book-page" type="text" inputmode="numeric" autocomplete="off" placeholder="0">
+            <span class="currency-fixed" id="book-of-total">of —</span>
+          </div>
+        </div>
+
+        <div class="field" id="book-total-field">
+          <label class="label" for="book-total">Total pages <span class="small">(optional)</span></label>
+          <input id="book-total" type="text" inputmode="numeric" autocomplete="off" placeholder="0">
+        </div>
+
+        <p class="small" id="book-finish-line" hidden>Finished? <button type="button" class="link" id="book-mark-read">Mark as read</button></p>
+        <p class="error" id="book-save-error" hidden>Sorry, this couldn’t be saved. Please try again.</p>
+
+        <div class="confirm" id="book-delete-confirm" hidden>
+          <p>Delete this book?</p>
+          <div class="actions">
+            <button type="button" class="btn" id="book-delete-no">No</button>
+            <button type="button" class="btn danger-fill" id="book-delete-yes">Yes</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" id="book-form-actions">
+        <button type="button" class="btn danger icon-only" id="delete-book" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Books you have read, 10 per page (Build 22) -->
+  <dialog id="books-log-dialog" aria-labelledby="books-log-title">
+    <div class="dialog-head">
+      <h2 id="books-log-title">Read</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <ul id="books-log-full"></ul>
+    <nav class="pager" aria-label="Read books pages">
+      <button type="button" class="btn" id="books-log-prev" aria-label="Previous page">‹</button>
+      <span id="books-log-label" aria-live="polite"></span>
+      <button type="button" class="btn" id="books-log-next" aria-label="Next page">›</button>
+    </nav>
+  </dialog>
+
+  <!-- Full saving log pop-up -->
+  <dialog id="saving-log-dialog" aria-labelledby="saving-log-title">
+    <div class="dialog-head">
+      <h2 id="saving-log-title">Saving log</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <p class="small" id="saving-log-range"></p>
+    <ul id="saving-log-full"></ul>
+    <nav class="pager" aria-label="Saving log pages">
+      <button type="button" class="btn" id="log-prev" aria-label="Previous page">‹</button>
+      <span id="log-page-label" aria-live="polite"></span>
+      <button type="button" class="btn" id="log-next" aria-label="Next page">›</button>
+    </nav>
+  </dialog>
+
+
+  <!-- Build 24.6: the cover screen's two Settings sheets. The sections themselves move in here
+       and back out again, so there is one copy of every field and every listener survives. -->
+  <dialog class="sheet" id="rates-sheet" aria-labelledby="rates-sheet-title">
+    <div class="dialog-head">
+      <h2 id="rates-sheet-title">Exchange rates</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-slot" id="rates-slot"></div>
+  </dialog>
+
+  <dialog class="sheet" id="backup-sheet" aria-labelledby="backup-sheet-title">
+    <div class="dialog-head">
+      <h2 id="backup-sheet-title">Backup &amp; restore</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-slot" id="backup-slot"></div>
+  </dialog>
+
+  <dialog class="sheet" id="export-sheet" aria-labelledby="export-sheet-title">
+    <div class="dialog-head">
+      <h2 id="export-sheet-title">Spreadsheet</h2>
+      <button type="button" class="close" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-slot" id="export-slot"></div>
+  </dialog>
+
+  <script src="app.js?v=26"></script>
+</body>
+</html>
