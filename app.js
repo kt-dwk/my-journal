@@ -56,7 +56,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "26", date: "2026-11-10" };
+const BUILD = { number: "26.1", date: "2026-11-10" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -751,6 +751,7 @@ addForm.addEventListener("submit", (event) => {
 
 // Build 24.10: the jar fills. All six are palette colours the app already carries, and ink
 // reads 4.89:1 or better on every one of them, so the percentage inside stays ink throughout.
+let jarClipSeq = 0;   // Build 26.1: one unique clipPath id per jar drawn
 const JAR_FILLS = ["var(--swipe)", "var(--sand)", "var(--need)", "var(--want)", "var(--wisteria)", "var(--rosewood)"];
 
 // Build 25: the routine changed, and the history is NOT rewritten. A done night stores only its
@@ -2676,8 +2677,11 @@ function checkBackup(backup) {
     throw new Error("Backup has damaged books");
   }
   // Backups made before Build 21 (version 6 and older) have no "goals", and those leave your goals untouched
+  // Build 26.1: an id must look like one. Every id the app makes is a UUID or letters and digits,
+  // so this refuses nothing real — but it stops a hand-made backup smuggling markup in as an id.
+  const plainId = (v) => typeof v === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(v);
   if (backup.goals !== undefined && (!Array.isArray(backup.goals)
-    || !backup.goals.every((g) => g && typeof g.id === "string" && typeof g.name === "string"))) {
+    || !backup.goals.every((g) => g && plainId(g.id) && typeof g.name === "string"))) {
     throw new Error("Backup has damaged goals");
   }
   // Backups made before Brain dump (version 5 and older) have no "braindump", and those leave To keep untouched
@@ -2832,7 +2836,11 @@ function renderSavings() {
       // colour. One clipPath per jar, so the fill rises inside the outline instead of in a box.
       // The percentage is ink on the fill at 5.89:1 and ink on the paper at 8.87:1, so unlike
       // Build 18's jar it never has to flip to white halfway up.
-      const clipId = `jar-clip-${g.id}`;
+      // Build 26.1: the id is a counter, not the goal's own id. A restored backup can carry any
+      // string as an id, and this one is written straight into innerHTML below — so a crafted
+      // backup could put its own markup on the page. The colour below still hashes the real id,
+      // which only ever reads it. See checkBackup, which now refuses an id that isn't plain.
+      const clipId = `jar-clip-${++jarClipSeq}`;
       // Build 24.10, your request: a colour per goal, chosen for you. It is picked from the
       // goal's OWN id, not at random each render — a jar that changed colour every time the
       // page drew would be worse than one colour for all of them. Same id, same colour, always.
@@ -3064,7 +3072,11 @@ function zipStored(files) {
   });
 }
 
+// Build 26.1: XML forbids most control characters outright — escaping them isn't enough, and one
+// stray character in one note made the whole workbook unopenable. Tab, newline and return are the
+// three it allows, so they stay; the rest are dropped.
 const xmlEscape = (v) => String(v)
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
   .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
