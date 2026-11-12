@@ -1290,7 +1290,6 @@ textarea {
 /* Build 26: one action, so it takes the whole row rather than half of the two-column grid.
    An id, so the cover-screen block further down cannot win on equal specificity. */
 #export-actions { grid-template-columns: 1fr; }
-#export-section .small { margin: 10px 0 0; }
 .build-foot { margin-top: auto; padding-top: 24px; }
 #build-info {                /* Build 14.6: tap it to reload the app */
   width: 100%;
