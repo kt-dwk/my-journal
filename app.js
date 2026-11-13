@@ -51,12 +51,13 @@ const INCOME_KEY = "myjournal.income";
 // Build 23.4: the edit history. Written only by update() and remove() on the three money
 // stores, plus one entry by a restore. Nothing in the app shows it — you read it in the backup.
 const CHANGES_KEY = "myjournal.changes";
+const DEBT_KEY = "myjournal.debt";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "26.2", date: "2026-11-10" };
+const BUILD = { number: "27", date: "2026-11-13" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -282,6 +283,80 @@ function saveRates(rates) {
   localStorage.setItem(RATES_KEY, JSON.stringify(rates));
 }
 
+// ---------- The Car loan bar (Build 27) ----------
+// How far through paying off the car loan you are, under the Car loan row on the Expenses tab.
+//
+// NOTHING ABOUT THIS DEBT IS IN THE CODE. The repository is public, and the size of your car loan
+// is exactly the kind of personal fact Builds 23.1 and 26.1 took out of it. You type the target in;
+// the app only ever reads it from your own data, and it rides in the backup like your goals do.
+const DEBT_ITEM = "Car loan";     // the expense item the bar follows — one of CATEGORIES
+
+function loadDebt() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DEBT_KEY) || "{}");
+    return {
+      target: Number(d.target) || 0,
+      paidBefore: Number(d.paidBefore) || 0,
+    };
+  } catch {
+    return { target: 0, paidBefore: 0 };
+  }
+}
+
+function saveDebt(debt) {
+  localStorage.setItem(DEBT_KEY, JSON.stringify(debt));
+}
+
+// The row under Car loan. It is built from ALL expenses, never from the month on screen: a debt is
+// cumulative, and a bar fed the month's own list would drop back to nothing every 1st of the month
+// and climb again — the exact opposite of what it is for.
+function debtBar(allExpenses, rates) {
+  const { target } = loadDebt();
+  const li = el("li", "debt");
+  const btn = el("button", "debt-btn");
+  btn.type = "button";
+
+  if (!target) {
+    // Nothing is set yet, so there is no bar to draw — but there still has to be something to tap.
+    btn.append(el("span", "debt-set", "Set a target"));
+    btn.setAttribute("aria-label", "Set a car loan target");
+  } else {
+    const paid = debtPaid(allExpenses, rates);
+    const pct = Math.round((paid / target) * 100);
+    const bar = el("span", "debt-bar");
+    const fill = el("span", "");
+    fill.style.width = `${Math.min(100, Math.max(0, pct))}%`;   // the bar stops at full; the number doesn't
+    bar.append(fill);
+    const line = el("span", "debt-line");
+    line.append(bar);
+    btn.append(
+      line,
+      el("span", "debt-pct", `${pct}%`),
+      el("span", "debt-sub", `${formatWhole(paid, "USD")} of ${formatWhole(target, "USD")}`)
+    );
+    btn.setAttribute("aria-label", `Car loan, ${pct} percent paid. Edit.`);
+  }
+
+  btn.addEventListener("click", openDebt);
+  li.append(btn);
+  return li;
+}
+
+// What you have paid, in dollars, from EVERY Car loan payment ever — not just this month.
+// A payment entered in dollars counts at face value. One entered in kip or baht is converted at
+// today’s dollar rate, because an expense freezes its rate against KIP, not against USD, so there
+// is no frozen dollar figure to use. Those payments will drift a little as the rate moves.
+function debtPaid(allExpenses, rates) {
+  const usdRate = rateFor("USD", rates);
+  let paid = loadDebt().paidBefore;
+  for (const e of allExpenses) {
+    if (e.category !== DEBT_ITEM) continue;
+    if (e.currency === "USD") paid += Number(e.amount) || 0;
+    else if (usdRate) paid += lakAmountOf(e, rates) / usdRate;
+  }
+  return paid;
+}
+
 // ---------- Helpers ----------
 
 function todayISO() {
@@ -446,7 +521,13 @@ function renderDashboard() {
       head.append(el("span", `cat-name is-${g.toLowerCase()}`, g), el("span", "row-amount", formatMoney(sumWhere((e) => groupOf(e) === g), "LAK")));
       const list = el("ul", "cat-list");
       for (const c of CATEGORIES.filter((c) => c.group === g)) {
-        list.append(summaryRow(c.name, sumWhere((e) => e.category === c.name)));
+        const row = summaryRow(c.name, sumWhere((e) => e.category === c.name));
+        list.append(row);
+        // Build 27: the debt bar hangs under its own row. `all`, not `items` — see debtBar.
+        if (c.name === DEBT_ITEM) {
+          row.classList.add("has-debt");
+          list.append(debtBar(all, rates));
+        }
       }
       return [head, list];
     }),
@@ -2562,7 +2643,7 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 10, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history
+    version: 11, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history, 11 the car loan
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -2576,6 +2657,7 @@ function makeBackup() {
     diary: diaryStore.load(),
     colors: loadColours(),
     changes: loadChanges(),
+    debt: loadDebt(),
   };
 }
 
@@ -2671,6 +2753,12 @@ function checkBackup(backup) {
     || !backup.income.every(isEntry))) {
     throw new Error("Backup has damaged income");
   }
+  // Backups made before Build 27 (version 10 and older) have no "debt", and those leave the car loan untouched
+  if (backup.debt !== undefined && (typeof backup.debt !== "object" || backup.debt === null
+    || Array.isArray(backup.debt)
+    || !["target", "paidBefore"].every((k) => backup.debt[k] === undefined || typeof backup.debt[k] === "number"))) {
+    throw new Error("Backup has a damaged car loan");
+  }
   // Backups made before Build 22 (version 7 and older) have no "books", and those leave My Books untouched
   if (backup.books !== undefined && (!Array.isArray(backup.books)
     || !backup.books.every((b) => b && typeof b.id === "string" && typeof b.title === "string"))) {
@@ -2745,7 +2833,7 @@ function redrawEverything() {
 $("restore-yes").addEventListener("click", () => {
   if (!pendingRestore) return;
   const backup = pendingRestore;
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -2766,6 +2854,8 @@ $("restore-yes").addEventListener("click", () => {
     // Build 23.4: version 10 carries the edit history. An older backup has none, so yours is left
     // alone — the same rule every other section follows.
     if (backup.changes) localStorage.setItem(CHANGES_KEY, JSON.stringify(backup.changes));
+    // Build 27: version 11 carries the car loan. An older backup has none, so yours is left alone.
+    if (backup.debt) saveDebt({ target: Number(backup.debt.target) || 0, paidBefore: Number(backup.debt.paidBefore) || 0 });
     // Build 19: an older backup's "braindump" is ignored on purpose — Brain dump stores nothing now
   } catch (err) {
     console.error(err);
@@ -3756,6 +3846,48 @@ function resetGoalErrors() {
 }
 
 $("new-goal").addEventListener("click", openNewGoal);
+
+// ---------- The Car loan sheet (Build 27) ----------
+
+const debtDialog = $("debt-dialog");
+
+function openDebt() {
+  const { target, paidBefore } = loadDebt();
+  $("debt-target").value = target ? formatWhileTyping(String(target), 2) : "";
+  $("debt-before").value = paidBefore ? formatWhileTyping(String(paidBefore), 2) : "";
+  $("debt-target-error").hidden = true;
+  $("debt-save-error").hidden = true;
+  debtDialog.showModal();
+}
+
+for (const id of ["debt-target", "debt-before"]) {
+  $(id).addEventListener("input", () => {
+    $(id).value = formatWhileTyping($(id).value, 2);
+    $("debt-target-error").hidden = true;
+    $("debt-save-error").hidden = true;
+  });
+}
+
+$("debt-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const target = readAmount($("debt-target").value, 2);
+  const paidBefore = readAmount($("debt-before").value, 2) || 0;
+
+  $("debt-target-error").hidden = target > 0;
+  $("debt-save-error").hidden = true;
+  if (!(target > 0)) return;
+
+  try {
+    saveDebt({ target, paidBefore });
+  } catch (err) {
+    console.error(err);
+    $("debt-save-error").hidden = false;
+    return;
+  }
+
+  debtDialog.close();
+  renderDashboard();
+});
 
 $("goal-form").addEventListener("submit", (event) => {
   event.preventDefault();

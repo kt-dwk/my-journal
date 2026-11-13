@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
   <!-- Home page -->
@@ -636,6 +636,39 @@
   </dialog>
 
   <!-- Add / Edit goal pop-up (Build 21) -->
+  <dialog class="sheet" id="debt-dialog" aria-labelledby="debt-title">
+    <form id="debt-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="debt-title">Car loan</h2>
+        <button type="button" class="close" data-close aria-label="Cancel">✕</button>
+      </div>
+
+      <div class="sheet-pair">
+        <div class="field">
+          <label class="label" for="debt-target">Target</label>
+          <div class="amount-row">
+            <span class="currency-fixed">$ USD</span>
+            <input id="debt-target" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="debt-before">Paid before Sept</label>
+          <div class="amount-row">
+            <span class="currency-fixed">$ USD</span>
+            <input id="debt-before" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <p class="error" id="debt-target-error" hidden>Please enter a target above 0.</p>
+      <p class="error" id="debt-save-error" hidden>Sorry, this couldn’t be saved. Please try again.</p>
+
+      <div class="actions">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="sheet" id="goal-dialog" aria-labelledby="goal-title">
     <form id="goal-form" novalidate>
       <div class="dialog-head">
@@ -810,6 +843,6 @@
     <div class="sheet-slot" id="export-slot"></div>
   </dialog>
 
-  <script src="app.js?v=28"></script>
+  <script src="app.js?v=29"></script>
 </body>
 </html>

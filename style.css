@@ -272,6 +272,43 @@ button { font: inherit; color: inherit; }
 /* Build 24.1: a summary row is NOT a button — nothing makes it tappable, so it is compact.
    That is what gives the cover screen room for both Need and Want above the camera line. */
 .cat-list .row { padding: 4px 0; color: var(--muted); }
+
+/* Build 27: the car loan bar, under its own row. Placed HERE, above the cover-screen block at
+   line ~1046, so the cover rules can still win at equal specificity — the trap from 17.2. */
+.cat-list .row.has-debt { border-bottom: 0; padding-bottom: 2px; }
+.debt { padding: 0 0 8px 14px; border-bottom: 1px solid var(--line); }
+.debt-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  /* Build 24.11/25: a <button> brings its own background, font, width AND border — reset them all
+     or it comes out as a grey box. Build 27: keep this comment ABOVE the declarations. Written
+     inline it opened on one line and closed on the next, swallowing `border: 0` so the button kept
+     a 2px outset border — the very thing the comment was warning about. */
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.debt-line { flex: 1 1 auto; display: flex; }
+.debt-bar {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+/* Dusty Teal: 3.54:1 against the track, so it is still visible when the bar is nearly empty —
+   which is exactly when you will be looking at it. The jar fill (--swipe) measures 1.18:1 and
+   works only because a jar has a drawn outline; a 6px bar has none, so the fill IS the bar. */
+.debt-bar > span { display: block; height: 100%; background: var(--accent); }
+.debt-pct { font-size: 13px; color: var(--ink); }
+.debt-sub { font-size: 12px; color: var(--quiet); white-space: nowrap; }
+.debt-set { font-size: 13px; color: var(--accent); }
 .fab {                       /* adding is a floating round button */
   position: fixed;
   right: max(16px, calc((100vw - 520px) / 2));
