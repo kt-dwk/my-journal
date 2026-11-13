@@ -57,7 +57,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "27", date: "2026-11-13" };
+const BUILD = { number: "27.1", date: "2026-11-13" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -382,16 +382,20 @@ function currencyInfo(currency) {
 }
 
 // Whole amounts, no decimals: "$1,200 of $2,000" as the design writes them
+// Build 27.1: the minus goes BEFORE the symbol — "-$200", not "$-200". Nothing in the app could
+// be negative until savings could be taken out, so this had never shown up.
 function formatWhole(amount, currency) {
   const { symbol } = currencyInfo(currency);
-  return symbol + Math.round(amount).toLocaleString("en-US");
+  const sign = amount < 0 ? "-" : "";
+  return sign + symbol + Math.round(Math.abs(amount)).toLocaleString("en-US");
 }
 
 // Build 16.4: cents only when there are cents, so savings read $50 but $50.75 keeps its pennies
 function formatMoney(amount, currency) {
   const { symbol, decimals } = currencyInfo(currency);
   const places = Number.isInteger(amount) ? 0 : decimals;
-  return symbol + amount.toLocaleString("en-US", {
+  const sign = amount < 0 ? "-" : "";          // Build 27.1: "-$200", not "$-200"
+  return sign + symbol + Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: places,
     maximumFractionDigits: places,
   });
@@ -2914,14 +2918,17 @@ function renderSavings() {
   $("goals").replaceChildren(
     ...shown.map((g) => {
       const saved = savedForGoal(g.id, all);
-      const percent = Math.min(100, g.target ? Math.floor((saved / g.target) * 100) : 0);   // Build 16.4: rounds down, so 100% only means reached
+      // Build 16.4: rounds down, so 100% only means reached.
+      // Build 27.1: clamped at 0 too — take out more than you put in and the fill would otherwise
+      // be given a negative height.
+      const percent = Math.max(0, Math.min(100, g.target ? Math.floor((saved / g.target) * 100) : 0));
 
       const jar = el("div", "jar");
       jar.setAttribute("role", "progressbar");
       jar.setAttribute("aria-label", `${g.name} progress`);
       jar.setAttribute("aria-valuemin", "0");
       jar.setAttribute("aria-valuemax", String(g.target));
-      jar.setAttribute("aria-valuenow", String(Math.min(saved, g.target)));
+      jar.setAttribute("aria-valuenow", String(Math.max(0, Math.min(saved, g.target))));   // Build 27.1: aria-valuemin is 0, so a withdrawn-below-zero jar must not report less
       // Build 24.1: a drawn mason jar — shoulders, neck and screw band — filling with the marker
       // colour. One clipPath per jar, so the fill rises inside the outline instead of in a box.
       // The percentage is ink on the fill at 5.89:1 and ink on the paper at 8.87:1, so unlike
@@ -2993,7 +3000,11 @@ function savingRow(s) {
   row.type = "button";
   const goal = el("span", "log-item");
   goal.append(el("span", "", s.goalId ? goalName(s.goalId) : s.goal || ""));
+  // Build 27.1: a withdrawal says so under the goal's name, and the amount carries the minus —
+  // the sign keeps the column addable, the word stops it reading as a typo. A note you wrote wins
+  // that line: the minus sign already says which way the money went, so nothing is lost.
   if (s.note) goal.append(el("span", "small", s.note));
+  else if (s.amount < 0) goal.append(el("span", "small", "Took out"));
   row.append(el("span", "log-date", shortDate(s.date, true)), goal, el("span", "log-amount", formatMoney(s.amount, "USD")));
   row.addEventListener("click", () => openSavingEdit(s.id));
   const li = el("li");
@@ -3057,14 +3068,49 @@ function fillSavingForm(keepGoalId = null) {
 }
 
 function resetSavingForm() {
-  savingForm.reset();
+  savingForm.reset();          // form.reset() restores the checked="" default, i.e. Put in
   savingDateEl.value = todayISO();
-  for (const id of ["goal-error", "saving-amount-error", "saving-error"]) $(id).hidden = true;
+  for (const id of ["goal-error", "saving-amount-error", "saving-error", "saving-too-much"]) $(id).hidden = true;
+}
+
+// Build 27.1: taking money out is a saving with a NEGATIVE amount. The jar, the savings total and
+// the goal lines all just add up `amount`, so none of them needed changing — a withdrawal reduces
+// them by itself. You type a positive number and choose the direction; the sign is added on save.
+// Build 27.1: you cannot take out more than the jar holds — so a jar at $0 cannot be taken from
+// at all. The entry BEING EDITED is left out of the balance: a $1,000 withdrawal that already
+// emptied its jar must still be editable, and counting it against itself would refuse its own value.
+function goalBalanceExcluding(goalId, excludeId) {
+  try {
+    return savingsStore.load()
+      .filter((sv) => sv.goalId === goalId && sv.id !== excludeId)
+      .reduce((sum, sv) => sum + sv.amount, 0);
+  } catch (err) {
+    console.error(err);
+    return 0;      // can't read the savings: treat the jar as empty rather than allow a blind withdrawal
+  }
+}
+
+function savingDirection() {
+  const checked = savingForm.querySelector('input[name="dir"]:checked');
+  return checked && checked.value === "out" ? "out" : "in";
+}
+
+function setSavingDirection(dir) {
+  const radio = savingForm.querySelector(`input[name="dir"][value="${dir}"]`);
+  if (radio) radio.checked = true;
+  updateSavingTitle();
+}
+
+function updateSavingTitle() {
+  const out = savingDirection() === "out";
+  $("saving-title").textContent = editingSavingId
+    ? (out ? "Edit withdrawal" : "Edit saving")
+    : (out ? "Take out" : "Add saving");
 }
 
 function setSavingMode(id) {
   editingSavingId = id;
-  $("saving-title").textContent = id ? "Edit saving" : "Add saving";
+  updateSavingTitle();
   $("delete-saving").hidden = !id;
   toggleConfirm("saving-delete-confirm", "saving-form-actions", false);
 }
@@ -3072,6 +3118,7 @@ function setSavingMode(id) {
 function openAddSaving() {
   fillSavingForm();
   resetSavingForm();
+  setSavingDirection("in");
   setSavingMode(null);
   applyDateControls();
   savingDialog.showModal();
@@ -3091,7 +3138,9 @@ function openSavingEdit(id) {
   setSavingMode(id);
   const radio = savingForm.querySelector(`input[name="goal"][value="${CSS.escape(saving.goalId || "")}"]`);
   if (radio) radio.checked = true;
-  savingAmountEl.value = formatWhileTyping(String(saving.amount), 2);
+  // Build 27.1: the sign lives on the chips, not in the box — so the box shows what you typed.
+  setSavingDirection(saving.amount < 0 ? "out" : "in");
+  savingAmountEl.value = formatWhileTyping(String(Math.abs(saving.amount)), 2);
   savingDateEl.value = saving.date;
   savingNoteEl.value = saving.note || "";
   applyDateControls();
@@ -4012,9 +4061,17 @@ $("goal-choices").addEventListener("change", () => {
   if ($("saving-dialog").open) $("saving-amount").focus();
 });
 
+for (const radio of savingForm.querySelectorAll('input[name="dir"]')) {
+  radio.addEventListener("change", () => {
+    updateSavingTitle();
+    $("saving-too-much").hidden = true;
+  });
+}
+
 savingAmountEl.addEventListener("input", () => {
   savingAmountEl.value = formatWhileTyping(savingAmountEl.value, 2);
   $("saving-amount-error").hidden = true;
+  $("saving-too-much").hidden = true;
 });
 
 savingForm.addEventListener("submit", (event) => {
@@ -4025,11 +4082,25 @@ savingForm.addEventListener("submit", (event) => {
   $("goal-error").hidden = Boolean(checked);
   $("saving-amount-error").hidden = amount > 0;
   $("saving-error").hidden = true;
+  $("saving-too-much").hidden = true;
   if (!checked || !(amount > 0)) return;
+
+  // Build 27.1, your decision: an empty jar can't be taken from, and no withdrawal may exceed
+  // what the jar holds. Said with the figure, so the message is useful rather than just a refusal.
+  if (savingDirection() === "out") {
+    const available = goalBalanceExcluding(checked.value, editingSavingId);
+    if (amount > available) {
+      $("saving-too-much").textContent = available > 0
+        ? `There's only ${formatMoney(available, "USD")} in this jar.`
+        : "This jar is empty — there's nothing to take out.";
+      $("saving-too-much").hidden = false;
+      return;
+    }
+  }
 
   const saving = {
     goalId: checked.value,
-    amount,
+    amount: savingDirection() === "out" ? -amount : amount,
     date: savingDateEl.value || todayISO(),
     note: savingNoteEl.value.trim(),
   };

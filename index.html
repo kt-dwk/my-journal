@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=29">
+  <link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
   <!-- Home page -->
@@ -585,6 +585,14 @@
       </div>
 
       <fieldset class="field">
+        <legend class="sr-only">Putting in or taking out</legend>
+        <div class="item-buttons" id="dir-choices">
+          <label class="item-btn"><input type="radio" name="dir" value="in" checked><span>Put in</span></label>
+          <label class="item-btn"><input type="radio" name="dir" value="out"><span>Take out</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
         <legend class="sr-only">Goal</legend>
         <div class="item-buttons" id="goal-choices"></div>
         <p class="error" id="goal-error" hidden>Please choose a goal.</p>
@@ -597,6 +605,7 @@
           <input id="saving-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
         </div>
         <p class="error" id="saving-amount-error" hidden>Please enter an amount above 0.</p>
+        <p class="error" id="saving-too-much" hidden></p>
       </div>
 
       <div class="sheet-pair">
@@ -843,6 +852,6 @@
     <div class="sheet-slot" id="export-slot"></div>
   </dialog>
 
-  <script src="app.js?v=29"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>
