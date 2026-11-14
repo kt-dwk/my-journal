@@ -53,12 +53,13 @@ const INCOME_KEY = "myjournal.income";
 const CHANGES_KEY = "myjournal.changes";
 const DEBT_KEY = "myjournal.debt";
 const REFLECT_KEY = "myjournal.reflections";
+// Build 29: one mood a day, the Habit tile's tenant. Declared with the mood code itself.
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "28", date: "2026-11-14" };
+const BUILD = { number: "29", date: "2026-11-14" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1022,6 +1023,459 @@ function isoDate(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+// ---------- Mood (Build 29) ----------
+// The tenant of the Habit tile. One mood a day, stored as a dated map like My Skin:
+//   { "2026-11-14": "lazy-cat" }
+// The tile keeps the name "Habit" on purpose: the slot stays generic, mood is only its tenant.
+// Nothing here plans or reminds — you pick a mood for a day that has already happened.
+
+const MOOD_KEY = "myjournal.moods";
+
+// The twelve. Drawn in a 24x24 box, no text inside any of them, so they hold their shape at
+// 104px in the hub, 56px on the wheel and ~41px in a calendar cell.
+// `family` groups them good / middling / rough. Nothing paints it today — the month view shows
+// each day's own drawing on plain paper — but it is cheap to keep and a later summary may want it.
+// Order is deliberate: the wheel runs clockwise from the top, good first, then middling, then rough.
+const MOODS = [
+  { key: 'freshly-charged', name: 'Freshly Charged', family: 'sunny', art: `
+  <rect x="2.5" y="7" width="16.5" height="10" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.3"/>
+  <rect x="20" y="10.2" width="2.2" height="3.6" rx="1" fill="currentColor"/>
+  <rect x="4.3" y="8.8" width="12.9" height="6.4" rx="1.4" fill="var(--need)"/>
+  <path d="M8 11.2h.01M13 11.2h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M8.6 13.2q2.2 1.8 4.4 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>` },
+  { key: 'overly-happy-sunny', name: 'Overly Happy Sunny', family: 'sunny', art: `
+  <path d="M10.78 4.90L12.00 0.70L13.22 4.90z" fill="currentColor"/>
+  <path d="M15.19 5.54L18.64 2.86L17.16 6.98z" fill="currentColor"/>
+  <path d="M18.37 8.65L22.75 8.51L19.13 10.97z" fill="currentColor"/>
+  <path d="M19.13 13.03L22.75 15.49L18.37 15.35z" fill="currentColor"/>
+  <path d="M17.16 17.02L18.64 21.14L15.19 18.46z" fill="currentColor"/>
+  <path d="M13.22 19.10L12.00 23.30L10.78 19.10z" fill="currentColor"/>
+  <path d="M8.81 18.46L5.36 21.14L6.84 17.02z" fill="currentColor"/>
+  <path d="M5.63 15.35L1.25 15.49L4.87 13.03z" fill="currentColor"/>
+  <path d="M4.87 10.97L1.25 8.51L5.63 8.65z" fill="currentColor"/>
+  <path d="M6.84 6.98L5.36 2.86L8.81 5.54z" fill="currentColor"/>
+  <circle cx="12" cy="12" r="6.1" fill="var(--sand)" stroke="currentColor" stroke-width="1.3"/>
+  <path d="M9.3 10.9q.9-1.1 1.8 0M12.9 10.9q.9-1.1 1.8 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M8.9 12.9h6.2a3.1 3.1 0 0 1-6.2 0z" fill="var(--card)" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M8.9 12.9h6.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>` },
+  { key: 'small-good-thing', name: 'Small Good Thing', family: 'sunny', art: `
+  <circle cx="12.00" cy="6.40" r="4.1" fill="var(--want)" stroke="currentColor" stroke-width="1.25"/>
+  <circle cx="16.85" cy="9.20" r="4.1" fill="var(--want)" stroke="currentColor" stroke-width="1.25"/>
+  <circle cx="16.85" cy="14.80" r="4.1" fill="var(--want)" stroke="currentColor" stroke-width="1.25"/>
+  <circle cx="12.00" cy="17.60" r="4.1" fill="var(--want)" stroke="currentColor" stroke-width="1.25"/>
+  <circle cx="7.15" cy="14.80" r="4.1" fill="var(--want)" stroke="currentColor" stroke-width="1.25"/>
+  <circle cx="7.15" cy="9.20" r="4.1" fill="var(--want)" stroke="currentColor" stroke-width="1.25"/>
+  <circle cx="12" cy="12" r="4.6" fill="var(--sand)" stroke="currentColor" stroke-width="1.3"/>
+  <path d="M9.75 11.55q0.68 0.90 1.35 0M12.90 11.55q0.68 0.90 1.35 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M10.72 13.95q1.27 1.20 2.55 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>` },
+  { key: 'zen-candle', name: 'Zen Candle', family: 'sunny', art: `
+  <path d="M12 2.2c1.8 1.9 2.6 3.1 2.6 4.3a2.6 2.6 0 0 1-5.2 0c0-1.2.8-2.4 2.6-4.3z" fill="var(--sand)" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M12 6.6v1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M8.4 8.4h7.2v9.2H8.4z" fill="var(--card)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M8.4 14.2q-1.5 1.5-2.1 3M15.6 14.2q1.5 1.5 2.1 3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="6" cy="17.9" r="1.4" fill="none" stroke="currentColor" stroke-width="1.15"/>
+  <circle cx="18" cy="17.9" r="1.4" fill="none" stroke="currentColor" stroke-width="1.15"/>
+  <path d="M4.2 20.4h15.6a1.6 1.6 0 0 1-1.6 1.8H5.8a1.6 1.6 0 0 1-1.6-1.8z" fill="var(--swipe)" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
+  <path d="M9.6 11.2q.75 .9 1.5 0M12.9 11.2q.75 .9 1.5 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M10.9 13.3q1.1 .9 2.2 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>` },
+  { key: 'fine-probably', name: 'Fine, Probably', family: 'room', art: `
+  <path d="M4.5 9.5h11v7.5a3.2 3.2 0 0 1-3.2 3.2H7.7a3.2 3.2 0 0 1-3.2-3.2z" fill="var(--card)" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M15.5 11.6a2.7 2.7 0 0 1 0 5.4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+  <path d="M7.6 7.6q1-1.7 0-3.4M11.6 7.6q1-1.7 0-3.4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+  <path d="M7.4 13h.01M11.6 13h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M7.2 16.2h4.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>` },
+  { key: 'lazy-cat', name: 'Lazy Cat', family: 'room', art: `
+  <path d="M4.2 19.2c0-4.1 3.5-6.6 7.8-6.6s7.8 2.5 7.8 6.6z" fill="var(--sand)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M5.6 14.4l-.5-3.6 3 1.9M18.4 14.4l.5-3.6-3 1.9" fill="var(--sand)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M9 16.2q1 1 2 0M13 16.2q1 1 2 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M11.3 17.9h1.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M4.2 19.2h15.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M16.1 7.0h2.3l-2.3 2.3h2.3" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18.7 2.8h3.3l-3.3 3.3h3.3" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>` },
+  { key: 'drunk-mushroom', name: 'Drunk Mushroom', family: 'room', art: `
+  <g transform="rotate(-12 12 12)">
+    <path d="M8.5 9.6h7v7.4q0 3.9-3.5 3.9t-3.5-3.9z" fill="var(--card)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+    <path d="M12 0.8c5.83 0 9.4 5.93 9.4 9.92 0 1.1-.9 1.7-2.2 1.7H4.8c-1.3 0-2.2-.6-2.2-1.7 0-3.99 3.57-9.92 9.4-9.92z" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(11.3 7) scale(.88)">
+    <path d="M-3.2 0a1.3 1.3 0 1 1-1.3 1.3 2.3 2.3 0 0 1 2.3-2.3 3.3 3.3 0 0 1 3.3 3.3" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" transform="translate(-1.7 -1.5) scale(.82)"/>
+    <path d="M3.2 0a1.3 1.3 0 1 1-1.3 1.3 2.3 2.3 0 0 1 2.3-2.3 3.3 3.3 0 0 1 3.3 3.3" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" transform="translate(1.4 -1.5) scale(.82)"/>
+    <path d="M-2 3.4q1-1 2 0 1 1 2 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  </g>` },
+  { key: 'buffering', name: 'Buffering', family: 'room', art: `
+  <circle cx="12.00" cy="3.40" r="1.45" fill="currentColor" opacity="0.16"/>
+  <circle cx="16.30" cy="4.55" r="1.45" fill="currentColor" opacity="0.24"/>
+  <circle cx="19.45" cy="7.70" r="1.45" fill="currentColor" opacity="0.31"/>
+  <circle cx="20.60" cy="12.00" r="1.45" fill="currentColor" opacity="0.39"/>
+  <circle cx="19.45" cy="16.30" r="1.45" fill="currentColor" opacity="0.47"/>
+  <circle cx="16.30" cy="19.45" r="1.45" fill="currentColor" opacity="0.54"/>
+  <circle cx="12.00" cy="20.60" r="1.45" fill="currentColor" opacity="0.62"/>
+  <circle cx="7.70" cy="19.45" r="1.45" fill="currentColor" opacity="0.69"/>
+  <circle cx="4.55" cy="16.30" r="1.45" fill="currentColor" opacity="0.77"/>
+  <circle cx="3.40" cy="12.00" r="1.45" fill="currentColor" opacity="0.85"/>
+  <circle cx="4.55" cy="7.70" r="1.45" fill="currentColor" opacity="0.92"/>
+  <circle cx="7.70" cy="4.55" r="1.45" fill="currentColor" opacity="1.00"/>
+  <path d="M9.9 11.4h.01M14.1 11.4h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M10.2 14.4h3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>` },
+  { key: 'wtf', name: 'WTF?!', family: 'room', art: `
+  <path d="M12 2.6a6.4 6.4 0 0 1 3.9 11.5v1.6H8.1v-1.6A6.4 6.4 0 0 1 12 2.6z" fill="var(--sand)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M8.6 17.6h6.8M9.2 20.1h5.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <circle cx="10" cy="8.4" r="1.25" fill="currentColor"/><circle cx="14" cy="8.4" r="1.25" fill="currentColor"/>
+  <ellipse cx="12" cy="11.8" rx="1.5" ry="1.9" fill="currentColor"/>
+  <path d="M3.4 5.6l1.9 1.1M20.6 5.6l-1.9 1.1M2.6 11h2.2M19.2 11h2.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".75"/>` },
+  { key: 'running-on-fumes', name: 'Running on Fumes', family: 'plum', art: `
+  <rect x="2.5" y="7" width="16.5" height="10" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.3"/>
+  <rect x="20" y="10.2" width="2.2" height="3.6" rx="1" fill="currentColor"/>
+  <rect x="4.3" y="8.8" width="2.6" height="6.4" rx="1.2" fill="var(--plum)"/>
+  <path d="M8.4 10.4l2 2M10.4 10.4l-2 2M13.6 10.4l2 2M15.6 10.4l-2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M10.2 14.6h3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>` },
+  { key: 'angry-kettle', name: 'Angry Kettle', family: 'plum', art: `
+  <!-- fume: the mushroom billow at 70%, lifted to sit on the taller body -->
+  <g transform="translate(0 -2) translate(3.75 2.82) scale(.7)">
+    <path d="M8.4 7.2a2.6 2.6 0 0 1 1.3-4.6 3 3 0 0 1 5.6 0 2.6 2.6 0 0 1 1.3 4.6z" fill="var(--card)" stroke="currentColor" stroke-width="1.79" stroke-linejoin="round"/>
+    <path d="M11.4 7.2q.4 1.4 1.2 2.2M13.4 7.2q-.3 1.3-.6 2.2" fill="none" stroke="currentColor" stroke-width="1.57" stroke-linecap="round"/>
+  </g>
+  <path d="M8.0 9.4h9.0l1.2 11.6H6.8z" fill="var(--want)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M8.0 9.4l-3.4-2.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M18.0 11.0a3.6 3.6 0 0 1 0 7.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M9.1 7.5h6.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M9.59 12.2l2.13 0.90M15.41 12.2l-2.13 0.90" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M10.37 14.33h.01M14.63 14.33h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M10.48 16.01h4.03v1.68h-4.03z" fill="var(--card)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+  <path d="M12.5 16.01v1.68" stroke="currentColor" stroke-width=".9"/>` },
+  { key: 'teary-cloud', name: 'Teary Cloud', family: 'plum', art: `
+  <path d="M7.4 17.2a3.8 3.8 0 0 1-.5-7.5 4.6 4.6 0 0 1 8.7-1.4 3.5 3.5 0 0 1 1.1 8.9z" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M9.9 12.4q1 1.1 2 0M12.9 12.4q1 1.1 2 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M10.8 15.2q1.2-1 2.4 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M10.0 17.7q2.57 3.80 0 4.95q-2.57 -1.16 0 -4.95z" fill="currentColor"/>` },
+];
+
+const MOOD_BY_KEY = new Map(MOODS.map((m) => [m.key, m]));
+
+function loadMoods() {
+  try {
+    const map = JSON.parse(localStorage.getItem(MOOD_KEY) || "{}");
+    return map && typeof map === "object" && !Array.isArray(map) ? map : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMoods(map) {
+  localStorage.setItem(MOOD_KEY, JSON.stringify(map));
+}
+
+function moodFor(dateISO) {
+  return MOOD_BY_KEY.get(loadMoods()[dateISO]) || null;
+}
+
+// key === null clears the day. A tracker you cannot leave blank is one you start lying to.
+function setMoodDay(dateISO, key) {
+  const map = loadMoods();
+  if (key && MOOD_BY_KEY.has(key)) map[dateISO] = key;
+  else delete map[dateISO];
+  saveMoods(map);
+}
+
+// One <svg>. The art is ours, written above in this file — never anything typed into the app —
+// so it goes in as markup on purpose.
+function moodSvg(mood, cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" aria-hidden="true">${mood.art}</svg>`;
+}
+
+// ---------- The wheel ----------
+// It is a layer, not part of the page: hold a day, the twelve appear, slide and let go.
+// Holding keeps the whole thing one gesture — press, slide, release — and a plain tap opens
+// the same wheel to be tapped instead, because a one-thumb hold-and-drag on a folded phone
+// needs a way out, and it is also the only way in from a keyboard.
+
+const MOOD_SPOKE = 56;    // the main screen's tap target, and the fallback if one cannot be measured
+const MOOD_HOLD_MS = 280; // long enough not to fire on a tap, short enough not to feel stuck
+const MOOD_SLOP = 10;     // moving further than this before the hold fires means you are scrolling
+
+// The day the wheel is setting, and the month the calendar is showing.
+let moodDate = todayISO();
+let moodViewYear = new Date().getFullYear();
+let moodViewMonth = new Date().getMonth();
+
+// Which spoke the thumb is over mid-drag, and a guard so the pointerup that picks a mood
+// does not also fire the spoke's click a moment later.
+let moodHover = null;
+let moodJustPicked = false;
+// The hold in progress on a day: its timer, where it started, and whether it became a drag.
+let moodHold = null;
+// Opened by a tap rather than a hold, so the hub says "Tap a mood" instead of "Slide to a mood".
+let moodTapMode = false;
+
+function moodSheetOpen() {
+  return !$("mood-sheet").hidden;
+}
+
+function renderMoodHub() {
+  const shown = moodHover || moodFor(moodDate);
+  const hub = $("mood-hub");
+  hub.innerHTML = shown ? moodSvg(shown, "mood-hub-art") : "";
+  // Measured: every one of the twelve names fits on ONE line inside the 104px hub, the longest
+  // ("Overly Happy Sunny", 79px) with 9px to spare. That is why names were never kept short.
+  hub.append(el("span", "mood-hub-name", shown ? shown.name : moodTapMode ? "Tap a mood" : "Slide to a mood"));
+  hub.classList.toggle("is-empty", !shown);
+}
+
+// The twelve spokes, placed in px after layout so a fold that changes the width re-lays them.
+function layoutMoodWheel() {
+  const wheel = $("mood-wheel");
+  const size = wheel.clientWidth;
+  if (!size) return;
+  const spokes = wheel.querySelectorAll(".mood-spoke");
+  // Read the spoke's real size rather than trusting the constant: the cover screen makes both
+  // the ring and the spokes smaller in CSS, and a hard-coded 56 would scatter them there.
+  const spokeSize = spokes[0] ? spokes[0].offsetWidth || MOOD_SPOKE : MOOD_SPOKE;
+  const radius = (size - spokeSize) / 2;
+  spokes.forEach((spoke, i) => {
+    const angle = -Math.PI / 2 + (i * Math.PI) / 6;
+    spoke.style.left = `${size / 2 + radius * Math.cos(angle) - spokeSize / 2}px`;
+    spoke.style.top = `${size / 2 + radius * Math.sin(angle) - spokeSize / 2}px`;
+  });
+}
+
+function buildMoodWheel() {
+  const wheel = $("mood-wheel");
+  if (wheel.querySelector(".mood-spoke")) return;   // built once
+  const spokes = MOODS.map((mood) => {
+    const spoke = el("button", "mood-spoke");
+    spoke.type = "button";
+    spoke.dataset.key = mood.key;
+    spoke.innerHTML = moodSvg(mood, "mood-spoke-art");
+    spoke.setAttribute("aria-label", mood.name);
+    spoke.addEventListener("click", () => {        // the tap fallback, and the keyboard's way in
+      if (moodJustPicked) return;
+      pickMood(mood.key);
+    });
+    return spoke;
+  });
+  wheel.append(...spokes);          // the hub is already in the markup, in the middle
+  layoutMoodWheel();
+}
+
+function spokeFromPoint(x, y) {
+  const box = $("mood-wheel").getBoundingClientRect();
+  const dx = x - (box.left + box.width / 2);
+  const dy = y - (box.top + box.height / 2);
+  // Inside the hub is "no choice yet", so you can slide back to the middle and let go to
+  // change your mind. Outside the ring still counts: past the edge is nobody's finger slipping.
+  if (Math.hypot(dx, dy) < box.width * 0.24) return null;
+  const angle = Math.atan2(dy, dx) + Math.PI / 2;          // 0 at the top, running clockwise
+  const slot = Math.round(angle / (Math.PI / 6));
+  return MOODS[((slot % 12) + 12) % 12];
+}
+
+function openMoodWheel(dateISO, { dragging = false } = {}) {
+  moodDate = dateISO;
+  moodHover = null;
+  moodTapMode = !dragging;
+  $("mood-sheet").hidden = false;
+  buildMoodWheel();
+  layoutMoodWheel();                // the sheet was hidden a moment ago, so it measured 0 wide
+  renderMoodSheet();
+  if (dragging) {
+    // The gesture started on a day cell, so the wheel cannot have captured the pointer. Follow
+    // it on the document instead — same result, and it survives sliding off the ring entirely.
+    document.addEventListener("pointermove", moodDragMove);
+    document.addEventListener("pointerup", moodDragEnd);
+    document.addEventListener("pointercancel", moodDragEnd);
+  }
+}
+
+function closeMoodWheel() {
+  $("mood-sheet").hidden = true;
+  moodHover = null;
+  stopMoodDrag();
+  renderMood();
+}
+
+function stopMoodDrag() {
+  document.removeEventListener("pointermove", moodDragMove);
+  document.removeEventListener("pointerup", moodDragEnd);
+  document.removeEventListener("pointercancel", moodDragEnd);
+}
+
+function moodDragMove(e) {
+  const over = spokeFromPoint(e.clientX, e.clientY);
+  if (over === moodHover) return;
+  moodHover = over;
+  renderMoodSheet();
+}
+
+function moodDragEnd(e) {
+  stopMoodDrag();
+  const over = e.type === "pointercancel" ? null : moodHover;
+  moodHover = null;
+  if (!over) {               // let go in the middle, or the gesture was cancelled: nothing written
+    renderMoodSheet();
+    return;
+  }
+  // The release picks it, so the click the browser sends next must not pick it a second time.
+  moodJustPicked = true;
+  setTimeout(() => (moodJustPicked = false), 350);
+  pickMood(over.key);
+}
+
+function pickMood(key) {
+  setMoodDay(moodDate, key);
+  moodHover = null;
+  renderMood();
+  renderMoodSheet();
+  // Closing on its own is the point: one gesture, one mood, back to the month.
+  setTimeout(closeMoodWheel, 260);
+}
+
+function renderMoodSheet() {
+  if (!moodSheetOpen()) return;
+  const today = todayISO();
+  const picked = moodFor(moodDate);
+  $("mood-sheet-day").textContent =
+    moodDate === today
+      ? `Today · ${weekdayShort(today)} ${shortDate(today)}`
+      : `${weekdayShort(moodDate)} ${shortDate(moodDate, true)}`;
+  renderMoodHub();
+  for (const spoke of $("mood-wheel").querySelectorAll(".mood-spoke")) {
+    spoke.classList.toggle("is-picked", !!picked && spoke.dataset.key === picked.key);
+    spoke.classList.toggle("is-hover", !!moodHover && spoke.dataset.key === moodHover.key);
+  }
+  $("mood-clear").hidden = !picked;
+}
+
+// ---------- The page under it ----------
+
+function renderMood() {
+  const today = todayISO();
+  const picked = moodFor(today);
+  $("mood-day").textContent = `Today · ${weekdayShort(today)} ${shortDate(today)}`;
+  $("mood-today-art").innerHTML = picked ? moodSvg(picked, "mood-today-svg") : "";
+  $("mood-today-name").textContent = picked ? picked.name : "How was today?";
+  $("mood-today-btn").classList.toggle("is-empty", !picked);
+  renderMoodMonth(today);
+}
+
+// Build 29: the month shows each day's own drawing, not a family colour. The "a 24px cell makes
+// a drawing illegible" worry in the plan was reasoned from a cell size the grid never produces:
+// measured on the real layout, a cell is 41px on the 360px screen and 43px on the cover, which
+// puts the drawing at ~30px — inside what these twelve were drawn and checked for.
+function renderMoodMonth(today) {
+  $("mood-month-label").textContent = new Date(moodViewYear, moodViewMonth, 1)
+    .toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const daysInMonth = new Date(moodViewYear, moodViewMonth + 1, 0).getDate();
+  const blanks = (new Date(moodViewYear, moodViewMonth, 1).getDay() + 6) % 7;   // weeks start Monday
+  const cells = [];
+  for (let i = 0; i < blanks; i++) cells.push(el("span", "mood-cell mood-blank"));
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push(moodDayCell(isoDate(moodViewYear, moodViewMonth, day), today));
+  }
+  $("mood-calendar").replaceChildren(...cells);
+  const now = new Date();
+  $("mood-next-month").disabled =
+    moodViewYear * 12 + moodViewMonth >= now.getFullYear() * 12 + now.getMonth();
+}
+
+function moodDayCell(dateISO, today) {
+  const mood = moodFor(dateISO);
+  const cell = el("button", "mood-cell");
+  cell.type = "button";
+  cell.append(el("span", "mood-cell-day", String(Number(dateISO.slice(8)))));
+  if (mood) cell.insertAdjacentHTML("beforeend", moodSvg(mood, "mood-cell-art"));
+  else cell.classList.add("is-empty");
+  if (dateISO === today) cell.classList.add("is-today");
+  if (dateISO > today) {
+    cell.classList.add("is-off");       // nothing has happened yet, so there is nothing to say
+    cell.disabled = true;
+  } else {
+    attachMoodHold(cell, dateISO);
+  }
+  cell.setAttribute("aria-label", `${shortDate(dateISO, true)}${mood ? `, ${mood.name}` : ", no mood"}`);
+  return cell;
+}
+
+// Hold to open, and the hold flows straight into the slide. A plain tap opens the same wheel
+// to be tapped. Moving more than MOOD_SLOP before the hold fires means you were scrolling the
+// month, so the hold is abandoned and the page scrolls as it always would.
+function attachMoodHold(target, dateISO) {
+  // A click with no pointer behind it is the keyboard (or an assistive tap): Enter on a focused
+  // day. The hold path never runs there, so the click below must open the wheel itself.
+  let fromPointer = false;
+  target.addEventListener("pointerdown", (e) => {
+    fromPointer = true;
+    moodHold = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      opened: false,
+      timer: setTimeout(() => {
+        moodHold.opened = true;
+        openMoodWheel(dateISO, { dragging: true });
+      }, MOOD_HOLD_MS),
+    };
+  });
+  target.addEventListener("pointermove", (e) => {
+    if (!moodHold || moodHold.opened || e.pointerId !== moodHold.id) return;
+    if (Math.hypot(e.clientX - moodHold.x, e.clientY - moodHold.y) < MOOD_SLOP) return;
+    clearTimeout(moodHold.timer);
+    moodHold = null;
+  });
+  const letGo = () => {
+    if (!moodHold) return;
+    clearTimeout(moodHold.timer);
+    const opened = moodHold.opened;
+    moodHold = null;
+    if (!opened) openMoodWheel(dateISO);          // a tap: the wheel opens to be tapped
+  };
+  target.addEventListener("pointerup", letGo);
+  target.addEventListener("pointercancel", () => {
+    if (!moodHold) return;
+    clearTimeout(moodHold.timer);
+    moodHold = null;
+  });
+  target.addEventListener("click", (e) => {
+    e.preventDefault();          // the click that follows a hold must not re-open anything
+    if (fromPointer) {
+      fromPointer = false;
+      return;
+    }
+    openMoodWheel(dateISO);      // keyboard: open it to be tapped, or arrowed into
+  });
+}
+
+attachMoodHold($("mood-today-btn"), todayISO());
+
+$("mood-clear").addEventListener("click", () => {
+  setMoodDay(moodDate, null);
+  renderMood();
+  renderMoodSheet();
+});
+
+$("mood-close").addEventListener("click", closeMoodWheel);
+// Tapping the dark space around the wheel closes it, the way every sheet in the app behaves.
+$("mood-sheet").addEventListener("pointerdown", (e) => {
+  if (e.target === $("mood-sheet")) closeMoodWheel();
+});
+
+for (const [id, delta] of [["mood-prev-month", -1], ["mood-next-month", 1]]) {
+  $(id).addEventListener("click", () => {
+    const index = moodViewYear * 12 + moodViewMonth + delta;
+    moodViewYear = Math.floor(index / 12);
+    moodViewMonth = index - moodViewYear * 12;
+    renderMood();
+  });
+}
+
+// Opening the page always starts at today, wherever you browsed to last time (the My Skin rule).
+function resetMoodView() {
+  const now = new Date();
+  moodDate = todayISO();
+  moodHover = null;
+  moodViewYear = now.getFullYear();
+  moodViewMonth = now.getMonth();
+}
+
 // ---------- Date steppers (Build 22.3) ----------
 // Android's own date picker uses its landscape layout on the cover screen (598 x 530, wider than
 // it is tall) and is then too wide for the window: Cancel is clipped and OK is off-screen, so a
@@ -1347,6 +1801,7 @@ function showView(view, { push = false } = {}) {
   if (view === "diary") renderDiary();
   if (view === "books") renderBooks();
   if (view === "reflect") openReflection(todayISO());
+  if (view === "habit") { resetMoodView(); renderMood(); }   // Build 29: opening starts at today
   if (view !== "brain" && $("brain-dialog").open) $("brain-dialog").close(); // Back left the page with the pop-up open
   applyPages();
   if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
@@ -2980,7 +3435,7 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 12, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history, 11 the car loan, 12 reflections
+    version: 13, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history, 11 the car loan, 12 reflections, 13 moods
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -2996,6 +3451,7 @@ function makeBackup() {
     changes: loadChanges(),
     debt: loadDebt(),
     reflections: reflectStore.load(),
+    moods: loadMoods(),
   };
 }
 
@@ -3174,6 +3630,7 @@ $("restore-no").addEventListener("click", () => {
 // Every screen drawn again from storage, after a restore puts new data there
 function redrawEverything() {
   renderReflectHistory();
+  renderMood();
   renderDashboard();
   renderIncome();
   renderSavings();
@@ -3238,7 +3695,7 @@ $("snapshot-yes").addEventListener("click", () => {
 // Build 27.2: the restore itself, lifted out of the button so a spare copy can use the same path.
 // Every guard stays: the rollback, the redraw inside the safety net, and the history entry.
 function applyBackup(backup, statusId, sourceLabel) {
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY, REFLECT_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY, REFLECT_KEY, MOOD_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -3263,6 +3720,8 @@ function applyBackup(backup, statusId, sourceLabel) {
     if (backup.debt) saveDebt({ target: Number(backup.debt.target) || 0, paidBefore: Number(backup.debt.paidBefore) || 0 });
     // Build 28: version 12 carries your reflections. An older backup has none, so yours are left alone.
     if (backup.reflections) reflectStore.save(backup.reflections);
+    // Build 29: version 13 carries your moods. An older backup has none, so yours are left alone.
+    if (backup.moods) saveMoods(backup.moods);
     // Build 19: an older backup's "braindump" is ignored on purpose — Brain dump stores nothing now
   } catch (err) {
     console.error(err);
@@ -4576,6 +5035,7 @@ function syncScreenState() {
   renderIncome();
   renderSavings();
   renderSkin();
+  renderMood();            // Build 29
   applyCoverWording();
 }
 

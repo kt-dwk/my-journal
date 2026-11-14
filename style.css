@@ -1711,3 +1711,195 @@ textarea {
   border-radius: 3px;
 }
 .date-step-label { text-align: center; font-size: 16px; }
+
+/* ---------- Mood (Build 29) ---------- */
+/* Today's card: the fastest way in, because today is the day you are nearly always setting. */
+.mood-today { margin-bottom: 14px; }
+.mood-today-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 17px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: none;        /* the hold starts here too, so it must not read as a scroll */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mood-today-art { display: flex; flex: 0 0 auto; }
+.mood-today-svg { width: 40px; height: 40px; }
+.mood-today-btn.is-empty { color: var(--muted); }
+
+/* The wheel, as a layer over the page. Measured: 12 spokes of 56px need a 274px ring, which
+   fits the 360px main screen. The cover screen gets a smaller one further down this file. */
+.mood-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  /* Not a black scrim: this app has no pure black anywhere. Espresso at 76%, which is not a
+     taste call — measured. The date line above the wheel is Vanilla, and Vanilla on this
+     scrim over the page reads 4.98:1, where 62% gave 3.53 and 38% was unreadable. The app's
+     rule is 4.5 everywhere, and a layer is no excuse. */
+  background: color-mix(in srgb, var(--ink) 76%, transparent);
+}
+.mood-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.mood-sheet-day { margin: 0; font-size: 14px; color: var(--card); }
+.mood-sheet-actions { display: flex; gap: 8px; min-height: 40px; }
+/* The cross, not a "Close" box. The wheel is a layer, and a layer is dismissed from its
+   corner — the same gesture the rest of the phone uses. 44px, the app's tap target. */
+.mood-close {
+  position: absolute;
+  top: calc(8px + env(safe-area-inset-top));
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--card);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.mood-wheel {
+  position: relative;
+  width: 274px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  /* The hold slides across this, so the browser must not read it as a scroll... */
+  touch-action: none;
+  /* ...and without this the same drag selects the hub's words, which then sit highlighted
+     under your thumb. Caught on the first real drag, not by calling the handler. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mood-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: var(--card);
+  border: 1.5px solid var(--edge);
+  pointer-events: none;      /* the wheel beneath handles every pointer, hub included */
+}
+.mood-hub-art { width: 40px; height: 40px; color: var(--ink); }
+/* Measured: every one of the twelve fits on one line here, the longest with 9px to spare. */
+.mood-hub-name {
+  max-width: 92px;
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--ink);
+}
+.mood-hub.is-empty .mood-hub-name { color: var(--quiet); }
+.mood-spoke {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.mood-spoke-art { width: 36px; height: 36px; }
+.mood-spoke.is-picked { border-color: var(--accent); }
+/* Whatever the thumb is over. It grows rather than changing colour: under a thumb, size is
+   the only change you can actually see. */
+.mood-spoke.is-hover {
+  background: var(--note);
+  border-color: var(--accent);
+  transform: scale(1.18);
+}
+
+/* The month. Each day shows its own drawing, not a family colour: measured on the real
+   layout a cell is 41px on the 360px screen and 43px on the cover, which leaves ~30px of
+   drawing — the size these twelve were drawn for. */
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.mood-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  touch-action: none;        /* the hold starts here; without this the first hold scrolls */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mood-cell-day {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--quiet);
+}
+/* A day with nothing on it is its number alone, in the middle: a cell is either a number or
+   a mood, never both competing in 41px. */
+.mood-cell.is-empty .mood-cell-day {
+  position: static;
+  font-size: 15px;
+  color: var(--muted);
+}
+.mood-cell-art { width: 74%; height: 74%; margin-top: 4px; }
+.mood-cell.is-today { outline: 1.5px solid var(--accent); outline-offset: -1.5px; }
+.mood-cell.is-off { color: var(--quiet); cursor: default; }
+.mood-cell.is-off .mood-cell-day { color: var(--line); }
+
+/* Build 29 on the cover screen. The ring is sized by its spokes: twelve of them need a
+   diameter of about 4.8x the spoke, so 48px spokes give a 232-unit ring. At 274 the bottom
+   of the wheel fell below the fold's 331 units and you had to scroll to reach four of the
+   twelve — on the screen meant for capturing something in seconds.
+   These selectors carry an id on purpose. The cover block higher up this file sits BEFORE
+   the rules above, so it would lose to them at equal weight (the Build 17.2 trap). */
+@media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
+  #mood-sheet .mood-wheel { width: 232px; }
+  #mood-sheet .mood-spoke { width: 48px; height: 48px; }
+  #mood-sheet .mood-spoke-art { width: 32px; height: 32px; }
+  #mood-sheet .mood-hub { width: 92px; height: 92px; }
+  #mood-sheet .mood-hub-art { width: 34px; height: 34px; }
+  #mood-sheet .mood-hub-name { max-width: 82px; font-size: 10px; }
+  #habit-page .mood-today-btn { min-height: 54px; font-size: 15px; }
+  #habit-page .mood-today-svg { width: 32px; height: 32px; }
+}

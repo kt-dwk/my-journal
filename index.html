@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=33">
+  <link rel="stylesheet" href="style.css?v=34">
 </head>
 <body>
   <!-- Home page -->
@@ -27,8 +27,8 @@
       </div>
     </div>
     <!-- Build 16.10 (wireframe 28a): the row under the note. 📖 opens My Books since Build 22;
-         ❤️ still has no page, so it is drawn but does nothing — aria-disabled rather than disabled,
-         which would grey it. Build 24.11 gives all three a name on the main screen. -->
+         ❤️ opened nothing until Build 28, which gave it Reflection — inert from 16.10 to 28, the
+         longest unfinished thing in the app. Build 24.11 gives all three a name on the main screen. -->
     <div class="home-icons">
       <button type="button" class="brain-button" id="tile-book" aria-label="My Books"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--sand)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path fill="none" d="M12 7.5v13"/></svg><span class="icon-label">Books</span></button>
       <button type="button" class="brain-button" id="tile-heart" aria-label="Reflection"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg><span class="icon-label">Reflect</span></button>
@@ -172,11 +172,44 @@
       <button type="button" class="icon-btn go-home" aria-label="Home">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <h1>Habit</h1>
+      <h1>Mood</h1>
       <button type="button" class="icon-btn open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M19 8h1M4 16h3M13 16h7"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg></button>
     </header>
-    <p>Coming in a later build.</p>
-    <p class="small">We'll plan this section together first: what counts as a habit, and how the week is shown.</p>
+    <section class="mood-today">
+      <p class="small" id="mood-day"></p>
+      <button type="button" class="mood-today-btn" id="mood-today-btn">
+        <span class="mood-today-art" id="mood-today-art"></span>
+        <span class="mood-today-name" id="mood-today-name"></span>
+      </button>
+    </section>
+
+    <section>
+      <div class="month-nav">
+        <button type="button" class="btn month-arrow" id="mood-prev-month" aria-label="Previous month">‹</button>
+        <h2 id="mood-month-label"></h2>
+        <button type="button" class="btn month-arrow" id="mood-next-month" aria-label="Next month">›</button>
+      </div>
+      <div class="cal-head" aria-hidden="true"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+      <div class="mood-grid" id="mood-calendar"></div>
+      <p class="small cal-key">Hold a day to open the wheel. Slide, then let go.</p>
+    </section>
+  </div>
+
+  <!-- Build 29: the wheel. It is a layer over whatever page you were on, opened by holding a
+       day, so the twelve never take up room they are not being used for. -->
+  <div class="mood-sheet" id="mood-sheet" hidden>
+    <button type="button" class="mood-close" id="mood-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="mood-sheet-inner">
+      <p class="small mood-sheet-day" id="mood-sheet-day"></p>
+      <div class="mood-wheel" id="mood-wheel">
+        <div class="mood-hub" id="mood-hub"></div>
+      </div>
+      <div class="mood-sheet-actions">
+        <button type="button" class="btn undo" id="mood-clear" hidden>Clear this day</button>
+      </div>
+    </div>
   </div>
 
   <!-- My Skin -->
@@ -909,6 +942,6 @@
     <div class="sheet-slot" id="export-slot"></div>
   </dialog>
 
-  <script src="app.js?v=33"></script>
+  <script src="app.js?v=34"></script>
 </body>
 </html>
