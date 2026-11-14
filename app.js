@@ -57,7 +57,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "27.1", date: "2026-11-13" };
+const BUILD = { number: "27.2", date: "2026-11-14" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1300,7 +1300,37 @@ function renderHome() {
   $("skin-tile-tonight").textContent = onCoverScreen()
     ? skinLetterFor(today)
     : skinNightFor(today);
+  renderBackupNudge();
 }
+
+// Build 27.2: the monthly nudge. It is here and nowhere else on purpose \u2014 Home is the page you
+// open daily, and it is MAIN SCREEN ONLY: the cover screen is for capturing something in seconds,
+// not for a chore. There is no dismiss, by your decision: a Later button is a laziness button.
+function renderBackupNudge() {
+  const btn = $("home-backup");
+  const due = !onCoverScreen() && backupIsDue();
+  btn.hidden = !due;
+  if (!due) return;
+  const last = localStorage.getItem(LAST_BACKUP_KEY);
+  btn.disabled = false;
+  btn.textContent = last
+    ? `Back up now \u00b7 last backup ${backupAge(last)}`
+    : "Back up now \u00b7 you haven't yet";
+}
+
+$("home-backup").addEventListener("click", async () => {
+  const btn = $("home-backup");
+  btn.disabled = true;
+  const ok = await runBackup("backup-status");
+  if (!ok) {                       // cancelled or failed: the nudge stays, as it should
+    renderBackupNudge();
+    return;
+  }
+  // Say it worked before going. A cancelled share also makes the button stay, so silence would
+  // leave "it worked" and "I cancelled" looking the same.
+  btn.textContent = "Backed up \u2713";
+  setTimeout(() => { renderHome(); showLastBackup(); }, 1600);
+});
 
 function showView(view, { push = false } = {}) {
   currentView = view;
@@ -1793,6 +1823,86 @@ const NOTE_MAX_CHARS = 10000;
 const DEFAULT_TEXT_HEX = "#443D35";            // the normal ink colour (Espresso)
 const COLOURS_KEY = "myjournal.colors";
 const LAST_BACKUP_KEY = "myjournal.lastbackup";  // Build 11.5: shown in Settings, not part of the backup
+
+// ---------- The spare copies (Build 27.2) ----------
+// One snapshot a day, kept for a week, plus one taken a moment before any restore.
+//
+// WHY A DAY AND NOT EVERY CHANGE: a copy that updates the instant you change something would
+// copy your mistake too. You would have a perfect spare of the damage. A spare is only worth
+// having if it is OLDER than the mistake, so these are taken once a day and seven are kept.
+//
+// WHAT THEY DO NOT DO: they live in the same storage as your data. Clearing the browser or
+// uninstalling takes both. They are for mistakes, never for a lost phone — that is the backup file.
+const SNAPSHOT_KEY = "myjournal.snapshots";
+const SNAPSHOT_KEEP = 7;
+const FIRST_RUN_KEY = "myjournal.firstrun";   // day zero, so a phone that has never backed up can be counted from
+
+function loadSnapshots() {
+  try {
+    const list = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];        // a damaged list is not your data: never let it take a page down
+  }
+}
+
+// A failed snapshot is swallowed, like the edit history: the save it is shadowing has already
+// happened, and must never be undone because its spare copy could not be written.
+function takeSnapshot(reason) {
+  let list;
+  try {
+    list = loadSnapshots();
+    list.push({ at: new Date().toISOString(), reason, data: makeBackup() });
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+  while (list.length > SNAPSHOT_KEEP) list.shift();
+  // If storage is full, drop the oldest and try again until it fits or there is nothing left.
+  while (list.length) {
+    try {
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(list));
+      return;
+    } catch (err) {
+      console.error(err);
+      list.shift();
+    }
+  }
+}
+
+function snapshotTodayIfNeeded() {
+  const today = todayISO();
+  if (loadSnapshots().some((s) => s.reason === "daily" && String(s.at).slice(0, 10) === today)) return;
+  takeSnapshot("daily");
+}
+
+function firstRunDate() {
+  let when = localStorage.getItem(FIRST_RUN_KEY);
+  if (!when) {
+    when = new Date().toISOString();
+    try { localStorage.setItem(FIRST_RUN_KEY, when); } catch (err) { console.error(err); }
+  }
+  return when;
+}
+
+// Build 27.2: the monthly nudge. Rolling from your last real backup — a fixed date would nag
+// on the 1st even if you backed up on the 29th. A phone that has never backed up counts from
+// first run, so nothing appears on day one, before there is anything worth losing.
+//
+// 30, not 90. Quarterly was chosen while the file-pile problem looked like a frequency problem;
+// it wasn't — it was one file per TAP, which the nudge fixes by itself. So the real trade was
+// 8 extra files a year against two extra months of data to lose if the phone dies. The spare
+// copies die with the phone, so this file is the only thing that would be left.
+const BACKUP_DUE_DAYS = 30;
+
+function daysSinceBackup() {
+  const last = localStorage.getItem(LAST_BACKUP_KEY) || firstRunDate();
+  return daysBetween(String(last).slice(0, 10), todayISO());
+}
+
+function backupIsDue() {
+  return daysSinceBackup() >= BACKUP_DUE_DAYS;
+}
 // Build 24.3: the warm rows. Every text colour clears 4.5:1 on both papers; every highlight
 // is a fill the palette already carries, with ink at 4.89 or better on it. Only Indigo and
 // Plum are new — the palette had no blue-violet or purple dark enough to write with.
@@ -2675,21 +2785,25 @@ function backupSummary(backup) {
     + ` · ${count(backup.savings.length, "saving")} · ${count((backup.diary || []).length, "note")}`;
 }
 
-$("backup-btn").addEventListener("click", async () => {
-  $("backup-status").hidden = true;
+// Build 27.2: the backup itself, lifted out of the Settings button so the Home nudge can run it
+// too. Same code, two callers. Returns true only when a file really left — a cancelled share
+// does NOT count, which is what keeps "it has been 90 days" honest.
+async function runBackup(statusId) {
+  $(statusId).hidden = true;
   let backup;
   try {
     backup = makeBackup();
   } catch (err) {
     console.error(err);
-    showSettingsStatus("backup-status", "Your saved data couldn't be read, so no backup was made.", true);
-    return;
+    showSettingsStatus(statusId, "Your saved data couldn't be read, so no backup was made.", true);
+    return false;
   }
 
-  // Build 9.8: the time in the name gives every backup its own file, so Chrome never asks "download again?"
-  const now = new Date();
-  const time = `${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
-  const name = `my-journal-backup-${todayISO()}-${time}`;
+  // Build 9.8 put the TIME in the name so Chrome never asked "download again?". Build 27.2 takes
+  // it out again: it meant every tap made a keeper, and ten taps in a month left ten files in
+  // OneDrive forever. Date only, so a second backup the same day lands as "(1)" — visibly a
+  // repeat rather than another thing to keep.
+  const name = `my-journal-backup-${todayISO()}`;
   const contents = JSON.stringify(backup, null, 2);
   // Chrome on Android won't share a .json file, but it will share .txt. Same backup inside; Restore accepts both.
   const shareFile = new File([contents], `${name}.txt`, { type: "text/plain" });
@@ -2698,12 +2812,12 @@ $("backup-btn").addEventListener("click", async () => {
     try {
       await navigator.share({ files: [shareFile], title: "My Journal backup" });
       rememberBackupTime();
-      showSettingsStatus("backup-status", `Backup shared ✓ (${backupSummary(backup)})`);
-      return;
+      showSettingsStatus(statusId, `Backup shared \u2713 (${backupSummary(backup)})`);
+      return true;
     } catch (err) {
       if (err.name === "AbortError") {
-        showSettingsStatus("backup-status", "Backup cancelled.");
-        return;
+        showSettingsStatus(statusId, "Backup cancelled.");
+        return false;
       }
       console.error(err); // sharing failed: fall back to saving the file
     }
@@ -2719,7 +2833,13 @@ $("backup-btn").addEventListener("click", async () => {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
   rememberBackupTime();
-  showSettingsStatus("backup-status", `Sharing isn't available here, so the backup was saved to Downloads ✓ (${backupSummary(backup)})`);
+  showSettingsStatus(statusId, `Sharing isn't available here, so the backup was saved to Downloads \u2713 (${backupSummary(backup)})`);
+  return true;
+}
+
+$("backup-btn").addEventListener("click", async () => {
+  await runBackup("backup-status");
+  renderHome();      // the Home nudge may have just become unnecessary
 });
 
 // Restore: check the file, show what's in it, then replace everything after "Yes, restore"
@@ -2834,9 +2954,60 @@ function redrawEverything() {
   fillRateInputs();
 }
 
-$("restore-yes").addEventListener("click", () => {
-  if (!pendingRestore) return;
-  const backup = pendingRestore;
+// ---------- The spare copies on screen (Build 27.2) ----------
+
+let pendingSnapshot = null;      // a spare copy waiting for "Yes"
+
+function snapshotLabel(s) {
+  const day = shortDate(String(s.at).slice(0, 10), true);
+  const time = new Date(s.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return s.reason === "before restore"
+    ? `${day}, ${time} \u00b7 before a restore`
+    : `${day}, ${time}`;
+}
+
+function cancelSnapshotRestore() {
+  pendingSnapshot = null;
+  toggleConfirm("snapshot-confirm", "snapshot-list", false);
+}
+
+function renderSnapshots() {
+  const list = loadSnapshots().slice().reverse();    // newest first
+  $("snapshot-none").hidden = list.length > 0;
+  $("snapshot-list").replaceChildren(...list.map((snap) => {
+    const li = el("li", "snap-row");
+    const btn = el("button", "snap-btn");
+    btn.type = "button";
+    btn.append(el("span", "", snapshotLabel(snap)), el("span", "snap-go", "Restore"));
+    btn.addEventListener("click", () => {
+      pendingSnapshot = snap;
+      $("snapshot-summary").textContent = `Go back to ${snapshotLabel(snap)}?`;
+      $("snapshot-status").hidden = true;
+      toggleConfirm("snapshot-confirm", "snapshot-list", true);
+    });
+    li.append(btn);
+    return li;
+  }));
+}
+
+$("snapshot-no").addEventListener("click", cancelSnapshotRestore);
+
+$("snapshot-yes").addEventListener("click", () => {
+  if (!pendingSnapshot) return;
+  const snap = pendingSnapshot;
+  // Going back is itself a restore, so it gets its own spare copy first \u2014 otherwise picking the
+  // wrong day would be the one move in the app with no way back.
+  takeSnapshot("before restore");
+  cancelSnapshotRestore();
+  if (applyBackup(snap.data, "snapshot-status", `Spare copy from ${snapshotLabel(snap)}`)) {
+    showSettingsStatus("snapshot-status", `Went back to ${snapshotLabel(snap)} \u2713`);
+  }
+  renderSnapshots();
+});
+
+// Build 27.2: the restore itself, lifted out of the button so a spare copy can use the same path.
+// Every guard stays: the rollback, the redraw inside the safety net, and the history entry.
+function applyBackup(backup, statusId, sourceLabel) {
   const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
@@ -2865,11 +3036,9 @@ $("restore-yes").addEventListener("click", () => {
     console.error(err);
     // Put everything back the way it was
     keys.forEach((key, i) => (before[i] === null ? localStorage.removeItem(key) : localStorage.setItem(key, before[i])));
-    cancelRestore();
-    showSettingsStatus("backup-status", "Restore failed, so your data wasn't changed.", true);
-    return;
+    showSettingsStatus(statusId, "Restore failed, so your data wasn't changed.", true);
+    return false;
   }
-  cancelRestore();
   // Build 23.1: drawing used to sit outside the safety net, so a backup that saved but wouldn't
   // draw left the bad data in place and broke the app on every open. Now drawing is covered too.
   try {
@@ -2882,17 +3051,27 @@ $("restore-yes").addEventListener("click", () => {
     } catch (err2) {
       console.error(err2);
     }
-    showSettingsStatus("backup-status", "Restore failed, so your data wasn't changed.", true);
-    return;
+    showSettingsStatus(statusId, "Restore failed, so your data wasn't changed.", true);
+    return false;
   }
   // Build 23.4: one entry for the restore itself, written LAST so the incoming history can't
   // overwrite it. It is the boundary marking where everything changed at once.
-  appendChange({
-    at: new Date().toISOString(),
-    what: "restore",
-    label: `Backup from ${backup.exportedAt ? shortDate(backup.exportedAt.slice(0, 10), true) : "an unknown date"}`,
-  });
-  showSettingsStatus("backup-status", `Restored ✓ (${backupSummary(backup)})`);
+  appendChange({ at: new Date().toISOString(), what: "restore", label: sourceLabel });
+  return true;
+}
+
+$("restore-yes").addEventListener("click", () => {
+  if (!pendingRestore) return;
+  const backup = pendingRestore;
+  // Build 27.2: a spare copy taken a second before the most dangerous button in the app, so a
+  // restore you regret can be undone. Taken BEFORE cancelRestore so nothing can clear it first.
+  takeSnapshot("before restore");
+  cancelRestore();
+  const label = `Backup from ${backup.exportedAt ? shortDate(backup.exportedAt.slice(0, 10), true) : "an unknown date"}`;
+  if (applyBackup(backup, "backup-status", label)) {
+    showSettingsStatus("backup-status", `Restored \u2713 (${backupSummary(backup)})`);
+    renderSnapshots();
+  }
 });
 
 // ---------- Savings tab ----------
@@ -4145,6 +4324,11 @@ function showTab(name) {
 
 COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
   applyDateControls();
+  // Build 27.2: Home was missing from this list. Two things depended on it and neither updated
+  // when you folded the phone with the app already open: the skin tile kept the long name
+  // ("Hydration") where Build 24.10 wants the letter "H" so the four tiles stay aligned, and the
+  // backup nudge stayed on screen on the cover, where it is not supposed to appear at all.
+  renderHome();
   renderDashboard();
   renderIncome();
   renderSavings();
@@ -4252,6 +4436,12 @@ async function checkForNewBuild() {
   } catch {}
   location.reload();
 }
+
+// Build 27.2: one spare copy a day, taken on the first open of the day, and the list drawn.
+// After the stores are loaded, so a snapshot is of real data rather than of nothing.
+firstRunDate();          // records day zero the very first time the app is opened
+snapshotTodayIfNeeded();
+renderSnapshots();
 
 checkForNewBuild();
 document.addEventListener("visibilitychange", () => {

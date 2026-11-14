@@ -1324,6 +1324,23 @@ textarea {
    and Restore replaces everything. The confirm step is what really protects you. */
 #restore-btn { color: var(--muted); border-color: var(--quiet); }
 #last-backup { margin: 10px 0 0; }
+/* Build 27.2: the spare copies, and the quarterly nudge on Home. Placed above the cover-screen
+   block so the cover rules can still win at equal specificity — the trap from 17.2. */
+.snap-head { margin: 18px 0 8px; font-size: 13px; font-weight: normal; color: var(--muted); }
+.snap-list { margin: 0; padding: 0; list-style: none; }
+.snap-btn {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  width: 100%; padding: 9px 0; font: inherit; font-size: 14px; color: var(--muted);
+  text-align: left; background: none; border: 0;
+  border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.snap-go { font-size: 13px; color: var(--accent); white-space: nowrap; }
+#home-backup {
+  width: 100%; margin: 0 0 14px; padding: 10px 14px;
+  font: inherit; font-size: 14px; border-radius: 12px;
+  color: var(--card); background: var(--accent); border: 0; cursor: pointer;
+}
+#home-backup[disabled] { opacity: .75; }
 /* Build 26: one action, so it takes the whole row rather than half of the two-column grid.
    An id, so the cover-screen block further down cannot win on equal specificity. */
 #export-actions { grid-template-columns: 1fr; }

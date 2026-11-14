@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=30">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
   <!-- Home page -->
@@ -34,6 +34,8 @@
       <button type="button" class="brain-button" id="tile-heart" aria-label="Self-reflection, coming later" aria-disabled="true"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg><span class="icon-label">Reflect</span></button>
       <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg><span class="icon-label">Let go</span></button>
     </div>
+    <button type="button" class="home-backup" id="home-backup" hidden></button>
+
     <div class="tile-dock">
       <button type="button" class="tile" id="tile-money">
         <span class="tile-name"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M21 10h-3.6a2.5 2.5 0 0 0 0 5H21"/></svg> Money</span>
@@ -422,6 +424,19 @@
       </div>
       <p class="small" id="last-backup"></p>
       <p class="status" id="backup-status" role="status" hidden></p>
+
+      <h4 class="snap-head">Spare copies on this phone</h4>
+      <p class="small" id="snapshot-none" hidden>None yet — the first is taken when you next open the app.</p>
+      <ul class="snap-list" id="snapshot-list"></ul>
+      <div class="confirm" id="snapshot-confirm" hidden>
+        <p id="snapshot-summary"></p>
+        <p class="small">This replaces all data on this device.</p>
+        <div class="actions">
+          <button type="button" class="btn" id="snapshot-no">No</button>
+          <button type="button" class="btn undo" id="snapshot-yes">Yes</button>
+        </div>
+      </div>
+      <p class="status" id="snapshot-status" role="status" hidden></p>
     </section>
 
     <section id="export-section">
@@ -852,6 +867,6 @@
     <div class="sheet-slot" id="export-slot"></div>
   </dialog>
 
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>
