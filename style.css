@@ -1081,6 +1081,15 @@ textarea {
 /* Build 11.1: the cover screen is nearly square (1048 × 948), the main screen is tall and narrow (1080 × 2520).
    Shape is the reliable test: a screen that isn't tall and narrow gets the compact layout. */
 @media (min-aspect-ratio: 3 / 4) and (min-width: 500px) {
+  /* Build 28, your decision: on the cover screen Reflection is the writing box and nothing else.
+     The five questions need a sit-down, and that happens on the main screen. Hiding the toggle
+     here also keeps the whole page inside the fold — 311 of 331 units, no scrolling. */
+  /* #reflect-page, not .refl-ask: this block sits ABOVE the main-screen rules, so a bare class
+     loses to them at equal specificity. That is the Build 17.2 trap, and it caught this rule on
+     the first test — "Ask Questions" stayed visible on the cover screen. */
+  #reflect-page .refl-ask, #reflect-page #reflect-questions { display: none; }
+  #reflect-page .refl-free { min-height: 110px; }
+
   /* Build 12.7: the phone hands this screen a 598×530 layout and scales it onto a small panel,
      so everything is drawn about half size. One zoom puts it back to a comfortable size. */
   :root { --cover-zoom: 1.6; }
@@ -1324,6 +1333,59 @@ textarea {
    and Restore replaces everything. The confirm step is what really protects you. */
 #restore-btn { color: var(--muted); border-color: var(--quiet); }
 #last-backup { margin: 10px 0 0; }
+/* Build 28: Reflection. Above the cover-screen block so the cover rules can win — the 17.2 trap. */
+.refl-free, .refl-q textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  resize: none;
+}
+/* The free box takes whatever height is going: this page is for writing, and a short box on a
+   mostly empty screen says "a sentence will do". It shrinks back when the questions open. */
+.refl-free { flex: 1 1 auto; min-height: 140px; margin-top: 4px; }
+#reflect-page { display: flex; flex-direction: column; }
+#reflect-page.has-questions .refl-free { flex: 0 0 auto; min-height: 120px; }
+.refl-q { margin-top: 16px; }
+.refl-q textarea { min-height: 62px; margin-top: 6px; }
+.refl-qtext { display: block; margin: 0; font-size: 15px; color: var(--ink); }
+.refl-ask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 10px 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--accent);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.refl-chev { margin-left: auto; color: var(--quiet); }
+/* Past reflections sits at the BOTTOM, not stacked under Ask Questions as two grey lines. */
+.refl-hist {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
 /* Build 27.2: the spare copies, and the quarterly nudge on Home. Placed above the cover-screen
    block so the cover rules can still win at equal specificity — the trap from 17.2. */
 .snap-head { margin: 18px 0 8px; font-size: 13px; font-weight: normal; color: var(--muted); }

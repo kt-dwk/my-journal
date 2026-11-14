@@ -52,12 +52,13 @@ const INCOME_KEY = "myjournal.income";
 // stores, plus one entry by a restore. Nothing in the app shows it — you read it in the backup.
 const CHANGES_KEY = "myjournal.changes";
 const DEBT_KEY = "myjournal.debt";
+const REFLECT_KEY = "myjournal.reflections";
 const TAB_KEY = "myjournal.tab";
 
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "27.3", date: "2026-11-14" };
+const BUILD = { number: "28", date: "2026-11-14" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1275,7 +1276,7 @@ function dailyLineFor(dateISO) {
 
 // ---------- Pages: Home, My Money, My Skin (Settings opens on top) ----------
 
-const VIEWS = ["home", "money", "skin", "diary", "brain", "books", "habit"];
+const VIEWS = ["home", "money", "skin", "diary", "brain", "books", "habit", "reflect"];
 const SESSION_VIEW_KEY = "myjournal.session-view";
 let currentView = "home";
 
@@ -1284,6 +1285,9 @@ function applyPages(overlay = "") {
   for (const view of VIEWS) $(`${view}-page`).hidden = overlay !== "" || view !== currentView;
   $("settings-page").hidden = overlay !== "settings";
   $("diary-note-page").hidden = overlay !== "note";
+  // Build 28: the reflection pages. "reflect" is a view of its own; its history is an overlay.
+  $("reflect-history-page").hidden = overlay !== "reflect-history";
+  if (overlay === "reflect") { for (const v of VIEWS) $(`${v}-page`).hidden = v !== "reflect"; }
   window.scrollTo(0, 0);
   // Build 16.7: leaving a page part-way down must not leave its + or ✎ hidden when you come back
   for (const id of ["open-add", "diary-new"]) $(id).classList.remove("is-away");
@@ -1342,6 +1346,7 @@ function showView(view, { push = false } = {}) {
   if (view === "skin") { resetSkinView(); renderSkin(); }   // Build 16.6: opening starts at today
   if (view === "diary") renderDiary();
   if (view === "books") renderBooks();
+  if (view === "reflect") openReflection(todayISO());
   if (view !== "brain" && $("brain-dialog").open) $("brain-dialog").close(); // Back left the page with the pop-up open
   applyPages();
   if (push) history.pushState({ view, fromHome: true }, ""); // so the phone's Back gesture returns Home
@@ -1363,10 +1368,13 @@ $("tile-money").addEventListener("click", () => {
 });
 $("tile-skin").addEventListener("click", () => showView("skin", { push: true }));
 $("tile-diary").addEventListener("click", () => showView("diary", { push: true }));
+$("tile-heart").addEventListener("click", () => {        // Build 28: the ❤️ finally opens something
+  openReflection(todayISO());
+  showView("reflect", { push: true });
+});
 $("tile-brain").addEventListener("click", () => showView("brain", { push: true }));
 $("tile-book").addEventListener("click", () => showView("books", { push: true }));   // Build 22
-// Build 16.10: #tile-heart has no handler on purpose — the ❤️ page isn't planned yet, so the icon
-// is drawn but inert until it has somewhere to go. 📖 became My Books in Build 22.
+// Build 28: #tile-heart opens Reflection. It was drawn but inert from 16.10 until now.
 $("tile-habit").addEventListener("click", () => showView("habit", { push: true }));
 for (const button of document.querySelectorAll(".go-home")) button.addEventListener("click", goHome);
 
@@ -1823,6 +1831,221 @@ const NOTE_MAX_CHARS = 10000;
 const DEFAULT_TEXT_HEX = "#443D35";            // the normal ink colour (Espresso)
 const COLOURS_KEY = "myjournal.colors";
 const LAST_BACKUP_KEY = "myjournal.lastbackup";  // Build 11.5: shown in Settings, not part of the backup
+
+// ---------- Reflection (Build 28) ----------
+// ❤️ opens today's reflection, ready to write. Not a list — a list would make reflecting cost a
+// choice before it costs a thought.
+//
+// THE ORDER MATTERS: a free box first, the five questions folded away behind "Ask Questions".
+// You said you reflect mostly in your head, rarely with a note app, and that what works with an
+// AI is being ASKED. So the questions are the safety net, not the page. They start CLOSED every
+// time — remembering them open would land you on a worksheet and the free box would stop being
+// the point.
+//
+// Each answer is stored under its question's OWN KEY, never its position. That is what makes
+// "read question 3 down the months" possible later without touching a single saved entry, and it
+// survives rewording or reordering the questions.
+const REFLECT_QUESTIONS = [
+  { key: "stood-out",      text: "What stood out to me this week?",            hint: "the moment you keep coming back to" },
+  { key: "good-difficult", text: "What felt good, and what felt difficult?",   hint: "one of each is enough" },
+  { key: "learned",        text: "What did I learn about myself?",             hint: "something you know now" },
+  { key: "noticed",        text: "What did I notice about myself this week?",  hint: "a pattern you spotted \u2014 no conclusion needed" },
+  { key: "focus-next",     text: "What would I like to focus on next week?",   hint: "one thing, not a list" },
+];
+// 3 and 4 are deliberately different questions — LEARNED is a conclusion you reached, NOTICED is
+// something you spotted without one. Your distinction; the hints exist to keep them apart.
+
+const reflectStore = makeStore(REFLECT_KEY);
+
+function reflectionFor(dateISO) {
+  try {
+    return reflectStore.load().find((r) => r.date === dateISO) || null;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+// Something to save? Any one box is enough — requiring all five would be the worksheet again.
+function reflectionHasContent(entry) {
+  if (!entry) return false;
+  if (String(entry.free || "").trim()) return true;
+  return REFLECT_QUESTIONS.some((q) => String((entry.answers || {})[q.key] || "").trim());
+}
+
+// What the history list shows: your own words, free box first, then the first answer you wrote.
+// Never the question — a list of five repeating questions tells you nothing about which day it was.
+function reflectionPreview(entry) {
+  const free = String(entry.free || "").trim();
+  if (free) return free;
+  for (const q of REFLECT_QUESTIONS) {
+    const a = String((entry.answers || {})[q.key] || "").trim();
+    if (a) return a;
+  }
+  return "";
+}
+
+// ---------- Reflection on screen (Build 28) ----------
+
+let reflectDate = null;          // which day's reflection is open
+let reflectSaved = true;
+
+function reflectBoxes() {
+  return REFLECT_QUESTIONS.map((q) => $(`reflect-a-${q.key}`)).filter(Boolean);
+}
+
+function buildReflectQuestions() {
+  if ($("reflect-questions").children.length) return;    // built once
+  $("reflect-questions").replaceChildren(...REFLECT_QUESTIONS.map((q) => {
+    const wrap = el("div", "refl-q");
+    const label = el("label", "refl-qtext", q.text);
+    label.htmlFor = `reflect-a-${q.key}`;
+    const box = document.createElement("textarea");
+    box.id = `reflect-a-${q.key}`;
+    box.placeholder = q.hint;        // the hint IS the placeholder — no second line of grey text
+    box.addEventListener("input", markReflectUnsaved);
+    wrap.append(label, box);
+    return wrap;
+  }));
+}
+
+function markReflectUnsaved() {
+  reflectSaved = false;
+  $("save-reflect").classList.remove("is-saved");
+  $("save-reflect").setAttribute("aria-label", "Save");
+}
+
+function markReflectSaved() {
+  reflectSaved = true;
+  $("save-reflect").classList.add("is-saved");
+  $("save-reflect").setAttribute("aria-label", "Saved");
+}
+
+// Closed every time, by your decision: write freely first.
+function collapseReflectQuestions() {
+  $("reflect-questions").hidden = true;
+  $("reflect-page").classList.remove("has-questions");
+  $("reflect-ask").setAttribute("aria-expanded", "false");
+  $("reflect-ask").querySelector(".refl-chev").textContent = "\u203a";
+}
+
+function openReflection(dateISO) {
+  buildReflectQuestions();
+  reflectDate = dateISO || todayISO();
+  const entry = reflectionFor(reflectDate);
+
+  $("reflect-free").value = entry ? entry.free || "" : "";
+  for (const q of REFLECT_QUESTIONS) {
+    $(`reflect-a-${q.key}`).value = entry ? String((entry.answers || {})[q.key] || "") : "";
+  }
+  $("reflect-when").textContent = shortDate(reflectDate, true);
+  $("reflect-delete-btn").hidden = !entry;
+  toggleConfirm("reflect-delete-confirm", "reflect-ask", false);
+  collapseReflectQuestions();
+  markReflectSaved();
+}
+
+function readReflection() {
+  const answers = {};
+  for (const q of REFLECT_QUESTIONS) answers[q.key] = $(`reflect-a-${q.key}`).value.trim();
+  return { date: reflectDate, free: $("reflect-free").value.trim(), answers };
+}
+
+// Saving follows a diary note: the button flips to "Saved", and going Back saves too — which is
+// what stops ten minutes of writing disappearing because you tapped away.
+function saveReflectionNow() {
+  const draft = readReflection();
+  const existing = reflectionFor(reflectDate);
+  try {
+    if (!reflectionHasContent(draft)) {
+      // Nothing written. An entry that already exists and has been emptied is removed rather than
+      // left as a blank row in the history.
+      if (existing) reflectStore.remove(existing.id);
+      markReflectSaved();
+      $("reflect-delete-btn").hidden = true;
+      return true;
+    }
+    if (existing) {
+      reflectStore.update(existing.id, { ...draft, updatedAt: new Date().toISOString() });
+    } else {
+      reflectStore.add({ id: newId(), ...draft, createdAt: new Date().toISOString() });
+    }
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+  $("reflect-delete-btn").hidden = false;
+  markReflectSaved();
+  return true;
+}
+
+function renderReflectHistory() {
+  let all = [];
+  try {
+    all = reflectStore.load();
+  } catch (err) {
+    console.error(err);
+  }
+  const sorted = [...all].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  $("reflect-history-empty").hidden = sorted.length > 0;
+  $("reflect-history").replaceChildren(...sorted.map((entry) => {
+    const row = el("button", "log-row with-year");
+    row.type = "button";
+    const words = el("span", "log-item");
+    words.append(el("span", "", reflectionPreview(entry)));
+    row.append(el("span", "log-date", shortDate(entry.date, true)), words);
+    row.addEventListener("click", () => {
+      openReflection(entry.date);
+      applyPages("reflect");
+    });
+    const li = el("li");
+    li.append(row);
+    return li;
+  }));
+}
+
+$("reflect-free").addEventListener("input", markReflectUnsaved);
+
+$("reflect-ask").addEventListener("click", () => {
+  const panel = $("reflect-questions");
+  const open = panel.hidden;
+  panel.hidden = !open;
+  $("reflect-page").classList.toggle("has-questions", open);   // the free box gives up its stretch
+  $("reflect-ask").setAttribute("aria-expanded", String(open));
+  $("reflect-ask").querySelector(".refl-chev").textContent = open ? "\u2304" : "\u203a";
+});
+
+$("save-reflect").addEventListener("click", () => { saveReflectionNow(); });
+
+$("close-reflect").addEventListener("click", () => {
+  saveReflectionNow();          // Back saves
+  showView("home");
+});
+
+$("open-reflect-history").addEventListener("click", () => {
+  saveReflectionNow();          // don't lose what is on screen on the way to the list
+  renderReflectHistory();
+  applyPages("reflect-history");
+});
+
+$("close-reflect-history").addEventListener("click", () => {
+  openReflection(todayISO());
+  applyPages("reflect");
+});
+
+$("reflect-delete-btn").addEventListener("click", () => toggleConfirm("reflect-delete-confirm", "reflect-ask", true));
+$("reflect-delete-no").addEventListener("click", () => toggleConfirm("reflect-delete-confirm", "reflect-ask", false));
+$("reflect-delete-yes").addEventListener("click", () => {
+  const existing = reflectionFor(reflectDate);
+  try {
+    if (existing) reflectStore.remove(existing.id);
+  } catch (err) {
+    console.error(err);
+  }
+  toggleConfirm("reflect-delete-confirm", "reflect-ask", false);
+  openReflection(todayISO());
+  showView("home");
+});
 
 // ---------- The spare copies (Build 27.2) ----------
 // One snapshot a day, kept for a week, plus one taken a moment before any restore.
@@ -2757,7 +2980,7 @@ function backupAge(iso) {
 function makeBackup() {
   return {
     format: BACKUP_FORMAT,
-    version: 11, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history, 11 the car loan
+    version: 12, // 2 added My Skin, 3 the daily message, 4 the diary notes, 5 formatted notes + colours, 6 brain dump, 7 savings goals, 8 My Books, 9 income, 10 the edit history, 11 the car loan, 12 reflections
     build: BUILD.number,
     exportedAt: new Date().toISOString(),
     expenses: expenseStore.load(),
@@ -2772,6 +2995,7 @@ function makeBackup() {
     colors: loadColours(),
     changes: loadChanges(),
     debt: loadDebt(),
+    reflections: reflectStore.load(),
   };
 }
 
@@ -2877,6 +3101,11 @@ function checkBackup(backup) {
     || !backup.income.every(isEntry))) {
     throw new Error("Backup has damaged income");
   }
+  // Backups made before Build 28 (version 11 and older) have no "reflections", and those leave yours untouched
+  if (backup.reflections !== undefined && (!Array.isArray(backup.reflections)
+    || !backup.reflections.every((r) => r && typeof r.id === "string" && typeof r.date === "string"))) {
+    throw new Error("Backup has damaged reflections");
+  }
   // Backups made before Build 27 (version 10 and older) have no "debt", and those leave the car loan untouched
   if (backup.debt !== undefined && (typeof backup.debt !== "object" || backup.debt === null
     || Array.isArray(backup.debt)
@@ -2944,6 +3173,7 @@ $("restore-no").addEventListener("click", () => {
 
 // Every screen drawn again from storage, after a restore puts new data there
 function redrawEverything() {
+  renderReflectHistory();
   renderDashboard();
   renderIncome();
   renderSavings();
@@ -3008,7 +3238,7 @@ $("snapshot-yes").addEventListener("click", () => {
 // Build 27.2: the restore itself, lifted out of the button so a spare copy can use the same path.
 // Every guard stays: the rollback, the redraw inside the safety net, and the history entry.
 function applyBackup(backup, statusId, sourceLabel) {
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY, REFLECT_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -3031,6 +3261,8 @@ function applyBackup(backup, statusId, sourceLabel) {
     if (backup.changes) localStorage.setItem(CHANGES_KEY, JSON.stringify(backup.changes));
     // Build 27: version 11 carries the car loan. An older backup has none, so yours is left alone.
     if (backup.debt) saveDebt({ target: Number(backup.debt.target) || 0, paidBefore: Number(backup.debt.paidBefore) || 0 });
+    // Build 28: version 12 carries your reflections. An older backup has none, so yours are left alone.
+    if (backup.reflections) reflectStore.save(backup.reflections);
     // Build 19: an older backup's "braindump" is ignored on purpose — Brain dump stores nothing now
   } catch (err) {
     console.error(err);

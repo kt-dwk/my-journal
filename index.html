@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
   <!-- Home page -->
@@ -31,7 +31,7 @@
          which would grey it. Build 24.11 gives all three a name on the main screen. -->
     <div class="home-icons">
       <button type="button" class="brain-button" id="tile-book" aria-label="My Books"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--sand)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10 5.8 7.5 5 4 5.2v13c3.5-.2 6 .6 8 2.3 2-1.7 4.5-2.5 8-2.3v-13c-3.5-.2-6 .6-8 2.3z"/><path fill="none" d="M12 7.5v13"/></svg><span class="icon-label">Books</span></button>
-      <button type="button" class="brain-button" id="tile-heart" aria-label="Self-reflection, coming later" aria-disabled="true"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg><span class="icon-label">Reflect</span></button>
+      <button type="button" class="brain-button" id="tile-heart" aria-label="Reflection"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--rosewood)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3C6 16 3.2 12.8 3.2 9.6c0-2.6 2-4.4 4.4-4.4 1.8 0 3.4 1 4.4 2.6 1-1.6 2.6-2.6 4.4-2.6 2.4 0 4.4 1.8 4.4 4.4 0 3.2-2.8 6.4-8.8 10.7z"/></svg><span class="icon-label">Reflect</span></button>
       <button type="button" class="brain-button" id="tile-brain" aria-label="Brain dump"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" fill="var(--wisteria)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.3-1.5-3.8-1.3-4.8.6-1.7.2-2.7 2-2.1 3.6-1.2 1.2-.9 3.3.6 4.1-.1 1.8 1.6 3.1 3.3 2.6.6 1.3 2.3 1.5 3 .5.7 1 2.4.8 3-.5 1.7.5 3.4-.8 3.3-2.6 1.5-.8 1.8-2.9.6-4.1.6-1.6-.4-3.4-2.1-3.6-1-1.9-3.5-2.1-4.8-.6z"/><path fill="none" d="M12 6v11.4"/></svg><span class="icon-label">Let go</span></button>
     </div>
     <button type="button" class="home-backup" id="home-backup" hidden></button>
@@ -300,6 +300,48 @@
   </dialog>
 
   <!-- My Diary: writing page -->
+  <!-- Build 28: ❤️ opens straight into today's reflection. The five questions are folded away -->
+  <div class="page" id="reflect-page" hidden>
+    <header class="settings-head note-head">
+      <button type="button" class="btn back" id="close-reflect" aria-label="Back">←</button>
+      <div class="note-actions">
+        <p class="small note-when" id="reflect-when"></p>
+        <button type="button" class="note-act" id="save-reflect" aria-label="Save">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.5v11M7.4 10.2 12 14.8l4.6-4.6M4.5 19.5h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="note-act" id="reflect-delete-btn" aria-label="Delete" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <textarea id="reflect-free" class="refl-free" placeholder="What’s on your mind?" aria-label="What’s on your mind?"></textarea>
+
+    <button type="button" class="refl-ask" id="reflect-ask" aria-expanded="false" aria-controls="reflect-questions">
+      <span>Ask Questions</span><span class="refl-chev" aria-hidden="true">›</span>
+    </button>
+    <div id="reflect-questions" hidden></div>
+
+    <div class="confirm" id="reflect-delete-confirm" hidden>
+      <p>Delete this reflection?</p>
+      <div class="actions">
+        <button type="button" class="btn" id="reflect-delete-no">No</button>
+        <button type="button" class="btn danger-fill" id="reflect-delete-yes">Yes</button>
+      </div>
+    </div>
+
+    <button type="button" class="refl-hist" id="open-reflect-history">Past reflections ›</button>
+  </div>
+
+  <div class="page" id="reflect-history-page" hidden>
+    <header class="settings-head">
+      <button type="button" class="btn back" id="close-reflect-history" aria-label="Back">←</button>
+      <h1>Past reflections</h1>
+    </header>
+    <ul class="log" id="reflect-history"></ul>
+    <p class="small" id="reflect-history-empty" hidden>No reflections yet.</p>
+  </div>
+
   <div class="page" id="diary-note-page" hidden>
     <header class="settings-head note-head">
       <button type="button" class="btn back" id="close-note" aria-label="Back">←</button>
@@ -867,6 +909,6 @@
     <div class="sheet-slot" id="export-slot"></div>
   </dialog>
 
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=33"></script>
 </body>
 </html>
