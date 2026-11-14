@@ -57,7 +57,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "27.2", date: "2026-11-14" };
+const BUILD = { number: "27.3", date: "2026-11-14" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -4322,19 +4322,32 @@ function showTab(name) {
   window.scrollTo(0, 0);
 }
 
-COVER_SCREEN.addEventListener("change", () => {   // folding the phone changes how much is written
+// Build 27.3: redrawing everything that reads differently on the two screens.
+//
+// This used to hang off the media query's "change" event alone, and that is not enough. Folding
+// the phone does not always arrive as a resize: Android can hide the app on one screen and show
+// it again on the other, so the app resumes with the layout it had before the fold. The symptom
+// you saw was the Home skin tile keeping its long name ("Hydration") where the cover screen
+// wants the letter ("H") — Build 24.10 made that swap so the four tiles stay aligned.
+//
+// So it now runs on BOTH the media query AND on becoming visible again, and it compares against
+// the last state it drew, so whichever arrives first does the work and the other does nothing.
+let lastDrawnCover = onCoverScreen();
+
+function syncScreenState() {
+  const now = onCoverScreen();
+  if (now === lastDrawnCover) return;      // nothing changed: do no work at all
+  lastDrawnCover = now;
   applyDateControls();
-  // Build 27.2: Home was missing from this list. Two things depended on it and neither updated
-  // when you folded the phone with the app already open: the skin tile kept the long name
-  // ("Hydration") where Build 24.10 wants the letter "H" so the four tiles stay aligned, and the
-  // backup nudge stayed on screen on the cover, where it is not supposed to appear at all.
-  renderHome();
+  renderHome();            // Build 27.2: the skin tile and the backup nudge both live here
   renderDashboard();
   renderIncome();
   renderSavings();
   renderSkin();
   applyCoverWording();
-});
+}
+
+COVER_SCREEN.addEventListener("change", syncScreenState);
 
 $("tab-expenses").addEventListener("click", () => showTab("expenses"));
 $("tab-income").addEventListener("click", () => showTab("income"));
@@ -4445,7 +4458,9 @@ renderSnapshots();
 
 checkForNewBuild();
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) checkForNewBuild();
+  if (document.hidden) return;
+  syncScreenState();       // Build 27.3: a fold can arrive as hide-then-show rather than a resize
+  checkForNewBuild();
 });
 
 // Ask Chrome to keep this app's data permanently, so it isn't cleared when the phone is low on space
