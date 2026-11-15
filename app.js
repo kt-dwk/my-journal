@@ -59,7 +59,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "29", date: "2026-11-14" };
+const BUILD = { number: "29.2", date: "2026-11-15" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1389,7 +1389,7 @@ function moodDayCell(dateISO, today) {
     cell.classList.add("is-off");       // nothing has happened yet, so there is nothing to say
     cell.disabled = true;
   } else {
-    attachMoodHold(cell, dateISO);
+    attachMoodHold(cell, () => dateISO);
   }
   cell.setAttribute("aria-label", `${shortDate(dateISO, true)}${mood ? `, ${mood.name}` : ", no mood"}`);
   return cell;
@@ -1398,7 +1398,12 @@ function moodDayCell(dateISO, today) {
 // Hold to open, and the hold flows straight into the slide. A plain tap opens the same wheel
 // to be tapped. Moving more than MOOD_SLOP before the hold fires means you were scrolling the
 // month, so the hold is abandoned and the page scrolls as it always would.
-function attachMoodHold(target, dateISO) {
+//
+// Build 29.1: `getDate` is a FUNCTION, asked at the moment the hold fires. Today's card used to
+// be bound to the date the page loaded on, and a phone never reloads this app — it resumes it.
+// Left open overnight, the card read "Today, Mon 16 Nov" and wrote to Sunday. The app already
+// knew this trap: resetSkinView reads a fresh date "so it stays right overnight".
+function attachMoodHold(target, getDate) {
   // A click with no pointer behind it is the keyboard (or an assistive tap): Enter on a focused
   // day. The hold path never runs there, so the click below must open the wheel itself.
   let fromPointer = false;
@@ -1411,7 +1416,7 @@ function attachMoodHold(target, dateISO) {
       opened: false,
       timer: setTimeout(() => {
         moodHold.opened = true;
-        openMoodWheel(dateISO, { dragging: true });
+        openMoodWheel(getDate(), { dragging: true });
       }, MOOD_HOLD_MS),
     };
   });
@@ -1426,7 +1431,7 @@ function attachMoodHold(target, dateISO) {
     clearTimeout(moodHold.timer);
     const opened = moodHold.opened;
     moodHold = null;
-    if (!opened) openMoodWheel(dateISO);          // a tap: the wheel opens to be tapped
+    if (!opened) openMoodWheel(getDate());       // a tap: the wheel opens to be tapped
   };
   target.addEventListener("pointerup", letGo);
   target.addEventListener("pointercancel", () => {
@@ -1440,11 +1445,11 @@ function attachMoodHold(target, dateISO) {
       fromPointer = false;
       return;
     }
-    openMoodWheel(dateISO);      // keyboard: open it to be tapped, or arrowed into
+    openMoodWheel(getDate());    // keyboard: open it to be tapped, or arrowed into
   });
 }
 
-attachMoodHold($("mood-today-btn"), todayISO());
+attachMoodHold($("mood-today-btn"), todayISO);   // the function itself: asked when you hold it
 
 $("mood-clear").addEventListener("click", () => {
   setMoodDay(moodDate, null);
@@ -1453,6 +1458,11 @@ $("mood-clear").addEventListener("click", () => {
 });
 
 $("mood-close").addEventListener("click", closeMoodWheel);
+// Escape closes it, the same as the note menu. A layer you cannot dismiss from the keyboard
+// is a layer a keyboard cannot leave.
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && moodSheetOpen()) closeMoodWheel();
+});
 // Tapping the dark space around the wheel closes it, the way every sheet in the app behaves.
 $("mood-sheet").addEventListener("pointerdown", (e) => {
   if (e.target === $("mood-sheet")) closeMoodWheel();
@@ -1736,6 +1746,9 @@ let currentView = "home";
 
 // overlay: "" (a normal page), "settings", or "note" (the diary writing page)
 function applyPages(overlay = "") {
+  // Build 29.1: the wheel is a layer that lives outside the pages, so nothing here was hiding
+  // it. Going Home — or Back, or into Settings — left the twelve floating over the next page.
+  if (typeof moodSheetOpen === "function" && moodSheetOpen()) closeMoodWheel();
   for (const view of VIEWS) $(`${view}-page`).hidden = overlay !== "" || view !== currentView;
   $("settings-page").hidden = overlay !== "settings";
   $("diary-note-page").hidden = overlay !== "note";
@@ -2474,7 +2487,10 @@ $("save-reflect").addEventListener("click", () => { saveReflectionNow(); });
 
 $("close-reflect").addEventListener("click", () => {
   saveReflectionNow();          // Back saves
-  showView("home");
+  // Build 29.2: goHome, not showView("home"). showView drew Home but left the history entry
+  // saying "reflect", so the NEXT page's Home button went back to Reflection instead of Home.
+  // Every other page's Home button has always called goHome; this one was written by hand.
+  goHome();
 });
 
 $("open-reflect-history").addEventListener("click", () => {
@@ -2499,7 +2515,7 @@ $("reflect-delete-yes").addEventListener("click", () => {
   }
   toggleConfirm("reflect-delete-confirm", "reflect-ask", false);
   openReflection(todayISO());
-  showView("home");
+  goHome();                     // Build 29.2: same fix, same reason
 });
 
 // ---------- The spare copies (Build 27.2) ----------
