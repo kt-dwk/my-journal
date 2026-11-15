@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=36">
+  <link rel="stylesheet" href="style.css?v=37">
 </head>
 <body>
   <!-- Home page -->
@@ -500,18 +500,25 @@
       <p class="small" id="last-backup"></p>
       <p class="status" id="backup-status" role="status" hidden></p>
 
-      <h4 class="snap-head">Spare copies on this phone</h4>
-      <p class="small" id="snapshot-none" hidden>None yet — the first is taken when you next open the app.</p>
-      <ul class="snap-list" id="snapshot-list"></ul>
-      <div class="confirm" id="snapshot-confirm" hidden>
-        <p id="snapshot-summary"></p>
-        <p class="small">This replaces all data on this device.</p>
-        <div class="actions">
-          <button type="button" class="btn" id="snapshot-no">No</button>
-          <button type="button" class="btn undo" id="snapshot-yes">Yes</button>
+      <!-- Build 29.3: folded away. Seven rows of a list you touch once in a blue moon were the
+           longest thing in Settings. The count stays on the closed row, so the safety net still
+           says it is there without being opened. -->
+      <button type="button" class="snap-fold" id="snapshot-fold" aria-expanded="false" aria-controls="snapshot-body">
+        <span id="snapshot-fold-label">Spare copies on this phone</span><span class="snap-chev" aria-hidden="true">›</span>
+      </button>
+      <div id="snapshot-body" hidden>
+        <p class="small" id="snapshot-none" hidden>None yet — the first is taken when you next open the app.</p>
+        <ul class="snap-list" id="snapshot-list"></ul>
+        <div class="confirm" id="snapshot-confirm" hidden>
+          <p id="snapshot-summary"></p>
+          <p class="small">This replaces all data on this device.</p>
+          <div class="actions">
+            <button type="button" class="btn" id="snapshot-no">No</button>
+            <button type="button" class="btn undo" id="snapshot-yes">Yes</button>
+          </div>
         </div>
+        <p class="status" id="snapshot-status" role="status" hidden></p>
       </div>
-      <p class="status" id="snapshot-status" role="status" hidden></p>
     </section>
 
     <section id="export-section">
@@ -942,6 +949,6 @@
     <div class="sheet-slot" id="export-slot"></div>
   </dialog>
 
-  <script src="app.js?v=36"></script>
+  <script src="app.js?v=37"></script>
 </body>
 </html>

@@ -59,7 +59,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "29.2", date: "2026-11-15" };
+const BUILD = { number: "29.3", date: "2026-11-15" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -3350,6 +3350,9 @@ function openSettings() {
   applyCoverWording();
   for (const id of ["rates-error", "rates-status", "backup-status"]) $(id).hidden = true;
   cancelRestore();
+  cancelSnapshotRestore();      // Build 29.3: and a confirm left open inside the fold goes too
+  renderSnapshots();            // so the count on the closed row is right every time
+  setSnapshotFold(false);       // shut each time Settings opens
   applyPages("settings");
   history.pushState({ view: currentView, settings: true }, ""); // so the phone's Back gesture closes Settings
 }
@@ -3677,6 +3680,11 @@ function cancelSnapshotRestore() {
 function renderSnapshots() {
   const list = loadSnapshots().slice().reverse();    // newest first
   $("snapshot-none").hidden = list.length > 0;
+  // Build 29.3: the count rides on the closed row. "Spare copies (7)" says the safety net is
+  // there without you opening anything; with none, the number would only be alarming.
+  $("snapshot-fold-label").textContent = list.length
+    ? `Spare copies on this phone (${list.length})`
+    : "Spare copies on this phone";
   $("snapshot-list").replaceChildren(...list.map((snap) => {
     const li = el("li", "snap-row");
     const btn = el("button", "snap-btn");
@@ -3692,6 +3700,17 @@ function renderSnapshots() {
     return li;
   }));
 }
+
+// Build 29.3: the fold. Shut every time Settings opens — you come here for other things far
+// more often than you restore.
+function setSnapshotFold(open) {
+  $("snapshot-fold").setAttribute("aria-expanded", String(open));
+  $("snapshot-body").hidden = !open;
+}
+
+$("snapshot-fold").addEventListener("click", () => {
+  setSnapshotFold($("snapshot-fold").getAttribute("aria-expanded") !== "true");
+});
 
 $("snapshot-no").addEventListener("click", cancelSnapshotRestore);
 
