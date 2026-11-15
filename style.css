@@ -1750,13 +1750,18 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 12px;
   cursor: pointer;
-  touch-action: none;        /* the hold starts here too, so it must not read as a scroll */
   user-select: none;
   -webkit-user-select: none;
 }
 .mood-today-art { display: flex; flex: 0 0 auto; }
 .mood-today-svg { width: 40px; height: 40px; }
-.mood-today-btn.is-empty { color: var(--muted); }
+.mood-today-btn.is-empty {
+  color: var(--muted);
+  /* Build 29.4: it picks nothing now, so it must not look like it can be pressed. */
+  cursor: default;
+  font-size: 14px;
+}
+.mood-today-remove { margin-left: auto; font-size: 13px; color: var(--error); white-space: nowrap; }
 
 /* The wheel, as a layer over the page. Measured: 12 spokes of 56px need a 274px ring, which
    fits the 360px main screen. The cover screen gets a smaller one further down this file. */

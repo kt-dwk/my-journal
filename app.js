@@ -59,7 +59,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "29.3", date: "2026-11-15" };
+const BUILD = { number: "29.4", date: "2026-11-15" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1352,8 +1352,13 @@ function renderMood() {
   const picked = moodFor(today);
   $("mood-day").textContent = `Today · ${weekdayShort(today)} ${shortDate(today)}`;
   $("mood-today-art").innerHTML = picked ? moodSvg(picked, "mood-today-svg") : "";
-  $("mood-today-name").textContent = picked ? picked.name : "How was today?";
+  // Build 29.4: the card picks nothing, so it must not ask a question it cannot answer.
+  // With a mood it offers to take it off; with none it points at the one way in.
+  $("mood-today-name").textContent = picked ? picked.name : "Hold a day below to pick a mood";
+  $("mood-today-remove").hidden = !picked;
   $("mood-today-btn").classList.toggle("is-empty", !picked);
+  $("mood-today-btn").disabled = !picked;
+  $("mood-today-btn").setAttribute("aria-label", picked ? `Remove today's mood, ${picked.name}` : "No mood today");
   renderMoodMonth(today);
 }
 
@@ -1449,7 +1454,14 @@ function attachMoodHold(target, getDate) {
   });
 }
 
-attachMoodHold($("mood-today-btn"), todayISO);   // the function itself: asked when you hold it
+// Build 29.4: today's card does NOT pick a mood. Picking happens one way only — hold a day in
+// the month. The card is there to show today's mood and to take it off again, nothing else.
+$("mood-today-btn").addEventListener("click", () => {
+  const today = todayISO();          // asked now, not at load: the app is resumed, not reloaded
+  if (!moodFor(today)) return;       // nothing to remove, and nothing to pick here
+  setMoodDay(today, null);
+  renderMood();
+});
 
 $("mood-clear").addEventListener("click", () => {
   setMoodDay(moodDate, null);
