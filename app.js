@@ -59,7 +59,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "29.6", date: "2026-11-21" };
+const BUILD = { number: "29.7", date: "2026-11-21" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -364,6 +364,17 @@ function debtPaid(allExpenses, rates) {
 function todayISO() {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+// Build 29.7: the journal day, which does NOT end at midnight.
+// You sleep after midnight, so at 1am the skin routine you are about to do is still *last
+// night's*, and the mood you would pick is still *yesterday's* day. Both now roll over at 3am.
+// Everything else keeps the calendar date on purpose — an expense entered at 1am belongs to
+// the date the shop's receipt says, and the daily quote changing at midnight bothers nobody.
+const DAY_CUTOFF_HOUR = 3;
+function journalDayISO(at = new Date()) {
+  const shifted = new Date(at.getTime() - DAY_CUTOFF_HOUR * 3600000);
+  return new Date(shifted.getTime() - shifted.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
 function newId() {
@@ -973,7 +984,7 @@ function skinProductsFor(dateISO) {
 // showing tonight only is what keeps that from ever being wrong. If products are ever wanted on a
 // past day, they have to be stored per night first.
 $("skin-products-btn").addEventListener("click", () => {
-  const today = todayISO();
+  const today = journalDayISO();
   const products = skinProductsFor(today);
   $("skin-products-title").textContent = skinNightFor(today);
   // Numbered only when there is an order to follow; one product reads as a plain line.
@@ -987,6 +998,11 @@ $("skin-products-btn").addEventListener("click", () => {
   $("skin-products-none").hidden = products.length > 0;
   $("skin-products-dialog").showModal();
 });
+
+// The tick on the Done button (Build 29.7). Ours, written here — never anything typed in.
+const TICK_SVG = '<svg class="btn-tick" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"'
+  + ' fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'
+  + '<path d="M4 12.5l5.5 5.5L20 6.5"/></svg>';
 
 // ---------- My Skin page ----------
 // Only the nights you marked Done are stored, keyed by date: { "YYYY-MM-DD": "done" }
@@ -1017,7 +1033,7 @@ function setSkinDay(dateISO, done) {
 
 let skinViewYear = now.getFullYear();
 let skinViewMonth = now.getMonth();
-let skinWeekAnchor = todayISO();   // which week the cover screen is showing
+let skinWeekAnchor = journalDayISO();   // which week the cover screen is showing
 
 function isoDate(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -1195,10 +1211,10 @@ const MOOD_HOLD_MS = 280; // long enough not to fire on a tap, short enough not 
 const MOOD_SLOP = 10;     // moving further than this before the hold fires means you are scrolling
 
 // The day the wheel is setting, and the month the calendar is showing.
-let moodDate = todayISO();
-let moodViewYear = new Date().getFullYear();
-let moodViewMonth = new Date().getMonth();
-let moodWeekAnchor = todayISO();   // which week the cover screen is showing
+let moodDate = journalDayISO();
+let moodViewYear = new Date(Date.now() - DAY_CUTOFF_HOUR * 3600000).getFullYear();
+let moodViewMonth = new Date(Date.now() - DAY_CUTOFF_HOUR * 3600000).getMonth();
+let moodWeekAnchor = journalDayISO();   // which week the cover screen is showing
 
 // Which spoke the thumb is over mid-drag, and a guard so the pointerup that picks a mood
 // does not also fire the spoke's click a moment later.
@@ -1363,7 +1379,7 @@ function pickMood(key) {
 
 function renderMoodSheet() {
   if (!moodSheetOpen()) return;
-  const today = todayISO();
+  const today = journalDayISO();
   const picked = moodFor(moodDate);
   $("mood-sheet-day").textContent =
     moodDate === today
@@ -1380,7 +1396,7 @@ function renderMoodSheet() {
 // ---------- The page under it ----------
 
 function renderMood() {
-  const today = todayISO();
+  const today = journalDayISO();   // Build 29.7: a day runs to 3am here too
   const picked = moodFor(today);
   $("mood-day").textContent = `Today · ${weekdayShort(today)} ${shortDate(today)}`;
   $("mood-today-art").innerHTML = picked ? moodSvg(picked, "mood-today-svg") : "";
@@ -1412,7 +1428,7 @@ function renderMoodWeek(today) {
   for (let i = 0; i < 7; i++) cells.push(moodDayCell(addDays(start, i), today));
   $("mood-calendar").replaceChildren(...cells);
   $("mood-prev-week").disabled = start <= mondayOf("2026-01-01");
-  $("mood-next-week").disabled = start >= mondayOf(today);   // this week is as far as it goes
+  $("mood-next-week").disabled = start >= mondayOf(today);   // `today` is the journal day   // this week is as far as it goes
 }
 
 // Build 29: the month shows each day's own drawing, not a family colour. The "a 24px cell makes
@@ -1430,7 +1446,7 @@ function renderMoodMonth(today) {
     cells.push(moodDayCell(isoDate(moodViewYear, moodViewMonth, day), today));
   }
   $("mood-calendar").replaceChildren(...cells);
-  const now = new Date();
+  const now = new Date(Date.now() - DAY_CUTOFF_HOUR * 3600000);
   const index = moodViewYear * 12 + moodViewMonth;
   $("mood-next-month").disabled = index >= now.getFullYear() * 12 + now.getMonth();
   // Build 29.5: and a floor. It paged back to 1823 if you kept tapping; My Skin has stopped at
@@ -1513,7 +1529,7 @@ function attachMoodHold(target, getDate) {
 // Build 29.4: today's card does NOT pick a mood. Picking happens one way only — hold a day in
 // the month. The card is there to show today's mood and to take it off again, nothing else.
 $("mood-today-btn").addEventListener("click", () => {
-  const today = todayISO();          // asked now, not at load: the app is resumed, not reloaded
+  const today = journalDayISO();     // asked now, not at load: the app is resumed, not reloaded
   if (!moodFor(today)) return;       // nothing to remove, and nothing to pick here
   setMoodDay(today, null);
   renderMood();
@@ -1538,7 +1554,7 @@ $("mood-sheet").addEventListener("pointerdown", (e) => {
 
 for (const [id, delta] of [["mood-prev-month", -1], ["mood-next-month", 1]]) {
   $(id).addEventListener("click", () => {
-    const now = new Date();
+    const now = new Date(Date.now() - DAY_CUTOFF_HOUR * 3600000);
     const index = Math.min(
       Math.max(moodViewYear * 12 + moodViewMonth + delta, MOOD_FIRST_MONTH),
       now.getFullYear() * 12 + now.getMonth()
@@ -1551,19 +1567,20 @@ for (const [id, delta] of [["mood-prev-month", -1], ["mood-next-month", 1]]) {
 
 // Opening the page always starts at today, wherever you browsed to last time (the My Skin rule).
 function resetMoodView() {
-  const now = new Date();
-  moodDate = todayISO();
+  const now = new Date(Date.now() - DAY_CUTOFF_HOUR * 3600000);
+  moodDate = journalDayISO();
   moodHover = null;
   moodViewYear = now.getFullYear();
   moodViewMonth = now.getMonth();
-  moodWeekAnchor = todayISO();
+  moodWeekAnchor = journalDayISO();
 }
 
 for (const [id, delta] of [["mood-prev-week", -7], ["mood-next-week", 7]]) {
   $(id).addEventListener("click", () => {
     const moved = addDays(moodWeekAnchor, delta);
     const floor = mondayOf("2026-01-01");
-    moodWeekAnchor = moved < floor ? floor : moved > todayISO() ? todayISO() : moved;
+    const cap = journalDayISO();
+    moodWeekAnchor = moved < floor ? floor : moved > cap ? cap : moved;
     renderMood();
   });
 }
@@ -1685,19 +1702,26 @@ function renderSkinWeek(map, today) {
 
 function renderSkin() {
   const map = loadSkin();
-  const today = todayISO();
+  const today = journalDayISO();   // Build 29.7: tonight runs to 3am
 
   // Tonight card
   $("skin-today").textContent = `Tonight · ${weekdayShort(today)} ${shortDate(today)}`;
   $("skin-tonight").textContent = skinNightFor(today);
   document.querySelector(".tonight-icon").innerHTML = skinBottleFor(today);   // fixed drawings, never anything typed
   const doneTonight = map[today] === "done";
-  $("skin-done-btn").textContent = "Done";
-  // Build 24.2: the button takes the colour of what TAPPING it does, which is the rule
-  // everywhere else — teal to do a thing, Terracotta to take it back. It was the other way
-  // round: filled once already done, so the loudest state was the one needing no action.
+  // Build 29.7: once it is done the button shows a TICK and turns Deep Sage, the app's "done"
+  // colour. It used to say "Done" in both states and change only colour — teal to do it,
+  // Terracotta once done — so the word never moved and the red read as a warning rather than
+  // as "finished". Your words: it made you confuse.
+  //
+  // This knowingly bends Build 24.2's rule that a button wears the colour of what TAPPING it
+  // does, since this green one undoes. It is acceptable HERE and probably nowhere else,
+  // because a confirm dialog stands between the tap and the loss — you cannot undo a night by
+  // brushing it. The state is read far more often than the undo is used.
+  $("skin-done-btn").innerHTML = doneTonight ? `${TICK_SVG} Done` : "Done";
   $("skin-done-btn").classList.toggle("primary", !doneTonight);
-  $("skin-done-btn").classList.toggle("undo", doneTonight);
+  $("skin-done-btn").classList.toggle("is-done", doneTonight);
+  $("skin-done-btn").setAttribute("aria-label", doneTonight ? "Done tonight. Tap to take it back." : "Mark tonight done");
 
   // The month on the main screen, this week on the cover screen
   const week = onCoverScreen();
@@ -1710,10 +1734,11 @@ function renderSkin() {
 // Build 16.6: opening the page always starts at today, wherever you browsed to last time.
 // Read from a fresh date, not the `now` captured at load, so it stays right overnight.
 function resetSkinView() {
-  const today = new Date();
+  // Build 29.7: the journal day, so at 1am on the 1st the month shown is still last month's
+  const today = new Date(Date.now() - DAY_CUTOFF_HOUR * 3600000);
   skinViewYear = today.getFullYear();
   skinViewMonth = today.getMonth();
-  skinWeekAnchor = todayISO();
+  skinWeekAnchor = journalDayISO();
 }
 
 function changeSkinMonth(delta) {
@@ -1746,7 +1771,7 @@ $("skin-next-week").addEventListener("click", () => changeSkinWeek(1));
 
 // Tonight's Done button toggles: tap again and the question opens as a pop-up (Build 13.1)
 $("skin-done-btn").addEventListener("click", () => {
-  const today = todayISO();
+  const today = journalDayISO();
   if (loadSkin()[today] === "done") {
     $("skin-undo-state").textContent = `${weekdayShort(today)} ${shortDate(today)} · ${skinNightFor(today)}`;
     $("skin-undo-dialog").showModal();
@@ -1756,7 +1781,7 @@ $("skin-done-btn").addEventListener("click", () => {
 });
 
 $("skin-undo-yes").addEventListener("click", () => {
-  setSkinDay(todayISO(), false);
+  setSkinDay(journalDayISO(), false);
   $("skin-undo-dialog").close();
 });
 
@@ -1845,14 +1870,17 @@ function applyPages(overlay = "") {
 
 function renderHome() {
   const today = todayISO();
-  $("daily-line").textContent = dailyLineFor(today);
-  const done = loadSkin()[today] === "done";
+  $("daily-line").textContent = dailyLineFor(today);   // the quote still turns at midnight
+  // Build 29.7: the skin tile follows the routine's day, not the clock's, so at 1am it still
+  // names the night you are about to do rather than jumping to the next one.
+  const skinToday = journalDayISO();
+  const done = loadSkin()[skinToday] === "done";
   // Build 24.10: on the cover the tile is one row, and "Recovery 2" wrapped onto a second
   // line, so the four tiles stopped matching. The cover shows the cycle LETTER instead — the
   // same letter the calendar uses, so it is one you already read every night.
   $("skin-tile-tonight").textContent = onCoverScreen()
-    ? skinLetterFor(today)
-    : skinNightFor(today);
+    ? skinLetterFor(skinToday)
+    : skinNightFor(skinToday);
   renderBackupNudge();
 }
 

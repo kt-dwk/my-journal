@@ -110,6 +110,18 @@ button { font: inherit; color: inherit; }
 .btn.primary { color: var(--card); background: var(--accent); border-color: var(--accent); }
 /* Build 24: taking something back is Terracotta, wherever it appears */
 .btn.undo { color: var(--card); background: var(--error); border-color: var(--error); }
+/* Build 29.7: a finished state, not an action. Deep Sage is the app's "done" colour and is
+   already used for it elsewhere. Only My Skin's Done button wears it — see the note in app.js
+   for why this one is allowed to break the colour-means-action rule. */
+.btn.is-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--card);
+  background: var(--done);
+  border-color: var(--done);
+}
+.btn-tick { display: block; }
 .btn.danger { margin-right: auto; color: var(--error); border-color: var(--error); }
 .btn.icon-only {
   display: flex;
