@@ -59,7 +59,7 @@ const TAB_KEY = "myjournal.tab";
 // Shown in Settings → Build info. Update with every build.
 // Build 23.5: version.json on the site must say the same number — that is how the app knows a new
 // build is live. The publish script writes both together, so never change one of them by hand.
-const BUILD = { number: "29.4", date: "2026-11-15" };
+const BUILD = { number: "29.6", date: "2026-11-21" };
 const BACKUP_FORMAT = "my-journal-backup";
 
 // Daily message lines from your Daily quotes.docx (encouragements, reminders, questions)
@@ -1189,6 +1189,7 @@ function moodSvg(mood, cls) {
 // the same wheel to be tapped instead, because a one-thumb hold-and-drag on a folded phone
 // needs a way out, and it is also the only way in from a keyboard.
 
+const MOOD_FIRST_MONTH = SKIN_FIRST_MONTH;   // January 2026, the same floor My Skin uses
 const MOOD_SPOKE = 56;    // the main screen's tap target, and the fallback if one cannot be measured
 const MOOD_HOLD_MS = 280; // long enough not to fire on a tap, short enough not to feel stuck
 const MOOD_SLOP = 10;     // moving further than this before the hold fires means you are scrolling
@@ -1197,6 +1198,7 @@ const MOOD_SLOP = 10;     // moving further than this before the hold fires mean
 let moodDate = todayISO();
 let moodViewYear = new Date().getFullYear();
 let moodViewMonth = new Date().getMonth();
+let moodWeekAnchor = todayISO();   // which week the cover screen is showing
 
 // Which spoke the thumb is over mid-drag, and a guard so the pointerup that picks a mood
 // does not also fire the spoke's click a moment later.
@@ -1211,14 +1213,41 @@ function moodSheetOpen() {
   return !$("mood-sheet").hidden;
 }
 
+// Build 29.6: the hub's drawing is built once per mood and kept. Sliding round the ring used
+// to re-parse a fresh SVG from a string on every spoke you crossed — twelve times in one
+// gesture — which is what made the cover screen feel heavier than the main one. The cover
+// also runs at zoom 1.6, so the same work costs more there.
+const moodArtCache = new Map();
+function hubArtFor(mood) {
+  if (!moodArtCache.has(mood.key)) {
+    const holder = document.createElement("div");
+    holder.innerHTML = moodSvg(mood, "mood-hub-art");
+    moodArtCache.set(mood.key, holder.firstElementChild);
+  }
+  return moodArtCache.get(mood.key);
+}
+
 function renderMoodHub() {
   const shown = moodHover || moodFor(moodDate);
   const hub = $("mood-hub");
-  hub.innerHTML = shown ? moodSvg(shown, "mood-hub-art") : "";
+  hub.replaceChildren();
+  if (shown) hub.append(hubArtFor(shown));
   // Measured: every one of the twelve names fits on ONE line inside the 104px hub, the longest
   // ("Overly Happy Sunny", 79px) with 9px to spare. That is why names were never kept short.
   hub.append(el("span", "mood-hub-name", shown ? shown.name : moodTapMode ? "Tap a mood" : "Slide to a mood"));
   hub.classList.toggle("is-empty", !shown);
+}
+
+// Only the two spokes that changed, not all twelve on every move.
+let moodHoverEl = null;
+function paintMoodHover() {
+  const next = moodHover
+    ? $("mood-wheel").querySelector(`.mood-spoke[data-key="${moodHover.key}"]`)
+    : null;
+  if (next === moodHoverEl) return;
+  if (moodHoverEl) moodHoverEl.classList.remove("is-hover");
+  if (next) next.classList.add("is-hover");
+  moodHoverEl = next;
 }
 
 // The twelve spokes, placed in px after layout so a fold that changes the width re-lays them.
@@ -1303,7 +1332,10 @@ function moodDragMove(e) {
   const over = spokeFromPoint(e.clientX, e.clientY);
   if (over === moodHover) return;
   moodHover = over;
-  renderMoodSheet();
+  // Build 29.6: mid-slide, only the hub's words and the two spokes change. renderMoodSheet
+  // rewrote the date line and looped all twelve on every crossing.
+  renderMoodHub();
+  paintMoodHover();
 }
 
 function moodDragEnd(e) {
@@ -1340,8 +1372,8 @@ function renderMoodSheet() {
   renderMoodHub();
   for (const spoke of $("mood-wheel").querySelectorAll(".mood-spoke")) {
     spoke.classList.toggle("is-picked", !!picked && spoke.dataset.key === picked.key);
-    spoke.classList.toggle("is-hover", !!moodHover && spoke.dataset.key === moodHover.key);
   }
+  paintMoodHover();
   $("mood-clear").hidden = !picked;
 }
 
@@ -1359,7 +1391,28 @@ function renderMood() {
   $("mood-today-btn").classList.toggle("is-empty", !picked);
   $("mood-today-btn").disabled = !picked;
   $("mood-today-btn").setAttribute("aria-label", picked ? `Remove today's mood, ${picked.name}` : "No mood today");
-  renderMoodMonth(today);
+  // Build 29.6: the month on the main screen, this week on the cover — the same split My Skin
+  // has had since Build 13, and for the same reason: everything above the fold. A month needs
+  // 545 units and the cover gives 331, so it had to be scrolled, and the grid's touch-action
+  // meant a finger starting on a date could not scroll it.
+  const week = onCoverScreen();
+  $("mood-month-nav").hidden = week;
+  $("mood-week-nav").hidden = !week;
+  if (week) renderMoodWeek(today);
+  else renderMoodMonth(today);
+}
+
+function renderMoodWeek(today) {
+  const start = mondayOf(moodWeekAnchor);
+  const end = addDays(start, 6);
+  const sameMonth = start.slice(0, 7) === end.slice(0, 7);
+  const from = sameMonth ? String(Number(start.slice(8))) : shortDate(start);
+  $("mood-week-label").textContent = `${from} \u2013 ${shortDate(end)}`;
+  const cells = [];
+  for (let i = 0; i < 7; i++) cells.push(moodDayCell(addDays(start, i), today));
+  $("mood-calendar").replaceChildren(...cells);
+  $("mood-prev-week").disabled = start <= mondayOf("2026-01-01");
+  $("mood-next-week").disabled = start >= mondayOf(today);   // this week is as far as it goes
 }
 
 // Build 29: the month shows each day's own drawing, not a family colour. The "a 24px cell makes
@@ -1378,8 +1431,11 @@ function renderMoodMonth(today) {
   }
   $("mood-calendar").replaceChildren(...cells);
   const now = new Date();
-  $("mood-next-month").disabled =
-    moodViewYear * 12 + moodViewMonth >= now.getFullYear() * 12 + now.getMonth();
+  const index = moodViewYear * 12 + moodViewMonth;
+  $("mood-next-month").disabled = index >= now.getFullYear() * 12 + now.getMonth();
+  // Build 29.5: and a floor. It paged back to 1823 if you kept tapping; My Skin has stopped at
+  // January 2026 since Build 16.6, so this matches it rather than inventing a second rule.
+  $("mood-prev-month").disabled = index <= MOOD_FIRST_MONTH;
 }
 
 function moodDayCell(dateISO, today) {
@@ -1482,7 +1538,11 @@ $("mood-sheet").addEventListener("pointerdown", (e) => {
 
 for (const [id, delta] of [["mood-prev-month", -1], ["mood-next-month", 1]]) {
   $(id).addEventListener("click", () => {
-    const index = moodViewYear * 12 + moodViewMonth + delta;
+    const now = new Date();
+    const index = Math.min(
+      Math.max(moodViewYear * 12 + moodViewMonth + delta, MOOD_FIRST_MONTH),
+      now.getFullYear() * 12 + now.getMonth()
+    );
     moodViewYear = Math.floor(index / 12);
     moodViewMonth = index - moodViewYear * 12;
     renderMood();
@@ -1496,6 +1556,16 @@ function resetMoodView() {
   moodHover = null;
   moodViewYear = now.getFullYear();
   moodViewMonth = now.getMonth();
+  moodWeekAnchor = todayISO();
+}
+
+for (const [id, delta] of [["mood-prev-week", -7], ["mood-next-week", 7]]) {
+  $(id).addEventListener("click", () => {
+    const moved = addDays(moodWeekAnchor, delta);
+    const floor = mondayOf("2026-01-01");
+    moodWeekAnchor = moved < floor ? floor : moved > todayISO() ? todayISO() : moved;
+    renderMood();
+  });
 }
 
 // ---------- Date steppers (Build 22.3) ----------
@@ -3482,7 +3552,10 @@ function makeBackup() {
     changes: loadChanges(),
     debt: loadDebt(),
     reflections: reflectStore.load(),
-    moods: loadMoods(),
+    // Build 29.6: moods are NOT backed up, by your decision — "it's just to kill time". They
+    // live on the phone and nowhere else, so a restore leaves whatever is on screen alone.
+    // Version stays 13: a file made between 14 and 21 Nov carries a "moods" field, and it is
+    // now ignored on the way back in rather than refused.
   };
 }
 
@@ -3588,6 +3661,8 @@ function checkBackup(backup) {
     || !backup.income.every(isEntry))) {
     throw new Error("Backup has damaged income");
   }
+  // Build 29.6: nothing to check for moods — they are no longer backed up, and a "moods" field
+  // in an older file is ignored rather than refused. 29.5's guard is gone with the feature.
   // Backups made before Build 28 (version 11 and older) have no "reflections", and those leave yours untouched
   if (backup.reflections !== undefined && (!Array.isArray(backup.reflections)
     || !backup.reflections.every((r) => r && typeof r.id === "string" && typeof r.date === "string"))) {
@@ -3742,7 +3817,7 @@ $("snapshot-yes").addEventListener("click", () => {
 // Build 27.2: the restore itself, lifted out of the button so a spare copy can use the same path.
 // Every guard stays: the rollback, the redraw inside the safety net, and the history entry.
 function applyBackup(backup, statusId, sourceLabel) {
-  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY, REFLECT_KEY, MOOD_KEY];
+  const keys = [STORAGE_KEY, SAVINGS_KEY, RATES_KEY, SKIN_DATA_KEY, DAILY_KEY, DIARY_KEY, COLOURS_KEY, BRAIN_KEY, GOALS_KEY, BOOKS_KEY, INCOME_KEY, CHANGES_KEY, DEBT_KEY, REFLECT_KEY];
   const before = keys.map((key) => localStorage.getItem(key));
   try {
     expenseStore.save(backup.expenses);
@@ -3767,8 +3842,8 @@ function applyBackup(backup, statusId, sourceLabel) {
     if (backup.debt) saveDebt({ target: Number(backup.debt.target) || 0, paidBefore: Number(backup.debt.paidBefore) || 0 });
     // Build 28: version 12 carries your reflections. An older backup has none, so yours are left alone.
     if (backup.reflections) reflectStore.save(backup.reflections);
-    // Build 29: version 13 carries your moods. An older backup has none, so yours are left alone.
-    if (backup.moods) saveMoods(backup.moods);
+    // Build 29.6: a backup's "moods" field is ignored. Moods are not backed up and a restore
+    // does not touch them — the one part of the app you can afford to lose.
     // Build 19: an older backup's "braindump" is ignored on purpose — Brain dump stores nothing now
   } catch (err) {
     console.error(err);

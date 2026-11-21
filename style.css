@@ -1866,6 +1866,17 @@ textarea {
   border-color: var(--accent);
   transform: scale(1.18);
 }
+/* Build 29.6: the growing was a jump. A short transition, and the browser told in advance
+   that these twelve will be transformed, so it gives each one its own layer instead of
+   repainting the ring. The cover screen feels the difference most — it runs at zoom 1.6,
+   where every repaint costs more. */
+.mood-spoke {
+  transition: transform .12s ease-out, background-color .12s ease-out;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mood-spoke { transition: none; }
+}
 
 /* The month. Each day shows its own drawing, not a family colour: measured on the real
    layout a cell is 41px on the 360px screen and 43px on the cover, which leaves ~30px of
